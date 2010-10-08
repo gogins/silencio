@@ -59,6 +59,11 @@ An event is a homogeneous vector with the following dimensions:
 10 Phase, in radians.
 11 Homogeneity, normally always 1.
 
+It is possible to embed a Csound orchestra in a Score object. If Csound is present, the Score 
+object will save this orchestra along with the score in Csound .sco format, and shell out to 
+render the piece using Csound. This enables compositions to be edited and auditioned 
+on a phone, then rendered using Csound on a computer.
+
 Thanks to Peter Billam for the Lua MIDI package
 (http://www.pjb.com.au/comp/lua/MIDI.html).
 ]]
@@ -90,8 +95,11 @@ function Event:new(o)
     return o
 end
 
+-- Translates this Event to a Csound score "i" statement.
+-- Note that MIDI channels are zero-based, Csound instrument numbers are one-based.
+
 function Event:csoundIStatement()
-    istatement = string.format("i %g %g %g %g %g %g %g %g %g %g %g", self[CHANNEL], self[TIME], self[DURATION], self[STATUS], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[HOMOGENEITY])
+    istatement = string.format("i %g %g %g %g %g %g %g %g %g %g %g", self[CHANNEL] + 1, self[TIME], self[DURATION], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[STATUS], self[HOMOGENEITY])
     return istatement
 end
 
@@ -109,7 +117,7 @@ function Event:midiScoreEventString()
 Score = {}
 
 function Score:new(o)
-    o = o or {title = "MyScore"}
+    o = o or {title = "MyScore", orchestra = ''}
     setmetatable(o, self)
     self.__index = self
     if platform == 'Android' then
@@ -128,12 +136,24 @@ function Score:getScoFilename()
     return string.format('%s%s.sco', self.prefix, self.title)
 end
 
+function Score:getOrcFilename()
+    return string.format('%s%s.orc', self.prefix, self.title)
+end
+
+function Score:getOutputSoundfileName()
+    return string.format('%s%s.wav', self.prefix, self.title)
+end
+
+function Score:getMp3SoundfileName()
+    return string.format('%s%s.mp3', self.prefix, self.title)
+end
+
 function Score:append(time_, duration, status, channel, key, velocity, pan, depth, height, phase)
     event = Event:new{time_, duration, status, channel, key, velocity, pan, depth, height, phase, 1}
     table.insert(self, event)
 end
 
-function Score:saveCsound()
+function Score:saveSco()
     print(string.format("Saving \"%s\" as Csound score file...", self:getScoFilename()))
     file = io.open(self:getScoFilename(), "w")
     for i, event in ipairs(self) do
@@ -178,8 +198,35 @@ function Score:playMidi()
     end
 end
 
-function Silencio.newScore()
-    return Score:new()
+function Score:playWav()
+    print(string.format('Playing \"%s\" on %s...', self:getOutputSoundfileName(), platform))
+    if platform == 'Linux' then
+        assert(os.execute(string.format("audacity %s", self:getOutputSoundfileName())))
+    end
+    if platform == 'Android' then
+        android.startActivity('android.intent.action.VIEW', 'file:///'..self:getOutputSoundfileName(), 'audio/x-wav')
+    end
+end
+
+function Score:setOrchestra(orchestra)
+    self.orchestra = orchestra
+end
+
+function Score:saveOrc()
+    print(string.format("Saving \"%s\" as Csound orchestra file...", self:getOrcFilename()))
+    orcfile = io.open(self:getOrcFilename(), 'w')
+    orcfile:write(self.orchestra)
+    orcfile:close()
+end
+
+function Score:renderCsound()
+    print(string.format("Rendering \"%s\" with Csound...", self:getOutputSoundfileName()))
+    self:saveMidi()
+    self:saveOrc()
+    self:saveSco()
+    local command = string.format('csound --old-parser -g -m163 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
+    os.execute(command)
+    os.execute('pkill jackd')
 end
 
 
