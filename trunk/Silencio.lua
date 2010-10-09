@@ -108,11 +108,21 @@ function Event:midiScoreEvent()
     return {tipe, self[TIME] * TICKS_PER_BEAT, self[DURATION] * TICKS_PER_BEAT, self[CHANNEL], self[KEY], self[VELOCITY]}
 end
 
+function Event:fomusNote()
+    -- Time in Silencio is in absolute seconds.
+    -- Default time in Fomus is in quarter-note beats.
+    -- 'beat' in Fomus is type of note per durational unit, e.g. 1/4 for ordinary 4/4.
+    -- We accept Fomus' default 'beat' setting and also assume MM 120 and 4/4,
+    -- which is 8 16th notes per second.
+    local noteString = string.format("time %g part %g dur %g pitch %g;", self[TIME] * 2, self[CHANNEL] + 1, self[DURATION] * 2, self[KEY]) 
+    return noteString
+end
+
 function Event:midiScoreEventString()
     local event = self:midiScoreEvent()
     local eventString = string.format("{%s, %d, %d, %g, %g, %g}", event[1], event[2], event[3], event[4], event[5], event[6]) 
     return eventString
-    end
+end
 
 Score = {}
 
@@ -126,6 +136,10 @@ function Score:new(o)
         self.prefix = ''
     end
     return o
+end
+
+function Score:getFomusFilename()
+    return string.format('%s%s.fms', self.prefix, self.title)
 end
 
 function Score:getMidiFilename()
@@ -188,20 +202,50 @@ function Score:saveMidi(patchChanges)
     file:close()
 end
 
-function Score:playMidi()
+function Score:saveFomus(namesForChannels, header)
+    print(string.format("Saving \"%s\" as Fomus music notation file...", self:getFomusFilename()))
+    file = io.open(self:getFomusFilename(), "w")
+    file:write(string.format("title = %s\n", self.title))
+    if namesForChannels then
+        for part, name in ipairs(namesForChannels) do
+            file:write(string.format("part <id = %s name = %s>\n", part, name))
+        end
+    end
+    if header then
+        file:write(header..'\n')
+    end
+    for i, event in ipairs(self) do
+        file:write(event:fomusNote().."\n")
+    end
+    file:close()
+    print("Running Fomus...")
+    os.execute(string.format('fomus -i %s -o %s.ly', self:getFomusFilename(), self.title))
+    print("Running Lilypond...")
+    os.execute(string.format('lilypond -fpdf %s.ly', self.title))
+end
+
+function Score:playMidi(inBackground)
+    local background = ''
+    if inBackground then
+        background = '&'
+    end
     print(string.format('Playing \"%s\" on %s...', self:getMidiFilename(), platform))
     if platform == 'Linux' then
-        assert(os.execute(string.format("timidity -idvvv %s -Od", self:getMidiFilename())))
+        assert(os.execute(string.format("timidity -idvvv %s -Os %s", self:getMidiFilename(), background)))
     end
     if platform == 'Android' then
         android.startActivity('android.intent.action.VIEW', 'file:///'..self:getMidiFilename(), 'audio/mid')
     end
 end
 
-function Score:playWav()
+function Score:playWav(inBackground)
     print(string.format('Playing \"%s\" on %s...', self:getOutputSoundfileName(), platform))
+    local background = ''
+    if inBackground then
+        background = '&'
+    end
     if platform == 'Linux' then
-        assert(os.execute(string.format("audacity %s", self:getOutputSoundfileName())))
+        assert(os.execute(string.format("audacity %s %s", self:getOutputSoundfileName(), background)))
     end
     if platform == 'Android' then
         android.startActivity('android.intent.action.VIEW', 'file:///'..self:getOutputSoundfileName(), 'audio/x-wav')
@@ -226,7 +270,6 @@ function Score:renderCsound()
     self:saveSco()
     local command = string.format('csound --old-parser -g -m163 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
     os.execute(command)
-    os.execute('pkill jackd')
 end
 
 
