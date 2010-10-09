@@ -6,12 +6,12 @@ score = Score:new()
 c = 0.9739333
 y = 0.5
 n = 100
-dt = 0.075
-d = 0.375
+dt = 0.125
+d = 0.25
 for i = 1, n do 
     y0 = y * c * 4.0 * (1.0 - y)
     y = y0
-    score:append(i * dt, d, 144, 0, math.floor(36.5 + y * 60.0), 80, 0, 0, 0, 0, 1)
+    score:append(i * dt, d, 144, i % 2, math.floor(36.5 + y * 60.0), 100, 0, 0, 0, 0, 1)
 end
 print("Generated score:")
 for i, event in ipairs(score) do
@@ -21,6 +21,8 @@ end
 
 print("BEGAN MIDI rendering...")
 score:saveMidi({{'patch_change', 0, 0, 1}})
+parts = {'Cembalom', 'Gong'}
+score:saveFomus(parts)
 score:playMidi()
 print("ENDED MIDI rendering.")
 
@@ -30,12 +32,6 @@ sr      =   96000
 ksmps   =       1
 nchnls  =       2
 0dbfs   =       1.0
-
-
-iresult                 system_i                1, "/usr/bin/jackd -R -P50 -t2000 -u -dalsa -s -dhw:0 -r48000 -p128 -n3", 1
-iresult                 system_i                1, "sleep 2"
-iresult                 system_i                1, "aeolus -t -u -S /home/mkg/stops", 1
-iresult                 system_i                1, "sleep 2"
 
 ;#define ENABLE_PIANOTEQ #1#
 
@@ -196,6 +192,16 @@ alwayson                "Soundfile"
 #include                "patches/Soundfile"
 ]]
 score:setOrchestra(orchestra)
+print('Starting Jack...')
+os.execute([[
+/usr/bin/jackd -R -Z -P50 -t2000 -u -dalsa -s -dhw:0 -r48000 -p128 -n3&
+sleep 2
+aeolus -t -u -S /home/mkg/stops &
+sleep 2
+]])
 score:renderCsound()
+print('Stopping Jack...')
+os.execute('pkill -9 aeolus')
+os.execute('pkill -9 jackd')
 score:playWav()
-print("ENDED MIDI rendering.")
+print("ENDED Csound rendering.")
