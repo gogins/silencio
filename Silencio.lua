@@ -112,9 +112,9 @@ function Event:fomusNote()
     -- Time in Silencio is in absolute seconds.
     -- Default time in Fomus is in quarter-note beats.
     -- 'beat' in Fomus is type of note per durational unit, e.g. 1/4 for ordinary 4/4.
-    -- We accept Fomus' default 'beat' setting and also assume MM 120 and 4/4,
-    -- which is 8 16th notes per second.
-    local noteString = string.format("time %g part %g dur %g pitch %g;", self[TIME] * 2, self[CHANNEL] + 1, self[DURATION] * 2, self[KEY]) 
+    -- We assume MM 120 and 4/4, which is 8 16th notes per second. 
+    -- But we pre-quantize to 64th notes at that tempo, so we set the beat to 64/2.
+    local noteString = string.format("time %g part %g dur %g pitch %g;", self[TIME] * 32, self[CHANNEL] + 1, self[DURATION] * 32, self[KEY]) 
     return noteString
 end
 
@@ -127,7 +127,7 @@ end
 Score = {}
 
 function Score:new(o)
-    o = o or {title = "MyScore", orchestra = ''}
+    o = o or {title = "MyScore", artist = '', orchestra = '', copyright = '', album = ''}
     setmetatable(o, self)
     self.__index = self
     if platform == 'Android' then
@@ -136,6 +136,38 @@ function Score:new(o)
         self.prefix = ''
     end
     return o
+end
+
+function Score:getTitle()
+    return self.title
+end
+
+function Score:setTitle(value)
+    self.title = value
+end
+
+function Score:getArtist()
+    return self.artist
+end
+
+function Score:setArtist(value)
+    self.artist = value
+end
+
+function Score:getCopyright()
+    return self.copyright
+end
+
+function Score:setCopyright(value)
+    self.copyright = value
+end
+
+function Score:getAlbum()
+    return self.album
+end
+
+function Score:setAlbum(value)
+    self.album = value
 end
 
 function Score:getFomusFilename()
@@ -205,7 +237,13 @@ end
 function Score:saveFomus(namesForChannels, header)
     print(string.format("Saving \"%s\" as Fomus music notation file...", self:getFomusFilename()))
     file = io.open(self:getFomusFilename(), "w")
-    file:write(string.format("title = %s\n", self.title))
+    file:write(string.format("title = \"%s\"\n", self.title))
+    if self.artist:len() > 1 then
+        file:write(string.format("author = \"%s\"\n", self.artist))
+    end
+    file:write("beat = 1/64\n")
+    file:write("timesig (4 4)\n")
+    file:write("lily-papersize = 11x17\n")
     if namesForChannels then
         for part, name in ipairs(namesForChannels) do
             file:write(string.format("part <id = %s name = %s>\n", part, name))
