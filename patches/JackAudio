@@ -1,0 +1,31 @@
+            instr JackAudio
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+            JackoTransport	3, 1.0
+aleft 	    JackoAudioIn	"leftin"
+aright 	    JackoAudioIn 	"rightin"
+            ; Aeolus uses MIDI controller 98 to control stops. 
+            ; Only 1 data value byte is used, not the 2 data 
+            ; bytes often used  with NRPNs. 
+            ; The format for control mode is 01mm0ggg:
+            ; mm 10 to set stops, 0, ggg group (or Division, 0 based).
+            ; The format for stop selection is 000bbbbb:   
+            ; bbbbb for button number (0 based).
+            ; Mode to enable stops for Divison I: b1100010 (98) 
+            ; [this controller VALUE is a pure coincidence]).
+            JackoMidiOut          "midiout", 176, 0, 98, 98 
+            ; Stops: Principal 8 (0), Principal 4 (1) , Flote 8 (8) , Flote 2 (10)
+            JackoMidiOut          "midiout", 176, 0, 98, 0
+            JackoMidiOut          "midiout", 176, 0, 98, 1
+            JackoMidiOut          "midiout", 176, 0, 98, 5
+            JackoMidiOut          "midiout", 176, 0, 98, 9
+            JackoMidiOut          "midiout", 176, 0, 98, 12
+            ; Sends audio coming in from Aeolus out
+            ; not only to the Jack system out (sound card),
+            ; but also to the signal flow graph.
+            ; Note that in freewheeling mode, "leftout"
+            ; and "rightout" simply go silent.
+            outleta         "leftout", aleft
+            outleta         "rightout", aright
+            JackoAudioOut 	"leftout", aleft
+            JackoAudioOut 	"rightout", aright
+            endin
