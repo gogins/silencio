@@ -1,0 +1,11 @@
+            instr JackNote
+            ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ichannel   	=			    p1 - 1
+itime 	   	= 			    p2
+iduration  	= 			    p3
+ikey 	   	= 			    p4
+ivelocity  	= 			    p5
+            JackoNoteOut 	"midiout", ichannel, ikey, ivelocity
+            print 		    itime, iduration, ichannel, ikey, ivelocity
+            endin
+
