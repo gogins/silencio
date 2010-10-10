@@ -3,15 +3,16 @@ require "Silencio"
 Silencio.help()
 
 score = Score:new()
+score:setArtist('Michael Gogins')
 c = 0.9739333
-y = 0.5
-n = 100
-dt = 0.125
+y = 0.55
+n = 1000
+dt = 0.125/2
 d = 0.25
 for i = 1, n do 
     y0 = y * c * 4.0 * (1.0 - y)
     y = y0
-    score:append(i * dt, d, 144, i % 2, math.floor(36.5 + y * 60.0), 100, 0, 0, 0, 0, 1)
+    score:append(i * dt, d, 144, i % 3, math.floor(36.5 + y * 60.0), 100, 0, 0, 0, 0, 1)
 end
 print("Generated score:")
 for i, event in ipairs(score) do
@@ -21,7 +22,7 @@ end
 
 print("BEGAN MIDI rendering...")
 score:saveMidi({{'patch_change', 0, 0, 1}})
-parts = {'Cembalom', 'Gong'}
+parts = {'Cembalom', 'Gong', 'Fife'}
 score:saveFomus(parts)
 score:playMidi()
 print("ENDED MIDI rendering.")
