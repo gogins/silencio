@@ -20,11 +20,20 @@ do
         local osname = os.getenv('WINDIR')
         if osname then 
             platform = 'Windows'
+        else
+            result, osname = pcall(os.capture, 'uname')
+            if osname then
+                platform = osname
+            end
         end
-        osname = os.capture('uname')
-        if osname then
-            platform = osname
-        end
+    end
+end
+
+do
+    if platform == 'Windows' then
+        result, cwd = pcall(os.capture, 'cd')
+    else
+        result, cwd = pcall(os.capture, 'pwd')
     end
 end
 
@@ -68,6 +77,7 @@ Thanks to Peter Billam for the Lua MIDI package
 (http://www.pjb.com.au/comp/lua/MIDI.html).
 ]]
 print(string.format("Platform: %s\n", platform))
+print('Current directory:', cwd)
 end
 
 MIDI = require("MIDI")
@@ -274,6 +284,11 @@ function Score:playMidi(inBackground)
     if platform == 'Android' then
         android.startActivity('android.intent.action.VIEW', 'file:///'..self:getMidiFilename(), 'audio/mid')
     end
+    if platform == 'Windows' then
+        local command = string.format("wmplayer.exe \"%s\\%s\"", cwd, self:getMidiFilename())
+        print (command)
+        assert(os.execute(command, background))
+    end
 end
 
 function Score:playWav(inBackground)
@@ -310,4 +325,37 @@ function Score:renderCsound()
     os.execute(command)
 end
 
+function Score:findScale(dimension)
+    local minimum = 0
+    local maximum = 0
+    for i, event in ipairs(self) do
+        local value = event[dimension]
+        if i == 1 then
+            minimum = value
+            maximum = value
+        end
+        if value < minimum then
+            minimum = value
+        end
+        if value > maximum then
+            maximum = value
+        end
+    end
+    range = maximum - minimum
+    return {minimum, range}
+end
+
+function Score:findScales()
+    local minima = Event:new()
+    local ranges = Event:new()
+    for i = 1, HOMOGENEITY do
+        local scale = self:findScale(i)
+        minima[i] = scale[1]
+        ranges[i] = scale[2] 
+    end
+    return {minima, ranges}
+end
+
+function Score:setScale(dimension, minimum, range)
+end
 

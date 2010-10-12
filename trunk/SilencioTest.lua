@@ -4,12 +4,13 @@ Silencio.help()
 
 score = Score:new()
 score:setArtist('Michael Gogins')
+score:setTitle('Loop_Study')
 c = 0.9739333
 y = 0.55
 n = 1000
 dt = 0.125/2
 d = 0.25
-for i = 1, n do 
+for i = 0, n - 1 do 
     y0 = y * c * 4.0 * (1.0 - y)
     y = y0
     score:append(i * dt, d, 144, i % 3, math.floor(36.5 + y * 60.0), 100, 0, 0, 0, 0, 1)
@@ -20,12 +21,17 @@ for i, event in ipairs(score) do
     print(' ', event:midiScoreEventString())
 end
 
+scales = score:findScales()
+print(string.format('minima: %s', scales[1]:csoundIStatement()))
+print(string.format('ranges: %s', scales[2]:csoundIStatement()))
+
 print("BEGAN MIDI rendering...")
 score:saveMidi({{'patch_change', 0, 0, 1}})
 parts = {'Cembalom', 'Gong', 'Fife'}
-score:saveFomus(parts)
 score:playMidi()
 print("ENDED MIDI rendering.")
+os.exit(0)
+score:saveFomus(parts)
 
 print("BEGAN Csound rendering...")
 orchestra = [[
