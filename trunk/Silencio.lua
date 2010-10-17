@@ -1,5 +1,57 @@
 Silencio = {}
 
+function Silencio.help()
+print [[
+S I L E N C I O
+
+Copyright (C) 2010 by Michael Gogins
+This software is licensed under the terms of the GNU Lesser General Public License.
+
+Silencio is a simple system for doing algorithmic composition in Lua.
+Silencio runs not only on Android smartphones, but also on personal computers. 
+It will output scores as MIDI sequence files or as Csound score files.
+
+There are also convenience functions to simplify algorithmic composition, including
+rescaling scores, splitting and combining scores, and applying matrix arithmetic operations
+to scores.
+
+A score is a matrix in which the rows are events.
+
+An event is a homogeneous vector with the following dimensions:
+
+ 1 Time in seconds from start of performance.
+ 2 Duration in seconds.
+ 3 MIDI status (actually, only the most significant nybble, e.g. 144 for 'NOTE ON').
+ 4 MIDI channel (actually, any real number >= 0, fractional part ties succeeding events).
+ 5 MIDI key number from 0 to 127, 60 is middle C (actually, a real number not an integer).
+ 6 MIDI velocity from 0 to 127, 80 is mezzo-forte (actually, a real number not an integer).
+ 7 Pan, 0 is the origin.
+ 8 Depth, 0 is the origin.
+ 9 Height, 0 is the origin.
+10 Phase, in radians.
+11 Homogeneity, normally always 1.
+
+It is possible to embed a Csound orchestra in a Score object. If Csound is present, the Score 
+object will save this orchestra along with the score in Csound .sco format, and shell out to 
+render the piece using Csound. This enables compositions to be edited and auditioned 
+on a phone, then rendered using Csound on a computer.
+
+Pass the invoking script's arg table to Score:processArg() and it will perform the following commands:
+
+--midi       Render generated score as MIDI sequence file and play it (default).
+--playmidi   Play generated MIDI sequence file.
+--fomus      Render generated score as Fomus music notation file.
+--csound     Render generated score using set Csound orchestra, post-process it, and play it.
+--post       Post-process Csound output soundfile: normalize, CD, MP3, tag, and play it.
+--playwav    Play rendered normalized output soundfile.
+
+Thanks to Peter Billam for the Lua MIDI package
+(http://www.pjb.com.au/comp/lua/MIDI.html).
+]]
+print(string.format("Platform: %s\n", platform))
+print('Current directory:', cwd)
+end
+
 function os.capture(cmd, raw)
   local f = assert(io.popen(cmd, 'r'))
   local s = assert(f:read('*a'))
@@ -37,49 +89,6 @@ do
     end
 end
 
-function Silencio.help()
-print [[
-S I L E N C I O
-
-Copyright (C) 2010 by Michael Gogins
-This software is licensed under the terms of the GNU Lesser General Public License.
-
-Silencio is a simple system for doing algorithmic composition in Lua.
-Silencio runs not only on Android smartphones, but also on personal computers. 
-It will output scores as MIDI sequence files or as Csound score files.
-
-There are also convenience functions to simplify algorithmic composition, including
-rescaling scores, splitting and combining scores, and applying matrix arithmetic operations
-to scores.
-
-A score is a matrix in which the rows are events.
-
-An event is a homogeneous vector with the following dimensions:
-
- 1 Time in seconds from start of performance.
- 2 Duration in seconds.
- 3 MIDI status (actually, only the most significant nybble, e.g. 144 for 'NOTE ON').
- 4 MIDI channel (actually, any real number >= 0, fractional part ties succeeding events).
- 5 MIDI key number from 0 to 127, 60 is middle C (actually, a real number not an integer).
- 6 MIDI velocity from 0 to 127, 80 is mezzo-forte (actually, a real number not an integer).
- 7 Pan, 0 is the origin.
- 8 Depth, 0 is the origin.
- 9 Height, 0 is the origin.
-10 Phase, in radians.
-11 Homogeneity, normally always 1.
-
-It is possible to embed a Csound orchestra in a Score object. If Csound is present, the Score 
-object will save this orchestra along with the score in Csound .sco format, and shell out to 
-render the piece using Csound. This enables compositions to be edited and auditioned 
-on a phone, then rendered using Csound on a computer.
-
-Thanks to Peter Billam for the Lua MIDI package
-(http://www.pjb.com.au/comp/lua/MIDI.html).
-]]
-print(string.format("Platform: %s\n", platform))
-print('Current directory:', cwd)
-end
-
 MIDI = require("MIDI")
 
 TIME        =  1
@@ -94,7 +103,7 @@ HEIGHT      =  9
 PHASE       = 10
 HOMOGENEITY = 11
 
-TICKS_PER_BEAT = 96000
+TICKS_PER_BEAT = 480
 
 Event = {}
 
@@ -115,7 +124,7 @@ end
 
 function Event:midiScoreEvent()
     tipe = 'note'
-    return {tipe, self[TIME] * TICKS_PER_BEAT, self[DURATION] * TICKS_PER_BEAT, self[CHANNEL], self[KEY], self[VELOCITY]}
+    return {tipe, self[TIME] * TICKS_PER_BEAT * 2, self[DURATION] * TICKS_PER_BEAT * 2, self[CHANNEL], self[KEY], self[VELOCITY]}
 end
 
 function Event:fomusNote()
@@ -180,6 +189,14 @@ function Score:setAlbum(value)
     self.album = value
 end
 
+function Score:getLicense()
+    return self.license
+end
+
+function Score:setLicense(value)
+    self.license = value
+end
+
 function Score:getFomusFilename()
     return string.format('%s%s.fms', self.prefix, self.title)
 end
@@ -198,6 +215,14 @@ end
 
 function Score:getOutputSoundfileName()
     return string.format('%s%s.wav', self.prefix, self.title)
+end
+
+function Score:getCdAudioFilename()
+    return string.format('%s%s.cd.wav', self.prefix, self.title)
+end
+
+function Score:getNormalizedSoundfileName()
+    return string.format('%s%s.norm.wav', self.prefix, self.title)
 end
 
 function Score:getMp3SoundfileName()
@@ -221,7 +246,7 @@ end
 -- Save the score as a format 0 MIDI sequence.
 -- The optional patch changes are an array of 
 -- {'patch_change', dtime, channel, patch}.
-function Score:saveMidi(patchChanges)
+function Score:renderMidi(patchChanges)
     print(string.format("Saving \"%s\" as MIDI sequence file...", self:getMidiFilename()))
     -- Time resolution is 96000 ticks per beat (i.e. per second), 
     -- i.e. sample precision at 96 KHz. 
@@ -244,7 +269,7 @@ function Score:saveMidi(patchChanges)
     file:close()
 end
 
-function Score:saveFomus(namesForChannels, header)
+function Score:renderFomus(namesForChannels, header)
     print(string.format("Saving \"%s\" as Fomus music notation file...", self:getFomusFilename()))
     file = io.open(self:getFomusFilename(), "w")
     file:write(string.format("title = \"%s\"\n", self.title))
@@ -279,7 +304,7 @@ function Score:playMidi(inBackground)
     end
     print(string.format('Playing \"%s\" on %s...', self:getMidiFilename(), platform))
     if platform == 'Linux' then
-        assert(os.execute(string.format("timidity -idvvv %s -Os %s", self:getMidiFilename(), background)))
+        assert(os.execute(string.format("timidity -idv %s -Od %s", self:getMidiFilename(), background)))
     end
     if platform == 'Android' then
         android.startActivity('android.intent.action.VIEW', 'file:///'..self:getMidiFilename(), 'audio/mid')
@@ -291,22 +316,71 @@ function Score:playMidi(inBackground)
     end
 end
 
+function Score:getOutputSoundfileName()
+    return string.format('%s%s.wav', self.prefix, self.title)
+end
+
 function Score:playWav(inBackground)
-    print(string.format('Playing \"%s\" on %s...', self:getOutputSoundfileName(), platform))
+    print(string.format('Playing \"%s\" on %s...', self:getNormalizedSoundfileName(), platform))
     local background = ''
     if inBackground then
         background = '&'
     end
     if platform == 'Linux' then
-        assert(os.execute(string.format("audacity %s %s", self:getOutputSoundfileName(), background)))
+        assert(os.execute(string.format("audacity %s %s", self:getNormalizedSoundfileName(), background)))
     end
     if platform == 'Android' then
-        android.startActivity('android.intent.action.VIEW', 'file:///'..self:getOutputSoundfileName(), 'audio/x-wav')
+        android.startActivity('android.intent.action.VIEW', 'file:///'..self:getNormalizedSoundfileName(), 'audio/x-wav')
     end
 end
 
 function Score:setOrchestra(orchestra)
     self.orchestra = orchestra
+end
+
+function Score:setPreCsoundCommands(commands)
+    self.preCsoundCommands = commands
+end
+
+function Score:setPostCsoundCommands(commands)
+    self.postCsoundCommands = commands
+end
+
+-- Sets MIDI bank and program setup to use
+-- when rendering a MIDI sequence.
+-- The format is a table of tables
+-- each entry containing {'patch change', bank number, channel number, program number},
+-- e.g. {{'patch_change', 0, 0, 1},{'patch_change', 0, 0, 8}, {'patch_change', 0, 2, 9}.
+
+function Score:setMidiPatches(midiPatches)
+    self.midiPatches = midiPatches
+end
+
+function Score:getMidiPatches()
+    return self.midiPatches
+end
+
+-- Sets optional part names to use when rendering
+-- Fomus music notation. The format is a table
+-- of names.
+
+function Score:setFomusParts(fomusParts)
+    self.fomusParts = fomusParts
+end
+
+function Score:getFomusParts()
+    return self.fomusParts
+end
+
+-- Sets an optional header of Fomus commands
+-- to use when rendering Fomus music notation.
+
+function Score:setFomusHeader(fomusHeader)
+    self.fomusHeader = fomusHeader
+end
+
+function Score:getFomusHeader()
+    return self.fomusHeader
 end
 
 function Score:saveOrc()
@@ -318,11 +392,14 @@ end
 
 function Score:renderCsound()
     print(string.format("Rendering \"%s\" with Csound...", self:getOutputSoundfileName()))
-    self:saveMidi()
+    self:renderMidi(self.midiPatches)
     self:saveOrc()
     self:saveSco()
+    os.execute(self.preCsoundCommands)
     local command = string.format('csound --old-parser -g -m163 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
     os.execute(command)
+    os.execute(self.postCsoundCommands)
+    self:postProcess()
 end
 
 function Score:findScale(dimension)
@@ -357,5 +434,116 @@ function Score:findScales()
 end
 
 function Score:setScale(dimension, minimum, range)
+end
+
+function Score:tagFile(filename)    
+    print('Tagging: "' .. filename .. '"...')
+    local timestamp = os.date('%Y-%m-%d')
+    command = 'bwfmetaedit'
+    command = command .. ' --OriginationDate=' .. timestamp
+    command = command .. ' --ICRD=' .. timestamp
+    if (self:getTitle()) then
+      command = command .. ' --Description=' .. self:getTitle()
+      command = command .. ' --INAM=' .. self:getTitle()
+    end
+    if (self:getCopyright():len() > 0) then
+      command = command .. ' --ICOP=' .. self:getCopyright()
+    end
+    if (self:getArtist()) then
+      command = command .. ' --Originator=' .. self:getArtist()
+      command = command .. ' --IART=' .. self:getArtist()
+    end
+    if (self:getAlbum()) then
+      command = command .. ' --IPRD=' .. self:getAlbum()
+    end
+    if (self:getLicense()) then
+      command = command .. ' --ICMT=' .. self:getLicense()
+    end
+    command = command .. ' ' .. filename
+    print('Command: "' .. command .. '".')
+    assert(os.execute(command))
+end
+
+function Score:normalizeOutputSoundfile(levelDb)
+    if not levelDb then
+        levelDb = -6.0
+    end
+    local buffer = string.format('sox %s -V3 -b 32 -e floating-point %s gain -n %f\n',
+		  self:getOutputSoundfileName(),
+		  self:getNormalizedSoundfileName(),
+		  levelDb);
+    print('Normalizing output soundfile:"' .. command .. '"..')
+    assert(os.execute(buffer))
+    self:tagFile(self:getNormalizedSoundfileName())
+end
+
+function Score:translateToCdAudio(levelDb)
+    if not levelDb then
+        levelDb = -6.0
+    end
+    local command = string.format('sox %s -V3 -b 16 %s gain -n %f rate 44100\n',
+		  self:getOutputSoundfileName(),
+		  self:getCdAudioFilename(),
+		  levelDb)
+    print('Translating output soundfile to CD audio:"' .. command .. '"..')
+    assert(os.execute(command))
+    self:tagFile(self:getCdAudioFilename())
+end
+
+function Score:translateToMp3()
+    local command = string.format('lame --verbose --disptime 2 --nohist --preset cd --tt %s --ta %s --tl %s --tc %s %s %s\n',
+		  self:getTitle(),
+		  self:getArtist(),
+		  self:getAlbum(),
+		  self:getCopyright(),
+		  self:getCdAudioFilename(),
+		  self:getMp3SoundfileName())
+    print('Translating CD audio file to MP3:"' .. command .. '"..')
+    assert(os.execute(command))
+end
+
+-- Tag the output soundfile,
+-- normalize it and tag the normalized file,
+-- translate it to CD audio and tag the CD audio file,
+-- and translate it to a tagged MP3 file.
+
+function Score:postProcess()
+    print('Post-processing: "' .. self.title .. '"...')
+    self:tagFile(self:getOutputSoundfileName())
+    self:normalizeOutputSoundfile()
+    self:translateToCdAudio()
+    self:translateToMp3()
+end
+
+-- Process rendering-related commands passed in the args table
+-- (typically, command-line arguments from the invoking script).
+
+function Score:processArg(args) 
+    if #args == 0 then
+        args[1] = '--midi'
+    end
+    for i, argument in ipairs(args) do
+        if argument == '--midi' then
+            self:renderMidi(self.midiPatches)
+            self:playMidi()
+        end
+        if argument == '--playmidi' then
+             self:playMidi()
+        end
+        if argument == '--fomus' then
+            self:renderFomus(self.fomusParts, self.fomusHeader)
+        end
+        if argument == '--csound' then
+            self:renderCsound()
+            self:playWav()
+        end
+        if argument == '--post' then
+            self:postProcess()
+            self:playWav()
+        end
+        if argument == '--playwav' then
+            self:playWav()
+        end
+    end   
 end
 

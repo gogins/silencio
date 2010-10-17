@@ -3,18 +3,73 @@ require "Silencio"
 Silencio.help()
 
 score = Score:new()
-score:setArtist('Michael Gogins')
-score:setTitle('SilencioTest')
-c = 0.9739333
-y = 0.55
-n = 1000
-dt = 0.125/2
-d = 0.25
-for i = 0, n - 1 do 
-    y0 = y * c * 4.0 * (1.0 - y)
-    y = y0
-    score:append(i * dt, d, 144, i % 3, math.floor(36.5 + y * 60.0), 100, 0, 0, 0, 0, 1)
+score:setArtist('Michael_Gogins')
+score:setTitle('Loop_Study.2')
+score:setCopyright('Copr_2010_Michael_Gogins')
+score:setAlbum('Silencio')
+
+function normalizeGeneratorTimes(g)
+    sum = 0.0
+    for i = 1, #g, 4 do
+        sum = (sum + g[i + 2])
+    end
+    for i = 1, #g, 4 do
+        g[i + 2] = g[i + 2] / sum
+    end
 end
+
+function Koch(generator, t, d, c, k, v, level, score)
+    local t1 = t
+    local d1 = d
+    local c1 = c
+    local k1 = k
+    local v1 = v
+    local pan = 0
+    if level > 0 then
+        for i = 1, #generator, 4 do
+            k1 = k + generator[i]
+            v1 = v + generator[i + 1]
+            d1 = d  * generator[i + 2]
+            d2 = d1 * generator[i + 3]
+            score:append(t1, d2, 144, c1, math.floor(k1), v1, 0, 0, 0, 0, 1)
+            Koch(generator, t1, d1, c1, k1 + 12, v1, level - 1, score)
+            t1 = t1 + d1
+        end
+    end
+end
+
+g = {  2,  0,  2,  1,
+       4,  0,  2,  .875,
+       7,  1,  2,  1,
+       5,  1,  2,  1,
+       7, -2,  2,  1,
+       8,  4,  2,  .875,
+       4,  1,  4,  1,
+      -4,  1,  4,  1
+    }
+
+normalizeGeneratorTimes(g)
+
+h = {  2,  0,  2,  1,
+       4,  0,  2,  .875,
+       7,  1,  2,  1,
+       5,  1,  2,  1,
+       7, -2,  2,  1,
+       8,  4,  2,  .875,
+       4,  1,  4,  1,
+      -1,  1,  4,  1
+    }
+
+normalizeGeneratorTimes(h)
+
+-- Generate events for layers of each generator.
+
+Koch(g, 0.00, 240, 0, 24, 30, 3, score)
+
+-- The second generator makes a canon relative to the first.
+
+Koch(h, 0.25, 240, 1, 36, 50, 3, score);
+
 print("Generated score:")
 for i, event in ipairs(score) do
     print(i, event:csoundIStatement())
@@ -25,15 +80,8 @@ scales = score:findScales()
 print(string.format('minima: %s', scales[1]:csoundIStatement()))
 print(string.format('ranges: %s', scales[2]:csoundIStatement()))
 
-print("BEGAN MIDI rendering...")
-score:saveMidi({{'patch_change', 0, 0, 1}})
-parts = {'Cembalom', 'Gong', 'Fife'}
-score:playMidi()
-print("ENDED MIDI rendering.")
-os.exit(0)
-score:saveFomus(parts)
-
-print("BEGAN Csound rendering...")
+score:setMidiPatches({{'patch_change', 0, 0, 1},{'patch_change', 0, 0, 8}, {'patch_change', 0, 2, 9} })
+score:setFomusParts({'Cembalom', 'Gong', 'Fife'})
 orchestra = [[
 sr      =   96000
 ksmps   =       1
@@ -67,28 +115,29 @@ giPianoteq              vstinit                 "C:\\utah\\opt\\pianoteq-3.5\\Pi
        ; to figure out the damn port names.
 
        ; JackoMidiInConnect   "alsa_pcm:in-131-0-Master", "midiin"
-       JackoAudioInConnect 	"aeolus:out.L", "leftin"
-       JackoAudioInConnect 	"aeolus:out.R", "rightin"
-       JackoMidiOutConnect 	"midiout", "aeolus:Midi/in"
-
+        JackoAudioInConnect 	"aeolus:out.L", "leftin"
+        JackoAudioInConnect 	"aeolus:out.R", "rightin"
+        JackoAudioInConnect 	"Pianoteq36:out_1", "leftin1"
+        JackoAudioInConnect 	"Pianoteq36:out_2", "rightin1"
+        JackoMidiOutConnect 	"midiout", "aeolus:Midi/in"
+        JackoMidiOutConnect 	"midiout1", "Pianoteq36:midi_in"
+       
         ; Note that Jack enables audio to be output to a regular
-       ; Csound soundfile and, at the same time, to a sound 
-       ; card in real time to the system client via Jack. 
+        ; Csound soundfile and, at the same time, to a sound 
+        ; card in real time to the system client via Jack. 
 
         JackoAudioOutConnect "leftout", "system:playback_1"
-       JackoAudioOutConnect "rightout", "system:playback_2"
-       JackoInfo
+        JackoAudioOutConnect "rightout", "system:playback_2"
+        JackoInfo
 
-       ; Turning freewheeling on seems automatically 
+        ; Turning freewheeling on seems automatically    
         ; to turn system playback off. This is good!
 
-       JackoFreewheel	1
-       JackoOn
+        JackoFreewheel	1
+        JackoOn
                         
 ;                       ALL SIGNAL FLOW GRAPH CONNECTIONS ARE DEFINED BELOW THIS
 
-connect                 "LivingstonGuitar", "leftout",     "Reverberator",     	"leftin"
-connect                 "LivingstonGuitar", "rightout",    "Reverberator",     	"rightin"
 connect                 "STKBeeThree",      "leftout",     "LeftReverberator",     	"input"
 connect                 "STKBeeThree",      "rightout",    "RightReverberator",     	"input"
 connect                 "FMBell",           "leftout",     "Reverberator",     	"leftin"
@@ -107,6 +156,8 @@ connect                 "Rhodes",           "leftout",     "Reverberator",     	
 connect                 "Rhodes",           "rightout",    "Reverberator",     	"rightin"
 connect                 "FilteredSines",    "leftout",     "Reverberator",     	"leftin"
 connect                 "FilteredSines",    "rightout",    "Reverberator",     	"rightin"
+connect                 "LivingstonGuitar", "leftout",     "Reverberator",     	"leftin"
+connect                 "LivingstonGuitar", "rightout",    "Reverberator",     	"rightin"
 connect                 "Xing",             "leftout",     "Reverberator",     	"leftin"
 connect                 "Xing",             "rightout",    "Reverberator",     	"rightin"
 connect                 "FMModulatedChorus","leftout",     "Reverberator",     	"leftin"
@@ -130,8 +181,11 @@ connect                 "Guitar2",          "rightout",    "Reverberator",     	
 connect                 "STKBowed",         "leftout",     "Reverberator",     	"leftin"
 connect                 "STKBowed",         "rightout",    "Reverberator",     	"rightin"
 
+#ifdef ENABLE_PIANOTEQ
 connect                 "PianoteqAudio",    "leftout",     "LeftReverberator",  "input"
 connect                 "PianoteqAudio",    "rightout",    "RightReverberator", "input"
+#endif
+
 connect                 "FluidAudio",       "leftout",     "Reverberator",     	"leftin"
 connect                 "FluidAudio",       "rightout",    "Reverberator",     	"rightin"
 connect                 "JackAudio",        "leftout",     "LeftReverberator",  "input"
@@ -161,6 +215,8 @@ alwayson                "Soundfile"
 ;                       GO BELOW THIS IN INSNO ORDER
 
 #include                "patches/JackNote"
+#include                "patches/JackNote1"
+#include                "patches/Harpsichord"
 ;#include                "patches/Pianoteq.inc"
 #include                "patches/STKBeeThree"
 ;#include                "patches/Plucked"
@@ -173,7 +229,6 @@ alwayson                "Soundfile"
 #include                "patches/FMBell"
 #include                "patches/DelayedPlucked"
 #include                "patches/FMModerate2"
-#include                "patches/Harpsichord"
 ;#include                "patches/STKBowed"
 ;                        Clicks, alas.
 ; #include                "patches/HeavyMetal"
@@ -187,7 +242,7 @@ alwayson                "Soundfile"
 ;                       INSTRUMENTS THAT COLLECT AUDIO FROM INSTRUMENTS ABOVE THIS 
 ;                       GO BELOW THIS 
 
-#include                "patches/PianoteqAudio.inc"
+;#include                "patches/PianoteqAudio.inc"
 #include                "patches/FluidAudio"
 #include                "patches/JackAudio"
 
@@ -199,16 +254,22 @@ alwayson                "Soundfile"
 #include                "patches/Soundfile"
 ]]
 score:setOrchestra(orchestra)
-print('Starting Jack...')
-os.execute([[
-/usr/bin/jackd -R -Z -P50 -t2000 -u -dalsa -s -dhw:0 -r48000 -p128 -n3&
+score:setPreCsoundCommands([[
+pkill -9 jackd
+pkill -9 aeolus
+pkill -9 Pianoteq
+pkill -9 csound
 sleep 2
-aeolus -t -u -S /home/mkg/stops &
+/usr/bin/jackd -R -P50 -t2000 -u -dalsa -s -dhw:0 -r48000 -p128 -n3 &
 sleep 2
+Pianoteq &
+aeolus -u -S /home/mkg/stops &
+sleep 20    
 ]])
-score:renderCsound()
-print('Stopping Jack...')
-os.execute('pkill -9 aeolus')
-os.execute('pkill -9 jackd')
-score:playWav()
-print("ENDED Csound rendering.")
+score:setPostCsoundCommands([[
+pkill -9 jackd
+pkill -9 aeolus
+pkill -9 Pianoteq
+pkill -9 csound
+]])
+score:processArg(arg)

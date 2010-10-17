@@ -3,6 +3,8 @@
             JackoTransport	3, 1.0
 aleft 	    JackoAudioIn	"leftin"
 aright 	    JackoAudioIn 	"rightin"
+aleft1 	    JackoAudioIn	"leftin1"
+aright1	    JackoAudioIn 	"rightin1"
             ; Aeolus uses MIDI controller 98 to control stops. 
             ; Only 1 data value byte is used, not the 2 data 
             ; bytes often used  with NRPNs. 
@@ -24,8 +26,8 @@ aright 	    JackoAudioIn 	"rightin"
             ; but also to the signal flow graph.
             ; Note that in freewheeling mode, "leftout"
             ; and "rightout" simply go silent.
-            outleta         "leftout", aleft
-            outleta         "rightout", aright
-            JackoAudioOut 	"leftout", aleft
-            JackoAudioOut 	"rightout", aright
+            outleta         "leftout", aleft+aleft1
+            outleta         "rightout", aright+aright1
+            JackoAudioOut 	"leftout", aleft+aleft1
+            JackoAudioOut 	"rightout", aright+aright1
             endin
