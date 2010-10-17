@@ -1,11 +1,17 @@
 #!/usr/bin/lua
 --require 'DataDumper'   -- http://lua-users.org/wiki/DataDumper
 local M = {} -- public interface
-M.Version = '3.9'
-M.VersionDate = '19sep2010'
--- 21010918 3.9 set_sequence_number supported, FWIW
--- 21010918 3.8 timeshift and segment accept named args
--- 21010913 3.7 first released version
+M.Version = '4.2'
+M.VersionDate = '10oct2010'
+-- 20101010 4.2 play_score() uses posix.fork if available
+-- 20101009 4.2 merge_scores() moves aside conflicting channels correctly
+-- 20101006 4.1 concatenate_scores() deepcopys also its 1st score
+-- 20101006 4.1 segment() uses start_time and end_time named arguments
+-- 20101005 4.1 timeshift() must not pad the set_tempo command
+-- 20101003 4.0 pitch2note_event must be chapitch2note_event
+-- 20100918 3.9 set_sequence_number supported, FWIW
+-- 20100918 3.8 timeshift and segment accept named args
+-- 20100913 3.7 first released version
 
 ---------------------------- private -----------------------------
 local sysex2midimode = {
@@ -110,7 +116,6 @@ Bit eight (the high bit) is set on each byte except the last.
 		table.insert(ber, 1, string.char(128+seven_bits))
 	end
 	return table.concat(ber)
-	--print("ber="..DataDumper(ber))
 end
 
 local function str2ber_int(s, start)
@@ -267,7 +272,6 @@ The options:
 				if exclude['pitch_wheel_change'] then
 					continue = true
 				else -- the 2 param bytes are a 14-bit int
---warn('param1='..param1..' param2='..param2)
 					E = {'pitch_wheel_change', time, channel,
 					 128*param2+param1-8192}
 				end
@@ -585,9 +589,6 @@ local function _encode(events_lol)
 				data[#data+1] = int2byte(status)
 			end
 			data[#data+1] = parameters
-			-- require 'DataDumper'
-			-- print(DataDumper(data))
- 
 			last_status = status
 			-- break
 		else
@@ -906,8 +907,8 @@ function M.concatenate_scores(scores)
 	-- the deepcopys are needed if input_scores are refs to the same table
 	-- e.g. if invoked by midisox's repeat()
 	local input_scores = consistentise_ticks(scores) -- 3.6
-	local output_score = input_scores[1]
-	local i; for i = 2,#input_scores do
+	local output_score = deepcopy(input_scores[1])   -- 4.2
+	for i = 2,#input_scores do
 		local input_score = input_scores[i]
 		local output_stats = M.score2stats(output_score)
 		local delta_ticks = output_stats['nticks']
@@ -934,7 +935,7 @@ function M.grep(score, t)
 	local channels = dict(t)
 	local itrack = 2 while itrack <= #score do
 		new_score[itrack] = {}
-		local k,event; for k,event in ipairs(score[itrack]) do
+		for k,event in ipairs(score[itrack]) do
 			local channel_index = M.Event2channelindex[event[1]]
 			if channel_index then
 				if channels[event[channel_index]] then
@@ -955,10 +956,9 @@ function M.merge_scores(scores)
 	local all_channels = dict{0,1,2,3,4,5,6,7,8,10,11,12,13,14,15}
 	for ks,input_score in ipairs(consistentise_ticks(scores)) do -- 3.6
 		local new_stats = M.score2stats(input_score)
-		local ns = new_stats['channels_total']
-		local new_channels = new_stats['channels_total']
+		local new_channels = dict(new_stats['channels_total']) -- 4.2 dict
 		new_channels[9] = nil  -- 2.8 cha9 must remain cha9 (in GM)
-		for channel,v1 in ipairs(new_channels) do
+		for j,channel in ipairs(sorted_keys(new_channels)) do  -- 4.2 to catch 0
 			if channels_so_far[channel] then
 				local free_channels = copy(all_channels)
 				for k,v in pairs(channels_so_far) do
@@ -978,7 +978,6 @@ function M.merge_scores(scores)
 				for itrack = 2,#input_score do
 					for k3,input_event in ipairs(input_score[itrack]) do
 						local ci = M.Event2channelindex[input_event[1]]
--- warn('input_event[1]='..input_event[1]..' ci='..tostring(ci)..' channel='..channel)
 						if ci and input_event[ci]==channel then
 							input_event[ci] = free_channel
 						end
@@ -1059,17 +1058,24 @@ end
 
 function M.play_score(score)
 	if not score then return end
-	local fn = os.tmpname()
-	-- local p = assert(io.popen("aplaymidi -", 'w'))  -- background ?  & ?
-	local fh = assert(io.open(fn, 'w'))
+	local midi
 	if M.score_type(score) == 'opus' then
-		fh:write(M.opus2midi(score))
+		midi = M.opus2midi(score)
 	else
-		fh:write(M.score2midi(score))
+		midi = M.score2midi(score)
 	end
-	fh:close()
-	--warn('fn='..fn)
-	os.execute("aplaymidi "..fn..' ; rm '..fn..' &')
+	pcall(function() require 'posix' end)
+	if posix and posix.fork then   -- 4.2
+		local pid = posix.fork()
+        if pid == 0 then
+			local p = assert(io.popen("aplaymidi -", 'w'))  -- background
+            p:write(midi) ; p:close() ; os.exit(0)
+        end
+	else
+		local fn = os.tmpname()
+		local fh = assert(io.open(fn, 'w'));  fh:write(midi);  fh:close()
+		os.execute("aplaymidi "..fn..' ; rm '..fn..' &')
+	end
 end
 
 function M.opus2midi(opus)
@@ -1085,7 +1091,6 @@ function M.opus2midi(opus)
 	--for track in tracks:
 	for i = 2, #opus do
 		local events = _encode(opus[i])
---print(DataDumper(events))
 		-- should really do an array and then concat...
 		my_midi = my_midi .. 'MTrk' .. int2fourbytes(#events) .. events
 	end
@@ -1100,26 +1105,29 @@ function M.opus2score(opus)
 		local opus_track = opus[itrack]
 		local ticks_so_far = 0
 		local score_track = {}
-		local pitch2note_on_events = {}
+		local chapitch2note_on_events = {}   -- 4.0
 		local k; for k,opus_event in ipairs(opus_track) do
 			ticks_so_far = ticks_so_far + opus_event[2]
 			if opus_event[1] == 'note_on' then
+				local cha = opus_event[3]  -- 4.0
 				local pitch = opus_event[4]
-				local new_e = {'note', ticks_so_far, 0,
-				 opus_event[3], pitch, opus_event[5]}
-				if pitch2note_on_events[pitch] then
-					table.insert(pitch2note_on_events[pitch], new_e)
+				local new_e = {'note',ticks_so_far,0,cha,pitch,opus_event[5]}
+				local key = cha*128 + pitch  -- 4.0
+				if chapitch2note_on_events[key] then
+					table.insert(chapitch2note_on_events[key], new_e)
 				else
-					pitch2note_on_events[pitch] = {new_e,}
+					chapitch2note_on_events[key] = {new_e,}
 				end
 			elseif opus_event[1] == 'note_off' then
+				local cha = opus_event[3]  -- 4.0
 				local pitch = opus_event[4]
-				if pitch2note_on_events[pitch] then
-					local new_e = table.remove(pitch2note_on_events[pitch], 1)
+				local key = cha*128 + pitch  -- 4.0
+				if chapitch2note_on_events[key] then
+					local new_e = table.remove(chapitch2note_on_events[key], 1)
 					new_e[3] = ticks_so_far - new_e[2]
 					score_track[#score_track+1] = new_e
 				else
-					warn('note_off without a note_on, pitch='..tostring(pitch))
+					warn('note_off without a note_on, cha='..tostring(cha)..' pitch='..tostring(pitch))
 				end
 			else
 				local new_e = copy(opus_event)
@@ -1196,8 +1204,7 @@ function M.score2opus(score)
 end
 
 function M.score_type(t)
-    print 'score_type now'
-	if t == nil or type(t) ~= 'table' or #t < 2 then return 'invalid argument' end
+	if t == nil or type(t) ~= 'table' or #t < 2 then return '' end
 	i = 2   -- ignore first element
 	while i <= #t do
 		local k,event; for k,event in ipairs(t[i]) do
@@ -1209,7 +1216,7 @@ function M.score_type(t)
 		end
 		i = i + 1
 	end
-	return 'unknown'
+	return ''
 end
 
 function M.score2midi(score)
@@ -1224,7 +1231,7 @@ function M.score2stats(opus_or_score)
  general_midi_mode (array),
  ntracks,
  nticks,
- patch_changes_by_track (table of arrays),
+ patch_changes_by_track (table of tables),
  patch_changes_total (array),
  percussion (a dictionary histogram of channel-9 events),
  pitches (dict histogram of pitches on channels other than 9),
@@ -1331,7 +1338,7 @@ function M.score2stats(opus_or_score)
 			lowest_pitch = 0
 		end
 		table.insert(channels_by_track, sorted_keys(channels_this_track))
-		table.insert(patch_changes_by_track, sorted_keys(patch_changes_this_track))
+		table.insert(patch_changes_by_track, patch_changes_this_track) -- 4.2
 		table.insert(pitch_range_by_track, {lowest_pitch,highest_pitch})
 		pitch_range_sum = pitch_range_sum + highest_pitch - lowest_pitch
 		i = i + 1
@@ -1359,14 +1366,15 @@ function M.segment(...)
 	local score, start, endt, tracks = ...
 	if #args == 1 and type(args[1][1]) == 'table' then
 		score = args[1][1]
-		start = args[1]['start_ticks']
-		endt = args[1]['end_ticks']
+		start = args[1]['start_time'] -- 4.1
+		endt = args[1]['end_time']    -- 4.1
 		tracks = args[1]['tracks']
 	end
 	if not score == nil or type(score) ~= 'table' or #score < 2 then
 		return {1000, {},}
 	end
-	if not endt then endt = 1000000000 end
+	if not start then start = 0 end -- 4.1
+	if not endt  then endt  = 1000000000 end
 	if not tracks then tracks = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15} end
 	local new_score = {score[1],}
 	local my_type = M.score_type(score)
@@ -1375,7 +1383,7 @@ function M.segment(...)
 	end
 	if my_type == 'opus' then
 		-- more difficult (disconnecting note_on's from their note_off's)...
-		_warn("segment: opus format is not supported\n")
+		warn("segment: opus format is not supported\n")
 		return new_score
 	end
 	tracks = dict(tracks)  -- convert list to lookup
@@ -1423,17 +1431,19 @@ end
 
 function M.timeshift(...)
 	local args = {...}  -- 3.8
-	local score, shift, start_time, from_time, tracks = ...
+	local score, shift, start_time, from_time, tracks_array = ...
 	if #args == 1 and type(args[1][1]) == 'table' then
 		score = args[1][1]
 		shift = args[1]['shift']
 		start_time = args[1]['start_time']
 		from_time = args[1]['from_time']
-		tracks = args[1]['tracks']
+		tracks_array = args[1]['tracks']
 	end
 	if score == nil or #score < 2 then return {1000, {},} end
 	if from_time == nil then from_time = 0 end
-	if not tracks then tracks = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15} end
+	if not tracks_array then
+		tracks_array = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}
+	end
 	local new_score = {score[1],}
 	local my_type = M.score_type(score)
 	if my_type == '' then return new_score end
@@ -1452,8 +1462,8 @@ function M.timeshift(...)
 		-- shift = start_time - from_time
 	end
 
-	tracks = dict(tracks)  -- convert list to lookup
-	earliest = 1000000000
+	local tracks = dict(tracks_array)  -- convert list to lookup
+	local earliest = 1000000000
 	if start_time ~= nil or shift < 0 then -- find the earliest event
 		for i = 2,#score do   -- ignore first element (ticks)
 			if tracks[i-1] then
@@ -1493,7 +1503,10 @@ function M.timeshift(...)
 				local continue = false
 				new_event = copy(event)
 				if new_event[2] >= from_time then
-					new_event[2] = new_event[2] + shift
+					-- 4.1 must not rightshift set_tempo
+					if new_event[1] ~= 'set_tempo' or shift<0 then
+						new_event[2] = new_event[2] + shift
+					end
 				elseif (shift < 0) and (new_event[2] >= (from_time+shift)) then
 					continue = true
 				end
@@ -1569,7 +1582,7 @@ MIDI.lua - Reading, writing and manipulating MIDI data
 
  -- Going through a score within a Lua program...
  channels = {[2]=true, [3]=true, [5]=true, [8]=true, [13]=true}
- while itrack = 2,#my_score then  -- skip 1st element, which is ticks
+ for itrack = 2,#my_score do  -- skip 1st element, which is ticks
     for k,event in ipairs(my_score[itrack]) do
        if event[1] == 'note' then
           -- for example, do something to all notes
@@ -1693,9 +1706,11 @@ written to a .mid file, or to stdout.
 For a description of the "opus" and "score" formats,
 see opus2midi() and score2opus().
 
-=item I<play_score> (a_score)
+=item I<play_score> (opus_or_score)
 
-Converts the "score" to midi, and feeds it into 'aplaymidi -'
+Converts the "score" to midi, and feeds it into 'aplaymidi -'.
+If Lua's I<posix> module is installed, the aplaymidi process will
+be run in the background.
 
 =item I<score_type> (opus_or_score)
 
@@ -1749,13 +1764,13 @@ Returns a table of some basic stats about the score, like:
  pitch_range_by_track (table, by track, of two-member-arrays),
  pitch_range_sum (sum over tracks of the pitch_ranges)
 
-=item I<segment> (score, start, end, tracks)
+=item I<segment> (score, start_time, end_time, tracks)
 
-=item I<segment> {score, start=100, end=2000, tracks={3,4,5}}
+=item I<segment> {score, start_time=100, end_time=2000, tracks={3,4,5}}
 
 Returns a "score" which is a segment of the one supplied
-as the argument, beginning at "start" ticks and ending
-at "end" ticks (or at the end if "end" is not supplied).
+as the argument, beginning at "start_time" ticks and ending
+at "end_time" ticks (or at the end if "end_time" is not supplied).
 If the array "tracks" is specified, only those tracks will be returned.
 
 =item I<timeshift> (score, shift, start_time, from_time, tracks)
