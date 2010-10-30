@@ -4,7 +4,7 @@ Silencio.help()
 
 score = Score:new()
 score:setArtist('Michael_Gogins')
-score:setTitle('Loop_Study.2')
+score:setTitle('Study.5')
 score:setCopyright('Copr_2010_Michael_Gogins')
 score:setAlbum('Silencio')
 
@@ -32,43 +32,58 @@ function Koch(generator, t, d, c, k, v, level, score)
             d1 = d  * generator[i + 2]
             d2 = d1 * generator[i + 3]
             score:append(t1, d2, 144, c1, math.floor(k1), v1, 0, 0, 0, 0, 1)
-            Koch(generator, t1, d1, c1, 12 + k1, v1, level - 1, score)
+            Koch(generator, t1, d1, c1, 12+k1, v1, level - 1, score)
             t1 = t1 + d1
         end
     end
 end
 
-g = {  4, -3,  2+2,  1,
-       7, -2,  2+2,  .875,
-       5, -3,  2+3,  1,
-       7, -2,  2+2,  1,
-       9, -2,  2+2,  1,
-       4, -1,  2+3,  .875,
-       5, -2,  2+6,  1,
-      -3, -4,  2+4,  1
+g = {  4, -4,  4,  1,
+      -3, -4,  2,  .875,
+       4, -3,  4,  1,
+       9, -3,  2,  1,
+       5, -3,  2,  1,
+       7, -2,  3,  1,
+      -1, -3,  6,  .875,
+       2, -3,  4,  1, 
     }
+    
+s=[[
+We define a method of generating scores by recursively applying a set of generating 
+functions to a single musical event. The algorithm is modeled upon the deterministic
+algorithm for computing the attractors of recurrent iterated function systems, 
+but the operators in this algorithm are arbitrary generating functions, and the depth
+of recursion is finite. The algorithm will in fact implement a recurrent IFS if
+the individual operators each apply a contractive affine matrix to the event parameter
+and then write the result to the score.
+
+generator = function(event)
+generatedEvents = generator(event)
+
+function recurrent(score, event, generators, index, transitions, depth)
+    depth = depth - 1
+    newEvents = generators[index](event)
+    for event in newEvents:
+        score:append(event)
+    end
+    if depth == 0 then
+        return
+    end
+    local transitionsForThisIndex = transitions[index]
+    for newIndex, doRecur in ipairs(transitionsForThisIndex)
+        if doRecur then
+            recurrent(score, event, generators, newIndex, transitions, depth) 
+        end
+    end
+end
+]]    
 
 normalizeGeneratorTimes(g)
 
-h = {  4, -3,  2+2,  1,
-       7, -2,  2+2,  .875,
-       5, -3,  2+3,  1,
-       7, -2,  2+2,  1,
-       9, -2,  2+2,  1,
-       4, -1,  2+3,  .875,
-       5, -2,  2+6,  1,
-      -1, -4,  2+4,  1
-    }
+duration = 60 * 3.5
 
-normalizeGeneratorTimes(h)
-
--- Generate events for layers of each generator.
-
-Koch(g, 1.00, 60 * 9, 1, 24, 50, 4, score)
-
--- The second generator makes a canon relative to the first.
-
-Koch(h, 1.50, 60 * 9, 1, 28, 50, 4, score);
+Koch(g, 1.00, duration, 1, 26, 80, 3, score)
+Koch(g, 1.50, duration, 0, 40, 80, 3, score)
 
 print("Generated score:")
 for i, event in ipairs(score) do
@@ -80,7 +95,7 @@ scales = score:findScales()
 print(string.format('minima: %s', scales[1]:csoundIStatement()))
 print(string.format('ranges: %s', scales[2]:csoundIStatement()))
 
-score:setMidiPatches({{'patch_change', 0, 0, 1},{'patch_change', 0, 0, 8}, {'patch_change', 0, 2, 9} })
+score:setMidiPatches({{'patch_change', 1, 0,16},{'patch_change', 1, 1,19}, {'patch_change', 1, 2,21} })
 score:setFomusParts({'Cembalom', 'Gong', 'Fife'})
 orchestra = [[
 sr      =   96000
@@ -120,7 +135,7 @@ giPianoteq              vstinit                 "C:\\utah\\opt\\pianoteq-3.5\\Pi
         JackoAudioInConnect 	"Pianoteq36:out_1", "leftin1"
         JackoAudioInConnect 	"Pianoteq36:out_2", "rightin1"
         JackoMidiOutConnect 	"midiout", "aeolus:Midi/in"
-        JackoMidiOutConnect 	"midiout1", "Pianoteq36:midi_in"
+        JackoMidiOutConnect 	"midiout1", "aeolus:Midi/in"
        
         ; Note that Jack enables audio to be output to a regular
         ; Csound soundfile and, at the same time, to a sound 
@@ -204,8 +219,8 @@ alwayson			    "PianoteqAudio", 0, 100
 alwayson                "FluidAudio", 0, 32
 alwayson		        "JackAudio"	  
 
-alwayson                "LeftReverberator", 0.22, 0.3433, 13000, 0.128
-alwayson                "RightReverberator", 0.20, 0.3333, 14000, 0.1285
+alwayson                "LeftReverberator", 0.82, 0.3433, 13000, 0.128
+alwayson                "RightReverberator", 0.80, 0.3333, 14000, 0.1285
 alwayson                "Compressor"
 alwayson                "Soundfile"
 

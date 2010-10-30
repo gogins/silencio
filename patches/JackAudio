@@ -13,14 +13,13 @@ aright1	    JackoAudioIn 	"rightin1"
             ; The format for stop selection is 000bbbbb:   
             ; bbbbb for button number (0 based).
             ; Mode to enable stops for Divison I: b1100010 (98) 
-            ; [this controller VALUE is a pure coincidence]).
-            JackoMidiOut          "midiout", 176, 0, 98, 98 
-            ; Stops: Principal 8 (0), Principal 4 (1) , Flote 8 (8) , Flote 2 (10)
-            JackoMidiOut          "midiout", 176, 0, 98, 0
-            JackoMidiOut          "midiout", 176, 0, 98, 1
-            JackoMidiOut          "midiout", 176, 0, 98, 5
-            JackoMidiOut          "midiout", 176, 0, 98, 9
-            JackoMidiOut          "midiout", 176, 0, 98, 12
+            ; Mode to enable stops for Divison II: b1100011 (99) 
+            JackoMidiOut          "midiout", 176, 0, 98,  98 
+            JackoMidiOut          "midiout", 176, 0, 98,   6 ; Tibia
+            JackoMidiOut          "midiout", 176, 0, 98,  97
+            JackoMidiOut          "midiout", 176, 0, 98,   1 ; Harmonic flute 8
+            JackoMidiOut          "midiout", 176, 0, 98,   7 ; Septime
+            JackoMidiOut          "midiout", 176, 0, 98,   2 ; Septime
             ; Sends audio coming in from Aeolus out
             ; not only to the Jack system out (sound card),
             ; but also to the signal flow graph.
