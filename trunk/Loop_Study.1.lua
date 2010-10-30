@@ -4,7 +4,7 @@ Silencio.help()
 
 score = Score:new()
 score:setArtist('Michael_Gogins')
-score:setTitle('Loop_Study.2')
+score:setTitle('Loop_Study.1')
 score:setCopyright('Copr_2010_Michael_Gogins')
 score:setAlbum('Silencio')
 
@@ -38,37 +38,37 @@ function Koch(generator, t, d, c, k, v, level, score)
     end
 end
 
-g = {  4, -3,  2+2,  1,
-       7, -2,  2+2,  .875,
-       5, -3,  2+3,  1,
-       7, -2,  2+2,  1,
-       9, -2,  2+2,  1,
-       4, -1,  2+3,  .875,
-       5, -2,  2+6,  1,
-      -3, -4,  2+4,  1
+g = {  5,  0,  2,  1,
+      -3,  0,  2,  .875,
+       6,  1,  2,  1,
+      -4,  1,  2,  1,
+       5, -2,  2,  1,
+      -4,  4,  2,  .875,
+      -3,  1,  4,  1
     }
 
 normalizeGeneratorTimes(g)
 
-h = {  4, -3,  2+2,  1,
-       7, -2,  2+2,  .875,
-       5, -3,  2+3,  1,
-       7, -2,  2+2,  1,
-       9, -2,  2+2,  1,
-       4, -1,  2+3,  .875,
-       5, -2,  2+6,  1,
-      -1, -4,  2+4,  1
+h = {  5,  0,  2,  1,
+      -3,  0,  2,  .875,
+       8,  1,  2,  1,
+      -4,  1,  2,  1,
+       5, -2,  2,  1,
+      -4,  4,  2,  .875,
+      -3,  1,  4,  1
     }
 
 normalizeGeneratorTimes(h)
 
 -- Generate events for layers of each generator.
 
-Koch(g, 1.00, 60 * 9, 1, 24, 50, 4, score)
+duration = 60 * 8
+
+Koch(g, 1.00, duration, 0, 33, 32, 4, score)
 
 -- The second generator makes a canon relative to the first.
 
-Koch(h, 1.50, 60 * 9, 1, 28, 50, 4, score);
+Koch(h, 1.25, duration, 1, 45, 30, 4, score);
 
 print("Generated score:")
 for i, event in ipairs(score) do
@@ -120,7 +120,7 @@ giPianoteq              vstinit                 "C:\\utah\\opt\\pianoteq-3.5\\Pi
         JackoAudioInConnect 	"Pianoteq36:out_1", "leftin1"
         JackoAudioInConnect 	"Pianoteq36:out_2", "rightin1"
         JackoMidiOutConnect 	"midiout", "aeolus:Midi/in"
-        JackoMidiOutConnect 	"midiout1", "Pianoteq36:midi_in"
+        JackoMidiOutConnect 	"midiout1", "aeolus:Midi/in"
        
         ; Note that Jack enables audio to be output to a regular
         ; Csound soundfile and, at the same time, to a sound 

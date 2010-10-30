@@ -23,7 +23,7 @@ An event is a homogeneous vector with the following dimensions:
  2 Duration in seconds.
  3 MIDI status (actually, only the most significant nybble, e.g. 144 for 'NOTE ON').
  4 MIDI channel (actually, any real number >= 0, fractional part ties succeeding events).
- 5 MIDI key number from 0 to 127, 60 is middle C (actually, a real number not an integer).
+ 5 MIDI key number from 0 to 127, 60 is middle C (actually, a real number not an iinteger).
  6 MIDI velocity from 0 to 127, 80 is mezzo-forte (actually, a real number not an integer).
  7 Pan, 0 is the origin.
  8 Depth, 0 is the origin.
@@ -38,6 +38,8 @@ on a phone, then rendered using Csound on a computer.
 
 Pass the invoking script's arg table to Score:processArg() and it will perform the following commands:
 
+--dir        Sets directory in which to render files (must come first;
+             default is cwd or, on Android, scripts).
 --midi       Render generated score as MIDI sequence file and play it (default).
 --playmidi   Play generated MIDI sequence file.
 --fomus      Render generated score as Fomus music notation file.
@@ -49,7 +51,8 @@ Thanks to Peter Billam for the Lua MIDI package
 (http://www.pjb.com.au/comp/lua/MIDI.html).
 ]]
 print(string.format("Platform: %s\n", platform))
-print('Current directory:', cwd)
+print('Current directory: "' .. cwd .. '".\n')
+print('Invoking script: "' .. arg[0] .. '".\n')
 end
 
 function os.capture(cmd, raw)
@@ -103,7 +106,10 @@ HEIGHT      =  9
 PHASE       = 10
 HOMOGENEITY = 11
 
-TICKS_PER_BEAT = 480
+-- Unfortunately, MIDI.lua doesn't know how to use more than 1 meta length
+-- for long duration notes.
+
+TICKS_PER_BEAT = 96
 
 Event = {}
 
@@ -150,9 +156,9 @@ function Score:new(o)
     setmetatable(o, self)
     self.__index = self
     if platform == 'Android' then
-        self.prefix = '/sdcard/sl4a/scripts/'
+        self.directory = '/sdcard/sl4a/scripts/'
     else
-        self.prefix = ''
+        self.directory = ''
     end
     return o
 end
@@ -197,36 +203,46 @@ function Score:setLicense(value)
     self.license = value
 end
 
+-- Sets a directory in which all files will be rendered.
+
+function Score:setDirectory(value)
+    self.directory = value
+end
+
+function Score:getDirectory()
+    return self.directory
+end
+
 function Score:getFomusFilename()
-    return string.format('%s%s.fms', self.prefix, self.title)
+    return string.format('%s%s.fms', self.directory, self.title)
 end
 
 function Score:getMidiFilename()
-    return string.format('%s%s.mid', self.prefix, self.title)
+    return string.format('%s%s.mid', self.directory, self.title)
 end
 
 function Score:getScoFilename()
-    return string.format('%s%s.sco', self.prefix, self.title)
+    return string.format('%s%s.sco', self.directory, self.title)
 end
 
 function Score:getOrcFilename()
-    return string.format('%s%s.orc', self.prefix, self.title)
+    return string.format('%s%s.orc', self.directory, self.title)
 end
 
 function Score:getOutputSoundfileName()
-    return string.format('%s%s.wav', self.prefix, self.title)
+    return string.format('%s%s.wav', self.directory, self.title)
 end
 
 function Score:getCdAudioFilename()
-    return string.format('%s%s.cd.wav', self.prefix, self.title)
+    return string.format('%s%s.cd.wav', self.directory, self.title)
 end
 
 function Score:getNormalizedSoundfileName()
-    return string.format('%s%s.norm.wav', self.prefix, self.title)
+    return string.format('%s%s.norm.wav', self.directory, self.title)
 end
 
 function Score:getMp3SoundfileName()
-    return string.format('%s%s.mp3', self.prefix, self.title)
+    return string.format('%s%s.mp3', self.directory, self.title)
 end
 
 function Score:append(time_, duration, status, channel, key, velocity, pan, depth, height, phase)
@@ -317,7 +333,7 @@ function Score:playMidi(inBackground)
 end
 
 function Score:getOutputSoundfileName()
-    return string.format('%s%s.wav', self.prefix, self.title)
+    return string.format('%s%s.wav', self.directory, self.title)
 end
 
 function Score:playWav(inBackground)
@@ -468,7 +484,7 @@ function Score:normalizeOutputSoundfile(levelDb)
     if not levelDb then
         levelDb = -6.0
     end
-    local buffer = string.format('sox %s -V3 -b 32 -e floating-point %s gain -n %f\n',
+    local buffer = string.format('sox %s -V3 -b 32 -e floating-point %s gain -n %f',
 		  self:getOutputSoundfileName(),
 		  self:getNormalizedSoundfileName(),
 		  levelDb);
@@ -481,24 +497,24 @@ function Score:translateToCdAudio(levelDb)
     if not levelDb then
         levelDb = -6.0
     end
-    local command = string.format('sox %s -V3 -b 16 %s gain -n %f rate 44100\n',
+    local command = string.format('sox %s -V3 -b 16 %s gain -n %f rate 44100',
 		  self:getOutputSoundfileName(),
 		  self:getCdAudioFilename(),
 		  levelDb)
-    print('Translating output soundfile to CD audio:"' .. command .. '"..')
+    print('Translating output soundfile to CD audio: "' .. command .. '".')
     assert(os.execute(command))
     self:tagFile(self:getCdAudioFilename())
 end
 
 function Score:translateToMp3()
-    local command = string.format('lame --verbose --disptime 2 --nohist --preset cd --tt %s --ta %s --tl %s --tc %s %s %s\n',
+    local command = string.format('lame --verbose --disptime 2 --nohist --preset cd --tt %s --ta %s --tl %s --tc %s %s %s &',
 		  self:getTitle(),
 		  self:getArtist(),
 		  self:getAlbum(),
 		  self:getCopyright(),
 		  self:getCdAudioFilename(),
 		  self:getMp3SoundfileName())
-    print('Translating CD audio file to MP3:"' .. command .. '"..')
+    print('Translating CD audio file to MP3: "' .. command .. '".')
     assert(os.execute(command))
 end
 
@@ -519,10 +535,14 @@ end
 -- (typically, command-line arguments from the invoking script).
 
 function Score:processArg(args) 
+    print('In script: "' .. args[0] .. '"\n')
     if #args == 0 then
         args[1] = '--midi'
     end
     for i, argument in ipairs(args) do
+        if argument == '--dir' then
+            self:setDirectory(args[i + 1])
+        end
         if argument == '--midi' then
             self:renderMidi(self.midiPatches)
             self:playMidi()
