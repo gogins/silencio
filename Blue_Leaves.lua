@@ -1,53 +1,13 @@
 require "Silencio"
+require "matrix"
 
 Silencio.help()
 
 score = Score:new()
 score:setArtist('Michael_Gogins')
-score:setTitle('Study.5')
 score:setCopyright('Copr_2010_Michael_Gogins')
 score:setAlbum('Silencio')
 
-function normalizeGeneratorTimes(g)
-    sum = 0.0
-    for i = 1, #g, 4 do
-        sum = (sum + g[i + 2])
-    end
-    for i = 1, #g, 4 do
-        g[i + 2] = g[i + 2] / sum
-    end
-end
-
-function Koch(generator, t, d, c, k, v, level, score)
-    local t1 = t
-    local d1 = d
-    local c1 = c
-    local k1 = k
-    local v1 = v
-    local pan = 0
-    if level > 0 then
-        for i = 1, #generator, 4 do
-            k1 = k + generator[i]
-            v1 = v + generator[i + 1]
-            d1 = d  * generator[i + 2]
-            d2 = d1 * generator[i + 3]
-            score:append(t1, d2, 144, c1, math.floor(k1), v1, 0, 0, 0, 0, 1)
-            Koch(generator, t1, d1, c1, 12+k1, v1, level - 1, score)
-            t1 = t1 + d1
-        end
-    end
-end
-
-g = {  4, -4,  4,  1,
-      -3, -4,  2,  .875,
-       4, -3,  4,  1,
-       9, -3,  2,  1,
-       5, -3,  2,  1,
-       7, -2,  3,  1,
-      -1, -3,  6,  .875,
-       2, -3,  4,  1, 
-    }
-    
 --[[
 Generates scores by recursively applying a set of generating 
 functions to a single initial musical event. 
@@ -57,9 +17,9 @@ within the score, as if moving a pen, and may at any time write the
 current state of the cursor into the score, or write other events 
 based, or not based, upon the cursor into the score.
 
-The generating functions must be lambdas. Generated notes must not
-be the same object as the cursor, but may be clones or entirely
-new objects.
+The generating functions may be lambdas. Generated notes must not
+be the same object as the cursor, but may be clones of the cusor,
+or entirely new objects.
 
 cursor          A Silencio.Event object that represents a position in a
                 musical score. This could be a note, a grain of sound, or 
@@ -87,9 +47,9 @@ generators      A list of generating functions with the above signature.
              
 transitions     An N x N transition matrix for the N generating functions. 
                 If entry [i][j] is 1, then if the current generator is the 
-                ith, then the jth generator must be applied to the current 
+                ith, then the jth generator will be applied to the current 
                 cursor after the ith; if the entry is 0, the jth generator 
-                may not be applied to the current cursor after the ith.
+                will not be applied to the current cursor after the ith.
                 In addition, each generator in the matrix must be reached
                 at some point during recursion.
                 
@@ -104,50 +64,92 @@ cursor          A Silencio.Event object that represents a position in a
                 musical score. This could be a note, a grain of sound, or 
                 a control event.
 
-score           A Silencio.Score object to which generating functions 
-                may write events. 
+score           A Silencio.Score object that collects generated events.
 ]]    
 function recurrent(generators, transitions, depth, index, cursor, score)
     depth = depth - 1
-    local cursor, local events = generators[index](event, depth)
-    for k,event in ipairs(events):
-        score:append(event)
-    end
+    print(string.format('recurrent(depth: %d  index: %d  cursor: %s)', depth, index, cursor:__tostring()))
     if depth == 0 then
         return
     end
     local transitionsForThisIndex = transitions[index]
-    for transitionIndex, liveNode in ipairs(transitionsForThisIndex)
-        if liveNode then
-            recurrent(score, cursor:clone(), generators, transitionIndex, transitions, depth) 
+    for transitionIndex, liveNode in ipairs(transitionsForThisIndex) do
+        if liveNode == 1 then
+            local newCursor, events = generators[transitionIndex](cursor:clone(), depth)
+            for k,event in ipairs(events) do
+                score:append(event:clone())
+            end
+            recurrent(generators, transitions, depth, transitionIndex, newCursor:clone(), score) 
         end
     end
 end
 
-normalizeGeneratorTimes(g)
-
-duration = 60 * 3.5
-
-Koch(g, 1.00, duration, 1, 26, 80, 3, score)
-Koch(g, 1.50, duration, 0, 40, 80, 3, score)
-
-print("Generated score:")
-for i, event in ipairs(score) do
-    print(i, event:csoundIStatement())
-    print(' ', event:midiScoreEventString())
+g1 = function(cursor, depth)
+    cursor[TIME] = cursor[TIME] * .7 + .35
+    cursor[KEY] = cursor[KEY] + 3.105
+    cursor[CHANNEL] = 0.0
+    cursor[VELOCITY] =  7.0
+    return cursor, {cursor}
 end
 
-scales = score:findScales()
-print(string.format('minima: %s', scales[1]:csoundIStatement()))
-print(string.format('ranges: %s', scales[2]:csoundIStatement()))
+g2 = function(cursor, depth)
+    cursor[TIME] = cursor[TIME] * .7464 - .203487
+    cursor[KEY] = cursor[KEY] *.99 + 3.0
+    cursor[CHANNEL] = 1.0                                     
+    cursor[VELOCITY] =  3.0                        
+    return cursor, {cursor}
+end
 
-score:setMidiPatches({{'patch_change', 1, 0,16},{'patch_change', 1, 1,19}, {'patch_change', 1, 2,21} })
+g3 = function(cursor, depth)
+    cursor[TIME] = cursor[TIME] * .5 - .3
+    cursor[KEY] = cursor[KEY] - 3.05
+    cursor[CHANNEL] = 0.0
+    cursor[VELOCITY] =  7.0
+    return cursor, {cursor}
+end
+
+g4 = function(cursor, depth)
+    cursor[TIME] = cursor[TIME] * .77 + .2
+    cursor[KEY] = cursor[KEY] - 4.25
+    cursor[CHANNEL] = 1.0
+    cursor[VELOCITY] =  9.0
+    return cursor, {cursor}
+end
+
+generators = {g1, g2, g3, g4}
+
+transitions = {}
+transitions[1] = {1, 1, 0, 1}
+transitions[2] = {1, 1, 0, 1}
+transitions[3] = {0, 1, 1, 0}
+transitions[4] = {1, 0, 1, 1}
+
+cursor = Event:new{1,1,144,0,1,1,0,0,0,0,1}
+cursor[DURATION] = 0.25
+recurrent(generators, transitions, 7, 1, cursor, score)
+score:setScale(CHANNEL, 0.0, 1.999)
+--score:setScale(TIME, 1.0, 240.0)
+score:setScale(KEY, 24.0, 72.0)
+score:setScale(VELOCITY, 50.0, 30.0)
+score:setScale(DURATION, 2,4.0)
+score:setDuration(240.0)
+score:setScale(DURATION, 2.0, 8.0)
+score:temper(12.0)
+score:tieOverlaps()
+print("Generated score:")
+score:print()
+scales = score:findScales()
+print('minima:', scales[1])
+print('ranges:', scales[2])
+print()
+
+score:setMidiPatches({{'patch_change', 1, 0,16},{'patch_change', 1, 1,1}, {'patch_change', 1, 2,1} })
 score:setFomusParts({'Cembalom', 'Gong', 'Fife'})
 orchestra = [[
 sr      =   96000
 ksmps   =       1
 nchnls  =       2
-0dbfs   =       1.0
+0dbfs   =       6.0
 
 ;#define ENABLE_PIANOTEQ #1#
 
@@ -275,10 +277,10 @@ alwayson                "Soundfile"
 ;                       INSTRUMENTS THAT TAKE "i" STATEMENTS TO CREATE NOTES 
 ;                       GO BELOW THIS IN INSNO ORDER
 
-#include                "patches/JackNote"
+#include                "patches/Pianoteq.inc"
 #include                "patches/JackNote1"
+#include                "patches/JackNote"
 #include                "patches/Harpsichord"
-;#include                "patches/Pianoteq.inc"
 #include                "patches/STKBeeThree"
 ;#include                "patches/Plucked"
 #include                "patches/Flute"
@@ -333,4 +335,8 @@ pkill -9 aeolus
 pkill -9 Pianoteq
 pkill -9 csound
 ]])
+arg[1] = '--dir'
+arg[2] = '/home/mkg/Dropbox/music/'
+arg[3] = '--pianoteq'
+
 score:processArg(arg)
