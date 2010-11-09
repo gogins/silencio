@@ -39,7 +39,7 @@ on a phone, then rendered using Csound on a computer.
 Pass the invoking script's arg table to Score:processArg() and it will perform the following commands:
 
 --dir        Sets directory in which to render files (must come first;
-             default is cwd or, on Android, scripts).
+             default is cwd or, on Android, scripts). Script is copied to this directory.
 --midi       Render generated score as MIDI sequence file and play it (default).
 --playmidi   Play generated MIDI sequence file.
 --fomus      Render generated score as Fomus music notation file.
@@ -54,6 +54,44 @@ print(string.format("Platform: %s\n", platform))
 print('Current directory: "' .. cwd .. '".\n')
 print('Invoking script: "' .. arg[0] .. '".\n')
 end
+
+local function clone(object)
+    local lookup_table = {}
+    local function _copy(object)
+        if type(object) ~= "table" then
+            return object
+        elseif lookup_table[object] then
+            return lookup_table[object]
+        end
+        local new_table = {}
+        lookup_table[object] = new_table
+        for index, value in pairs(object) do
+            new_table[_copy(index)] = _copy(value)
+        end
+        return setmetatable(new_table, getmetatable(object))
+    end
+    return _copy(object)
+end
+
+local function split(str, pat)
+   local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+   local fpat = "(.-)" .. pat
+   local last_end = 1
+   local s, e, cap = str:find(fpat, 1)
+   while s do
+      if s ~= 1 or cap ~= "" then
+	 table.insert(t,cap)
+      end
+      last_end = e+1
+      s, e, cap = str:find(fpat, last_end)
+   end
+   if last_end <= #str then
+      cap = str:sub(last_end)
+      table.insert(t, cap)
+   end
+   return t
+end
+
 
 function os.capture(cmd, raw)
   local f = assert(io.popen(cmd, 'r'))
@@ -106,6 +144,8 @@ HEIGHT      =  9
 PHASE       = 10
 HOMOGENEITY = 11
 
+local eventSortOrder = {TIME, DURATION, STATUS, CHANNEL, KEY, VELOCITY, PAN, DEPTH, HEIGHT, PHASE, HOMOGENEITY}
+
 -- Unfortunately, MIDI.lua doesn't know how to use more than 1 meta length
 -- for long duration notes.
 
@@ -114,7 +154,7 @@ TICKS_PER_BEAT = 96
 Event = {}
 
 function Event:new(o)
-    o = o or {0,0,144,1,0,0,0,0,0,0,1}
+    o = o or {0,0,144,0,0,0,0,0,0,0,1}
     setmetatable(o, self)
     self.__index = self
     return o
@@ -147,6 +187,22 @@ function Event:midiScoreEventString()
     local event = self:midiScoreEvent()
     local eventString = string.format("{%s, %d, %d, %g, %g, %g}", event[1], event[2], event[3], event[4], event[5], event[6]) 
     return eventString
+end
+
+function Event:clone()
+    return clone(self)
+end
+
+function Event:getOffTime()
+    return self[TIME] + self[DURATION]
+end
+
+function Event:setOffTime(offTime)
+    self[DURATION] = offTime - self[TIME]
+end    
+
+function Event:__tostring()
+    return string.format('t %9.3f d %9.3f s %6.2f c %7.3f k %7.3f v %7.3f x %7.3f y %7.3f z %7.3f p %7.3f h %7.2f', self[TIME], self[DURATION], self[STATUS], self[CHANNEL], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[HOMOGENEITY])
 end
 
 Score = {}
@@ -250,6 +306,19 @@ function Score:append(time_, duration, status, channel, key, velocity, pan, dept
     table.insert(self, event)
 end
 
+function Score:append(event)
+    table.insert(self, event)
+end
+
+function Score:temper(tonesPerOctave)
+    for i, event in ipairs(self) do
+        local octave = event[KEY] / 12.0
+        local tone = math.floor((octave * tonesPerOctave) + 0.5)
+        octave = tone / tonesPerOctave
+        event[KEY] = octave * 12.0
+    end
+end
+
 function Score:saveSco()
     print(string.format("Saving \"%s\" as Csound score file...", self:getScoFilename()))
     file = io.open(self:getScoFilename(), "w")
@@ -329,6 +398,17 @@ function Score:playMidi(inBackground)
         local command = string.format("wmplayer.exe \"%s\\%s\"", cwd, self:getMidiFilename())
         print (command)
         assert(os.execute(command, background))
+    end
+end
+
+function Score:playPianoteq(inBackground)
+    local background = ''
+    if inBackground then
+        background = '&'
+    end
+    print(string.format('Playing \"%s\" on %s...', self:getMidiFilename(), platform))
+    if platform == 'Linux' or platform == 'Windows' then
+        assert(os.execute(string.format("Pianoteq --midi %s  %s", self:getMidiFilename(), background)))
     end
 end
 
@@ -449,7 +529,23 @@ function Score:findScales()
     return {minima, ranges}
 end
 
+function Score:print()
+    for i, event in ipairs(self) do
+        print(i, event)
+    end
+end
+
 function Score:setScale(dimension, minimum, range)
+    local scale = self:findScale(dimension)
+    currentRange = scale[2]
+    if currentRange == 0 then
+        currentRange = 1.0
+    end
+    for i, event in ipairs(self) do
+        event[dimension] = event[dimension] - scale[1]
+        event[dimension] = event[dimension] * range / currentRange
+        event[dimension] = event[dimension] + minimum
+    end
 end
 
 function Score:tagFile(filename)    
@@ -536,12 +632,35 @@ end
 
 function Score:processArg(args) 
     print('In script: "' .. args[0] .. '"\n')
+    if platform == 'Android' then
+        local argz = split(args[0], '/')
+        local title = argz[#argz]
+        self:setTitle(title)
+    else
+        self:setTitle(args[0])    
+    end
     if #args == 0 then
         args[1] = '--midi'
     end
     for i, argument in ipairs(args) do
         if argument == '--dir' then
-            self:setDirectory(args[i + 1])
+            local scriptPath = cwd
+            if platform == 'Windows' then
+                scriptPath = scriptPath .. '\\' .. args[0]                
+            end
+            if platform == 'Linux' then
+                scriptPath = scriptPath .. '/' .. args[0]
+                print( 'scriptPath', scriptPath)
+            end
+            assert(os.execute(string.format('cd %s', args[i + 1])))
+            if platform == 'Windows' then
+                assert(os.execute(string.format('copy %s', scriptPath)))
+            end
+            if platform == 'Linux' then
+                local command = string.format('cp %s .', scriptPath)
+                print(command)
+                assert(os.execute(command))
+            end
         end
         if argument == '--midi' then
             self:renderMidi(self.midiPatches)
@@ -549,6 +668,10 @@ function Score:processArg(args)
         end
         if argument == '--playmidi' then
              self:playMidi()
+        end
+        if argument == '--pianoteq' then
+            self:renderMidi(self.midiPatches)
+            self:playPianoteq()
         end
         if argument == '--fomus' then
             self:renderFomus(self.fomusParts, self.fomusHeader)
@@ -567,3 +690,63 @@ function Score:processArg(args)
     end   
 end
 
+function Score:clone()
+    return clone(self)
+end
+
+local function eventComparator(a, b)
+    for k, dimension in ipairs(eventSortOrder) do
+        if a[dimension] < b[dimension] then
+            return true
+        else
+            if a[dimension] > b[dimension] then
+                return false
+            end
+        end
+    end
+    return false
+end
+
+function Score:sort()
+    return table.sort(self, eventComparator)
+end
+
+function Score:setDuration(newDuration)
+    local scale = self:findScale(TIME)
+    local minimum = scale[1]
+    local duration = scale[2]
+    local factor = newDuration / duration
+    for i, event in ipairs(self) do
+        event[TIME] = event[TIME] - minimum
+        event[TIME] = event[TIME] * factor
+        event[DURATION] = event[DURATION] * factor
+    end
+end
+
+-- Joins notes (only) of the same pitch and channel that overlap in time.
+-- If the score contains two notes of the same pitch and channel
+-- and loudness and duration greater than 0 that overlap in time,
+-- extends the earlier note and discard the later note.
+
+function Score:tieOverlaps()
+    self:sort()
+    for laterI = #self, 1, -1 do
+        laterEvent = self[laterI]
+        if laterEvent[STATUS] == 144 then
+            if laterEvent[DURATION] <= 0.0 or laterEvent[VELOCITY] <= 0.0 then
+                table.remove(self, laterI)
+            else
+                for earlierI = laterI - 1, 1, -1 do
+                    earlierEvent = self[earlierI]
+                    if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL] 
+                        and math.floor(earlierEvent[KEY] + 0.5) == math.floor(laterEvent[KEY] + 0.5)
+                        and earlierEvent:getOffTime() > laterEvent[TIME] then
+                        earlierEvent:setOffTime(laterEvent:getOffTime())
+                        table.remove(self, laterI)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end
