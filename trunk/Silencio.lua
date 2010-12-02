@@ -131,6 +131,8 @@ do
 end
 
 MIDI = require("MIDI")
+require("ScoreView")
+
 
 TIME        =  1
 DURATION    =  2
@@ -687,6 +689,9 @@ function Score:processArg(args)
         if argument == '--playwav' then
             self:playWav()
         end
+        if argument == '--display' then
+            self:display()
+        end
     end   
 end
 
@@ -739,7 +744,7 @@ function Score:tieOverlaps()
                 for earlierI = laterI - 1, 1, -1 do
                     earlierEvent = self[earlierI]
                     if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL] 
-                        and math.floor(earlierEvent[KEY] + 0.5) == math.floor(laterEvent[KEY] + 0.5)
+                        and math.floor(earlierEvent[KEY ] + 0.5) == math.floor(laterEvent[KEY] + 0.5)
                         and earlierEvent:getOffTime() > laterEvent[TIME] then
                         earlierEvent:setOffTime(laterEvent:getOffTime())
                         table.remove(self, laterI)
@@ -749,4 +754,8 @@ function Score:tieOverlaps()
             end
         end
     end
+end
+
+function Score:display()
+   ScoreView.display(self)
 end
