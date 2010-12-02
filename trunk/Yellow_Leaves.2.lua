@@ -126,12 +126,12 @@ transitions[4] = {1, 0, 1, 1}
 
 cursor = Event:new{1,1,144,0,1,1,0,0,0,0,1}
 cursor[DURATION] = 0.25
-recurrent(generators, transitions, 10, 1, cursor, score)
+recurrent(generators, transitions, 10, 2, cursor, score)
 score:setScale(CHANNEL, 0.0, 0.0)
 score:setScale(KEY, 24.0, 72.0)
 score:setScale(VELOCITY, 50.0, 30.0)
 score:setScale(DURATION, 1.0, 4.0)
-score:setDuration(300.0)
+score:setDuration(500.0)
 score:setScale(DURATION, 1.0, 8.0)
 score:temper(12.0)
 score:tieOverlaps()
@@ -276,8 +276,8 @@ alwayson                "Soundfile"
 ;                       INSTRUMENTS THAT TAKE "i" STATEMENTS TO CREATE NOTES 
 ;                       GO BELOW THIS IN INSNO ORDER
 
-#include                "patches/Pianoteq.inc"
 #include                "patches/JackNote1"
+#include                "patches/Pianoteq.inc"
 #include                "patches/JackNote"
 #include                "patches/Harpsichord"
 #include                "patches/STKBeeThree"
