@@ -299,3 +299,5 @@ function ScoreView.display(score_)
       iup.MainLoop()
     end
 end
+
+return ScoreView
