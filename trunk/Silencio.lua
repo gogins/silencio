@@ -131,8 +131,8 @@ do
 end
 
 MIDI = require("MIDI")
-require("ScoreView")
 
+local scoreView = require("ScoreView")
 
 TIME        =  1
 DURATION    =  2
@@ -757,5 +757,5 @@ function Score:tieOverlaps()
 end
 
 function Score:display()
-   ScoreView.display(self)
+   scoreView.display(self)
 end
