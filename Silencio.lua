@@ -132,7 +132,7 @@ end
 
 MIDI = require("MIDI")
 
-local scoreView = require("ScoreView")
+local scoreView = pcall(require, "ScoreView")
 
 TIME        =  1
 DURATION    =  2
@@ -304,7 +304,7 @@ function Score:getMp3SoundfileName()
 end
 
 function Score:append(time_, duration, status, channel, key, velocity, pan, depth, height, phase)
-    event = Event:new{time_, duration, status, channel, key, velocity, pan, depth, height, phase, 1}
+    local event = Event:new{time_, duration, status, channel, key, velocity, pan, depth, height, phase, 1}
     table.insert(self, event)
 end
 
@@ -327,6 +327,8 @@ function Score:saveSco()
     for i, event in ipairs(self) do
         file:write(event:csoundIStatement().."\n")
     end
+    file:write('s 4.0\n')
+    --file:write('e 4.0\n')
     file:close()
 end
 
