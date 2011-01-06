@@ -272,4 +272,8 @@ pkill -9 aeolus
 pkill -9 Pianoteq
 pkill -9 csound
 ]])
+arg[1] = '--dir'
+arg[2] = '/home/mkg/Dropbox/music/'
+arg[3] = '--display'
+arg[4] = '--csound'
 score:processArg(arg)
