@@ -94,7 +94,8 @@ end
 
 g2 = function(cursor, depth)
     cursor[TIME] = cursor[TIME] * .7464 - .203487
-    cursor[KEY] = cursor[KEY] *.99 + 3.0
+--    cursor[KEY] = cursor[KEY] *.99 + 3.0
+    cursor[KEY] = cursor[KEY] * .9825 + 3.0
     cursor[CHANNEL] = 1.0                                     
     cursor[VELOCITY] =  3.0                        
     return cursor, {cursor}
@@ -110,7 +111,7 @@ end
 
 g4 = function(cursor, depth)
     cursor[TIME] = cursor[TIME] * .77 + .2
-    cursor[KEY] = cursor[KEY] - 4.25
+    cursor[KEY] = cursor[KEY] - 4.245
     cursor[CHANNEL] = 1.0
     cursor[VELOCITY] =  9.0
     return cursor, {cursor}
@@ -337,6 +338,6 @@ pkill -9 csound
 ]])
 arg[1] = '--dir'
 arg[2] = '/home/mkg/Dropbox/music/'
-arg[3] = '--pianoteq'
-
+arg[3] = '--display'
+arg[4] = '--pianoteq-wav'
 score:processArg(arg)
