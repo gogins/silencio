@@ -5,15 +5,16 @@ print [[
 S I L E N C I O
 
 Copyright (C) 2010 by Michael Gogins
-This software is licensed under the terms of the GNU Lesser General Public License.
+This software is licensed under the terms 
+of the GNU Lesser General Public License.
 
 Silencio is a simple system for doing algorithmic composition in Lua.
-Silencio runs not only on Android smartphones, but also on personal computers. 
+Silencio runs on Android smartphones and personal computers. 
 It will output scores as MIDI sequence files or as Csound score files.
 
-There are also convenience functions to simplify algorithmic composition, including
-rescaling scores, splitting and combining scores, and applying matrix arithmetic operations
-to scores.
+There are also convenience functions to simplify algorithmic composition, 
+including rescaling scores, splitting and combining scores, and applying 
+matrix arithmetic operations to scores.
 
 A score is a matrix in which the rows are events.
 
@@ -21,31 +22,40 @@ An event is a homogeneous vector with the following dimensions:
 
  1 Time in seconds from start of performance.
  2 Duration in seconds.
- 3 MIDI status (actually, only the most significant nybble, e.g. 144 for 'NOTE ON').
- 4 MIDI channel (actually, any real number >= 0, fractional part ties succeeding events).
- 5 MIDI key number from 0 to 127, 60 is middle C (actually, a real number not an iinteger).
- 6 MIDI velocity from 0 to 127, 80 is mezzo-forte (actually, a real number not an integer).
+ 3 MIDI status (only the most significant nybble, e.g. 144 for 'NOTE ON').
+ 4 MIDI channel (any real number >= 0, fractional part ties events).
+ 5 MIDI key number from 0 to 127, 60 is middle C (a real number).
+ 6 MIDI velocity from 0 to 127, 80 is mezzo-forte (a real number.
  7 Pan, 0 is the origin.
  8 Depth, 0 is the origin.
  9 Height, 0 is the origin.
 10 Phase, in radians.
 11 Homogeneity, normally always 1.
 
-It is possible to embed a Csound orchestra in a Score object. If Csound is present, the Score 
-object will save this orchestra along with the score in Csound .sco format, and shell out to 
-render the piece using Csound. This enables compositions to be edited and auditioned 
-on a phone, then rendered using Csound on a computer.
+It is possible to embed a Csound orchestra in a Score object. 
+If Csound is present, the Score object will save this orchestra along with the 
+score in Csound .sco format, and shell out to render the piece using Csound. 
+This enables compositions to be edited and auditioned on a phone, then 
+rendered using Csound on a computer.
 
-Pass the invoking script's arg table to Score:processArg() and it will perform the following commands:
+Pass the invoking script's arg table to Score:processArg() 
+and it will perform the following commands:
 
---dir        Sets directory in which to render files (must come first;
-             default is cwd or, on Android, scripts). Script is copied to this directory.
---midi       Render generated score as MIDI sequence file and play it (default).
---playmidi   Play generated MIDI sequence file.
---fomus      Render generated score as Fomus music notation file.
---csound     Render generated score using set Csound orchestra, post-process it, and play it.
---post       Post-process Csound output soundfile: normalize, CD, MP3, tag, and play it.
---playwav    Play rendered normalized output soundfile.
+--csound        Render generated score using set Csound orchestra, 
+--dir           Sets directory in which to render files (must come first;
+                default is cwd or, on Android, scripts). Script is copied 
+                to this directory.
+--display       Display the generated score as a 3-D piano roll using OpenGL.
+--fomus         Render generated score as Fomus music notation file.
+--midi          Render generated score as MIDI file and play it (default).
+--pianoteq      Play generated MIDI sequence file with Pianoteq.sc
+--pianoteq-wav  Render score to soundfile using Pianoteq, 
+                post-process it, and play it.
+--playmidi      Play generated MIDI file.
+                post-process it, and play it.
+--playwav       Play rendered normalized output soundfile.
+--post          Post-process Csound output soundfile: 
+                normalize, CD, MP3, tag, and play it.
 
 Thanks to Peter Billam for the Lua MIDI package
 (http://www.pjb.com.au/comp/lua/MIDI.html).
@@ -265,6 +275,7 @@ end
 
 function Score:setDirectory(value)
     self.directory = value
+    print(string.format('Changed output directory to: %s', self.directory))
 end
 
 function Score:getDirectory()
@@ -303,13 +314,16 @@ function Score:getMp3SoundfileName()
     return string.format('%s%s.mp3', self.directory, self.title)
 end
 
-function Score:append(time_, duration, status, channel, key, velocity, pan, depth, height, phase)
-    local event = Event:new{time_, duration, status, channel, key, velocity, pan, depth, height, phase, 1}
-    table.insert(self, event)
-end
+-- If the first parameter only is given, it is assumed to be an Event,
+-- otherwise the parameters are assumed to be the fields for an Event.
 
-function Score:append(event)
-    table.insert(self, event)
+function Score:append(time_, duration, status, channel, key, velocity, pan, depth, height, phase)
+    if duration then
+        local event = Event:new{time_, duration, status, channel, key, velocity, pan, depth, height, phase, 1}
+        table.insert(self, event)
+    else
+        table.insert(self, time_)
+    end
 end
 
 function Score:temper(tonesPerOctave)
@@ -328,7 +342,7 @@ function Score:saveSco()
         file:write(event:csoundIStatement().."\n")
     end
     file:write('s 4.0\n')
-    --file:write('e 4.0\n')
+    file:write('e 4.0\n')
     file:close()
 end
 
@@ -502,6 +516,14 @@ function Score:renderCsound()
     self:postProcess()
 end
 
+function Score:renderPianoteq()
+    print(string.format("Rendering \"%s\" with Pianoteq...", self:getOutputSoundfileName()))
+    self:renderMidi(self.midiPatches)
+    local command = string.format('Pianoteq --headless --midi %s --rate 96000 --wav %s', self:getMidiFilename(), self:getOutputSoundfileName())
+    os.execute(command)
+    self:postProcess()
+end
+
 function Score:findScale(dimension)
     local minimum = 0
     local maximum = 0
@@ -648,6 +670,7 @@ function Score:processArg(args)
     end
     for i, argument in ipairs(args) do
         if argument == '--dir' then
+            self:setDirectory(args[i + 1])            
             local scriptPath = cwd
             if platform == 'Windows' then
                 scriptPath = scriptPath .. '\\' .. args[0]                
@@ -661,7 +684,7 @@ function Score:processArg(args)
                 assert(os.execute(string.format('copy %s', scriptPath)))
             end
             if platform == 'Linux' then
-                local command = string.format('cp %s .', scriptPath)
+                local command = string.format('cp %s %s', scriptPath, args[i + 1])
                 print(command)
                 assert(os.execute(command))
             end
@@ -676,6 +699,11 @@ function Score:processArg(args)
         if argument == '--pianoteq' then
             self:renderMidi(self.midiPatches)
             self:playPianoteq()
+        end
+        if argument == '--pianoteq-wav' then
+            self:renderMidi(self.midiPatches)
+            self:renderPianoteq()
+            self:playWav()
         end
         if argument == '--fomus' then
             self:renderFomus(self.fomusParts, self.fomusHeader)
@@ -733,7 +761,7 @@ end
 -- Joins notes (only) of the same pitch and channel that overlap in time.
 -- If the score contains two notes of the same pitch and channel
 -- and loudness and duration greater than 0 that overlap in time,
--- extends the earlier note and discard the later note.
+-- extends the earlier note and discards the later note.
 
 function Score:tieOverlaps()
     self:sort()
@@ -759,5 +787,9 @@ function Score:tieOverlaps()
 end
 
 function Score:display()
-   scoreView.display(self)
+    if scoreView then
+        ScoreView.display(self)
+    else
+        print('Score:display() not available: check LuaGL.')
+    end
 end
