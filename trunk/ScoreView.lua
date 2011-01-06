@@ -11,6 +11,8 @@ What we want here is the following:
 (4) It should be possible to pick notes using the mouse; doing so will toggle a display of the actual values of the note and/or play the note.
 (5) The user should be able to navigate in the score by translating and rotating on all 3 dimensions.
 ]]
+print('package.path:', package.path)
+print('package.cpath:', package.cpath)
 
 require "iuplua"
 require "iupluagl"
