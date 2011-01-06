@@ -8,43 +8,23 @@ This software is licensed under the terms
 of the GNU Lesser General Public License.
 
 This package, part of Silencio, implements a geometric approach 
-to some common operations in neo-Riemannian music theory, 
+to some common operations in neo-Riemannian music theory 
 for use in score generating algorithms.
 
-When this package is run as a standalone program, 
-it displays a model of chord space
-for trichords and can orbit a chord through
-the space, playing the results using Csound.
-
-This script also demonstrates the triadic 
-neo-Riemannian transformations
-of leading-tone exchange (press l), 
-parallel (press p),  
-relative (press r),
-and dominant (press d) progression. 
-See Alissa S. Crans, Thomas M. Fiore, and Raymon Satyendra, 
-_Musical Actions of Dihedral Groups_, 2008 
-(arXiv:0711.1873v2).
-
-You can do plain old transpositions
-by pressing 1, 2, 3, 4, 5, or 6.
-
-You can move each voice independently with the arrow keys: 
-up arrow to move voice 1 up 1 semitone (shift for down), 
-right arrow to move voice 2 in the same way,
-down arrow to move voice 3.
+The associated ChordSpaceView package can display these
+chord spaces in an interactive 3-dimensional view.
 
 DEFINITIONS
 
 Pitch is the perception that a sound has a distinct frequency.
-It is a logarithmic perception; octaves, which are 'equivalent' 
+It is a logarithmic perception; octaves, which sound 'equivalent' 
 in some sense, represent doublings or halvings of frequency.
 
 Pitches and intervals are represented as real numbers. 
 Middle C is 60 and the octave is 12. The integers are the same 
 as MIDI key numbers and perfectly represent our usual system 
 of 12-tone equal temperament, but any and all other pitches 
-can be represented by fractions.
+can also be represented, using fractions.
 
 A tone is a sound that is heard as having a pitch.
 
@@ -53,15 +33,7 @@ what is the same thing, a point in a chord space having one dimension of
 pitch for each voice in the chord.
 
 For the purposes of algorithmic composition in Silencio, a score can be 
-considered as a sequence of more or less fleeting chords. A monophonic melody 
-can be considered as a sequence of unison chords.
-
-Care is needed to distinguish the mathematician's sense of 'invert', which 
-means to reflect around a center, from the musician's sense of 'invert', which
-varies according to context but in practice usually means 'revoice by 
-adding an octave to the lowest tone of a chord.' Here, we use 'invert' and 
-'inversion' in the mathematician's sense, and we use the terms 
-'revoice' and 'voicing' for the musician's 'invert' and 'inversion'.
+considered as a sequence of more or less fleeting chords. 
 
 EQUIVALENCE CLASSES
 
@@ -69,6 +41,9 @@ An equivalence class is a property that identifies elements of a
 set. Equivalence classes induce quotient spaces or orbifolds, where
 the equivalence class glues points on one face of the orbifold together
 with points on an opposing face.
+
+Plain chord space has no equivalence classes, and plain chords
+are represented as vectors in braces {p1, ..., pN}. 
 
 The following equivalence classes apply to pitches and chords, 
 and induce different orbifolds in chord space:
@@ -83,42 +58,67 @@ P       Permutational equivalence, e.g. {1, 2} == {2, 1}.
         Represented by the chord always being sorted.
 
 T       Translational equivalence, e.g. {1, 2} == {7, 8}.
-        Represented by the chord always having a lowest pitch of 0 (C).
+        Represented by the chord always having a sum of pitches
+        as close as possible to 0 (see below).
 
-I       Inversional equivalence, e.g. for reflection around 7, 
-        {0, 4, 7} == {6, 2, 11}.
-        Represented by the OP (see below) that is closest to 
-        the orthogonal axis of chord space.
+I       Inversional equivalence, e.g.  {0, 4, 7} == {0, -4, -7}.
+        Represented as the inversion having the first interval between 
+        voices being smaller than or equal to the final interval.
+        Care is needed to distinguish the mathematician's sense of 'invert',
+        which means to reflect around a center, from the musician's sense of 
+        'invert', which varies according to context but in practice often 
+        means 'revoice by adding an octave to the lowest tone of a chord.' 
+        Here, we use 'invert' and 'inversion' in the mathematician's sense, 
+        and we use the terms 'revoice' and 'voicing' for the musician's 
+        'invert' and 'inversion'.
 
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
-        Note that in the following cardinality equivalence is ignored,
-        because we are working in chord spaces of fixed dimension.
+        We never not assume cardinality equivalence here, because we are 
+        working in chord spaces of fixed dimensionality; e.g. we represent
+        the note C not as {0}, but as {0, 0, ..., 0}.
+        
+The equivalence classes may be combined as follows,
+and sometimes we distinguish them with different kinds of brackets;
+see Callendar, Quinn, and Tymoczko, "Generalized Voice-Leading Spaces,"
+_Science_ 320, 2008.
 
-These equivalence classes may be combined as follows,
-and after this we distinguish them with different kinds of brackets:
+OP      Tymoczko's orbifold for chords; i.e. chords with a 
+        fixed number of voices in a harmonic context.
+        It forms a hyperprism with as many sides as voices and 
+        the ends identified by octave equivalence and a twist of 
+        voicing. In OP for trichords in 12TET, the augmented triads run up 
+        the middle of the prism, the two-pitch chords form the sides, and 
+        the one-pitch chords form the edges that join the sides.
+        Represented as vectors in parentheses (p1,...,pN);
 
-        Plain chord space has no equivalence classes; chords are 
-        represented as vectors in braces {p1, ..., pN}.
-
-OP      Tymoczko's orbifold for chords; dimensionality is preserved 
-        by using e.g. {0, 0, 0} for the note C instead of just {0},
-        i.e. chords with a fixed number of voices in a harmonic context;
-        represented as vectors in parentheses (p1,...,pN);
-
-OPC     Pitch-class sets; i.e. chords with varying numbers of voices
+OPC     Pitch-class set; i.e. chords with varying numbers of voices
         in a harmonic context; represented as vectors in brackets [p1,...,pN].
+        
+OPT     Chord type; base layer of the OP prism, where the sum of each chord's 
+        pitches are as close as possible to 0. Note that CM and Cm are 
+        different OPT. Because the OP prism is canted down from the origin, 
+        at least one pitch in each OPT chord (excepting the origin itself) 
+        is negative.
 
-OPI     Similar to 'normal form.'
-        This is a dart-shaped prism within the OP orbifold;
-        represented as vectors in angle brackets <p1,...,pN>.
+OPI     Normal voicing; not the same as 'normal form' 
+        but used for some of the same purposes.
+        In OP for trichords, OPI is the 1/3 of OP bounded by the 
+        orthogonal axis and the column of augmented triads.
+        Represented as vectors in angle brackets <p1,...,pN>
 
-OPTI    Set-class or chord type, similar to 'prime form.'
-        This is a dart-shaped layer at the base of the OP and RP orbifolds;
-        represented as vectors in slash brackets, /p1,...,pN\.
+OPTI    Set-class, not the same as 'prime form' but used for some of the same
+        purposes. Note that CM and Cm are the same OPTI.
+        In OP for trichords, OPTI is the 1/6 of the OPT layer 
+        bounded by the origin and the augmented triad at the center.
+        Represented as vectors in slash brackets, /p1,...,pN\.
 
 RP      The chord space used in scores; chords with a fixed number of voices
-        in a contrapuntal context; represented as vectors 
-        in double parentheses ((p1,...,pN)).
+        in a contrapuntal context. Represented as vectors 
+        in double parentheses ((p1,...,pN)). Note that there exists 
+        RPC as well as OPC, RPT as well as OPT, and so on; if R is an 
+        integral multiple of the octave then these operations sound similar to 
+        the analogous operations under octave equivalence, but there are 
+        more choices of voice-leadings for a given progression.
 
 OPERATIONS
 
@@ -139,6 +139,11 @@ L               Send a major triad to the minor triad one major third higher,
 
 R               Send a major triad to the minor triad one minor third lower,
                 or vice versa.
+                
+D               Send any triad to the next triad a perfect fifth lower.
+                
+P, L, and R have been extended as follows, see Fiore and Satyendra, 
+"Generalized Contextual Groups", _Music Theory Online_ 11, August 2008:
     
 K(c)            Interchange by inversion;
                 K(c):= I(c, c[1] + c[2]).
@@ -151,36 +156,42 @@ Q(c, n, m)      Contexual transposition;
                 or T(c, -n) if c is an I-form of M. Not a generalized form
                 of L or R; but, like them, K and Q generate the T-I group.
                 
-Those operations that are defined only in OP can be extended to
-RP by voicing the results (projecting from OP to RP).
-            
 MUSICAL MEANING AND USE
 
 The chord space in most musicians' heads is a combination of OP and RP, 
-with reference to OPI and OPTI (actually, since musicians ignore doublings
-and so do not in fact ignore C, these are OPC, RPC, OPCI, and OPCTI).
+with reference to OPI and OPTI (actually, since harmonic analysts do in fact
+ignore unisons and doublings and so do not in fact ignore C, 
+these are OPC, RPC, OPCI, and OPCTI).
 
-In OP and RP, root progressions are motions more or less up and down 
+In OP, root progressions are motions more or less up and down 
 the 'columns' of identically structured chords. Changes of chord type are 
 motions across the layers of differently structured chords.
 P, L, and R send major triads to their nearest minor neighbors,
-and vice versa. I reflects across a layer of the prism.
-T moves a chord back and forth along the orthogonal axis of the prism.
+and vice versa. I reflects a chord across a layer of the prism.
+T moves a chord up and down the orthogonal axis of the prism.
+
+VOICE-LEADING
+
+Those operations that are defined only in OP can be extended to
+RP by revoicing the results (projecting from OP to RP).
+            
 The closest voice-leadings are between the closest chords in the space.
 The 'best' voice-leadings are closest first by 'smoothness,'
 and then  by 'parsimony.' See Dmitri Tymoczko, 
 _The Geometry of Musical Chords_, 2005 (Princeton University).
 
-The basic idea is that all _purely_ harmonic transformations of chords
-can be performed in OP, but _all_ contrapuntal transformations of chords 
-require RP or, to make it really simple, OP is harmony and RP is counterpoint.
-    
-VOICE-LEADING
+This concept of voice-leading applies in all equivalence classes, not 
+only to root progressions of chords, and the meaning of 'well-formed 
+voice-leading' changes according to the equivalence class. In OP it means 
+well-formed harmonic progression, in RP it also means well-formed 
+contrapuntal voice-leading.
 
-We do bijective voiceleading by connecting a chord in RP
-to another chord with a different OP by the shortest path through RP,
-optionally avoiding parallel fifths. This invariably produces a 
-well-formed voice-leading.
+Or, to make it really simple, OP is harmony and RP is counterpoint.
+    
+We do bijective contrapuntal voiceleading by connecting a chord in RP
+to a chord with a different OP by choosing the shortest path 
+through RP, optionally avoiding parallel fifths. 
+This invariably produces a well-formed voice-leading.
 
 PROJECTIONS
 
@@ -192,26 +203,33 @@ a matrix whose diagonal represents the normal basis of the subspace,
 and where each element of the basis may be either identity 
 (1) or any multiple of the octave (12).
 
-An operation V is defined to iterate through all powers of 
-the basis of OP under RP, for the purpose of revoicing chords.
+V(c [, n])      Iterates with optional stride n through all powers of the  
+                basis of OP under RP, for the purpose of revoicing the chord.
 
-An operation A is defined to iterate through all subspaces
-V, for the purpose of arpeggiating a chord.
+S(c, v)         Projects the chord to the subspace defined by the basis
+                vector v, e.g. for trichords v := [0, 1, 0] picks the 
+                second voice. 
+
+A(c, v [, n])   Iterates through all cyclical permutations of v in S(c, v),
+                with optional stride n.
+                
+V, S, and A may be used in combination to produce any regular arpeggiation.
+                
 
 SCORE GENERATION
 
 Durations, instruments, dynamics, and so on can be attributed
-to chords by expanding them to tensors. 
+to chords by expanding them from vectors to tensors. 
 
 Because Lua lacks a tensor package, and because the [] operator
 cannot truly be overridden, and because the () operator 
-cannot return an lvalue, Chords contain auxiliary tables that 
-represent the channel, velocity, and pan of each voice. These
-attributes are not sorted or manipulated along with the pitches,
+cannot return an lvalue, the Chord class contains auxiliary tables to 
+represent the duration, channel, velocity, and pan of each voice. 
+These attributes are not sorted or manipulated along with the pitches,
 they are associated with the numerical order of the voices;
 but they can still be very useful in score generation.
 
-Any Chord can be written to any time slice of a Silence score.
+Any Chord object can be written to any time slice of a Silence score.
 
 SCORE APPLICATION
 
@@ -230,22 +248,33 @@ IMPLEMENTATION
 Operations implemented as member functions of Chord  
 do not operate upon self, but return a transformed copy of self.
 
-All operations that take a single Chord are 
+All functions that take a single Chord parameter are 
 implemented as member functions of Chord.
 
-All other operations that take two Chord objects are
-implemented as member functions of Orbifold because they
-assume the two chords have the same number of voices, i.e.
-lie within the same chord space.
+All functions that take more than one Chord parameter,
+and some that take one Chord but refer to R, are
+implemented as member functions of Orbifold.
 
+Each function that implements an equivalence class has a name
+beginning with 'e', e.g. 'eO' for octave equivalence (pitch class)
+and 'eOPTI' for OPTI equivalence (set class).
+
+Each function that identifies an equivalence class has a name
+beginning with 'ise', e.g. 'iseO' for 'is in the fundamental 
+domain for octave equivalence.'
 ]]
 end
 
 require("Silencio")
 
+-- The size of the octave, defined to be consistent with 
+-- 12 tone equal temperament and MIDI.
+
+OCTAVE = 12
+
 -- Returns the pitch under range equivalence.
 
-function R(pitch, range)
+function eR(pitch, range)
     if range then
         return pitch % range
     else
@@ -256,35 +285,48 @@ end
 -- Returns the pitch under octave equivalence,
 -- i.e. returns the pitch-class of the pitch.
 
-function O(pitch)
-    return R(pitch, 12)
+function eO(pitch)
+    return eR(pitch, OCTAVE)
 end
 
 -- Returns the pitch translated by x, by default
 -- under octave equivalence, optionally under
--- range equivalence r.
+-- range equivalence.
 
-function T(pitch, x, r)
-    r = r or 12
-    return R(pitch + x, r)
+function T(pitch, x, range)
+    range = range or OCTAVE
+    return eR(pitch + x, range)
 end 
 
 -- Returns the pitch reflected by x, by default
 -- under octave equivalence, optionally under 
--- range equivalence r.
+-- range equivalence.
 
-function I(pitch, x, r)
-    r = r or 12
-    return R((r - R(pitch, r)) + x, r)
+function I(pitch, x, range)
+    range = range or OCTAVE
+    return eR((range - eR(pitch, range)) + x, range)
 end    
 
--- Chords mainly represent pitches, but have auxiliary tables
--- to represent channel (instrument), velocity (loudness), and pan.
+-- Returns the Euclidean distance between chords a and b.
+
+function euclidean(a, b)
+    local sumOfSquaredDifferences = 0
+    for voice = 1, #a do
+        sumOfSquaredDifferences = sumOfSquaredDifferences + math.pow((a[voice] - b[voice]), 2)
+    end
+    return math.sqrt(sumOfSquaredDifferences)
+end
+
+-- Chords mainly represent pitches, but have auxiliary tables to represent 
+-- duration, channel (instrument), velocity (loudness), and pan.
 
 Chord = {}
 
 function Chord:new(o)
-    local o = o or {channel = {}, velocity = {}, pan = {}}
+    local o = o or {duration = {}, channel = {}, velocity = {}, pan = {}}
+    if not o.duration then
+        o.duration = {}
+    end
     if not o.channel then
         o.channel = {}
     end
@@ -299,25 +341,42 @@ function Chord:new(o)
     return o
 end
 
-function Chord:resize(n)
-    while #self < n do
+-- Returns a string representation of the chord.
+-- Quadratic complexity, but short enough not to matter.
+
+function Chord:__tostring()
+    local buffer = '{'
+    for voice = 1, #self do
+        buffer = buffer .. string.format('%9.4f', self[voice])
+    end
+    buffer = buffer .. '}'
+    return buffer
+end
+
+function Chord:resize(voices)
+    while #self < voices do
         table.insert(self, 0)
+        table.insert(self.duration, 0)
         table.insert(self.channel, 0)
         table.insert(self.velocity, 0)
         table.insert(self.pan, 0)
     end
-    while #self > n do
+    while #self > voices do
         table.remove(self)
+        table.remove(self.duration)
         table.remove(self.channel)
         table.remove(self.velocity)
         table.remove(self.pan)
     end
 end
 
+-- Redefines the metamethod to implement value semantics
+-- for ==, for the pitches in this only.
+
 function Chord:__eq(other)
-    n = math.min(#self, #other)
-    for i = 1, n do
-        if self[i] ~= other[i] then
+    voices = math.min(#self, #other)
+    for voice = 1, voices do
+        if self[voice] ~= other[voice] then
             return false
         end
     end
@@ -327,26 +386,16 @@ function Chord:__eq(other)
     return true
 end
 
-function Chord:__eq(other)
-    n = math.min(#self, #other)
-    for i = 1, n do
-        if self[i] ~= other[i] then
-            return false
-        end
-    end
-    if #self ~= #other then
-        return false
-    end
-    return true
-end
+-- Redefines the metamethod to implement value semantics
+-- for <, for the pitches in this only.
 
 function Chord:__lt(other)
-    n = math.min(#self, #other)
-    for i = 1, n do
-        if self[i] < other[i] then
+    voices = math.min(#self, #other)
+    for voice = 1, voices do
+        if self[voice] < other[voice] then
             return true
         end
-        if self[i] > other[i] then
+        if self[voice] > other[voice] then
             return false
         end
     end
@@ -356,116 +405,28 @@ function Chord:__lt(other)
     return false
 end
 
-function Chord:min(n)
-    n_ = n or #self
-    local m = self[1]
-    for i = 2, n_ do
-        if self[i] < m then
-            m = self[i]
+-- Returns the lowest pitch in the chord.
+
+function Chord:min()
+    local lowest = self[1]
+    for voice = 2, #self do
+        if self[voice] < lowest then
+            lowest = self[voice]
         end
     end
-    return m
+    return lowest
 end
 
-function Chord:max(n)
-    n_ = n or #self
-    local m = self[1]
-    for i = 2, n_ do
-        if self[i] > m then
-            m = self[i]
+-- Returns the highest pitch in the chord.
+
+function Chord:max()
+    local highest = self[1]
+    for voice = 2, #self do
+        if self[voice] > highest then
+            highest = self[voice]
         end
     end
-    return m
-end
-
-function Chord:copy()
-    chord = Chord:new()
-    for i, v in ipairs(self) do
-        chord[i] = v
-    end
-    for i, v in ipairs(self.channel) do
-        chord.channel[i] = v
-    end
-    for i, v in ipairs(self.velocity) do
-        chord.velocity[i] = v
-    end
-    for i, v in ipairs(self.pan) do
-        chord.pan[i] = v
-    end
-    return chord
-end
-
--- Quadratic complexity, but short enough not to matter.
-
-function Chord:__tostring()
-    local buffer = '{'
-    for i = 1, #self do
-        buffer = buffer .. string.format('%9.4f', self[i])
-    end
-    buffer = buffer .. '}'
-    return buffer
-end
-
--- Returns a copy of the chord transposed by n, 
--- under equivalence class r. 
-
-function Chord:T(n, r)  
-    c = self:copy()
-    for i, p in ipairs(self) do
-        c[i] = T(p, n, r)
-    end
-    return c
-end
-
--- Returns a copy of the chord reflected around n,
--- under equivalence class r.
-
-function Chord:I(n, r)
-    c = self:copy()
-    for i, p in ipairs(self) do
-        c[i] = I(p, n, r)
-    end
-    return c
-end
-
--- Returns this under permutational equivalence,
--- i.e. sorted.
-
-function Chord:P()
-    local c = self:copy()
-    table.sort(c)
-    return c
-end
-
--- Returns a copy of this under some pitch equivalence.
-
-function Chord:R(equivalence)
-    c = self:copy()
-    for i, p in ipairs(self) do
-        c[i] = R(p, equivalence)
-    end
-    return c
-end
-
--- Returns a copy of this under both range equivalence and 
--- under permutational equivalence, i.e. sorted.
-
-function Chord:RP(equivalence)
-    return self:R(equivalence):P()
-end
-
--- Returns a copy of this under octave equivalence,
--- i.e. the pitch-classes in this.
-
-function Chord:O()
-    return self:R(12)
-end
-
--- Returns a copy of this under octave equivalence and
--- under permutational equivalence, i.e. sorted.
-
-function Chord:OP()
-    return self:O():P()
+    return highest
 end
 
 -- Returns the range of the chord.
@@ -474,58 +435,487 @@ function Chord:range()
     return self:max() - self:min()
 end
 
--- Returns the count of the pitch in this,
--- under an optional equivalence class.
+function Chord:clone()
+    local chord = Chord:new()
+    for voice, value in ipairs(self) do
+        chord[voice] = value
+    end
+    for voice, value in ipairs(self.duration) do
+        chord.duration[voice] = value
+    end
+    for voice, value in ipairs(self.channel) do
+        chord.channel[voice] = value
+    end
+    for voice, value in ipairs(self.velocity) do
+        chord.velocity[voice] = value
+    end
+    for voice, value in ipairs(self.pan) do
+        chord.pan[voice] = value
+    end
+    return chord
+end
 
-function Chord:count(pitch, equivalence)
-    n = 0
-    if equivalence then
-        for k, v in ipairs(self) do
-            if R(v, equivalence) == pitch then
-                n = n + 1
-            end
+-- Returns whether the chord is in the fundamental domain
+-- of R (range) equivalence.
+
+function Chord:iseR(range)
+    -- The chord must have a range less than or equal to the range.
+    if not (self:range() <= range) then
+        return false
+    end
+    -- Then the chord must be on the right layer of the range orbifold.
+    -- The layers are perpendicular to the orthogonal axis.
+    local layer = self:sum()
+    if not ((0 <= layer) and (layer <= range)) then
+        return false
+    end
+    return true
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of O (octave) equivalence.
+
+function Chord:iseO()
+    return self:iseR(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- or P (permutational) equivalence.
+
+function Chord:iseP()
+    for i = 1, #self - 1 do
+        if not (self[i] <= self[i + 1]) then
+            return false
         end
+    end
+    return true
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of T (transpositional) equivalence.
+
+function Chord:iseT()
+    if (self:sum() == 0) then
+        return true
     else
-        for k, v in ipairs(self) do
-            if (v % 12) == pitch then
-                n = n + 1
-            end
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of I (inversional) equivalence.
+
+function Chord:iseI()
+    if ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:distanceToOrthogonalAxis()
+    local layer = self:sum()
+    local distancePerVoice = layer / #self
+    local orthogonalChord = Chord:new()
+    for voice = 1, #self do
+        orthogonalChord[voice] = distancePerVoice
+    end
+    local distanceToOrthogonalAxis = euclidean(self, orthogonalChord)
+    -- print(distanceToOrthogonalAxis)
+    return distanceToOrthogonalAxis
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of V (voicing) equivalence.
+
+function Chord:iseV()
+    local distanceToOrthogonalAxis = self:distanceToOrthogonalAxis()
+    local voicings = self:voicings()
+    for i, voicing in ipairs(voicings) do
+        if voicing:distanceToOrthogonalAxis() < distanceToOrthogonalAxis then
+            return false
+        end
+    end
+    return true
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of RP equivalence.
+
+function Chord:iseRP(range) 
+    for i = 1, #self - 1 do
+        if not (self[i] <= self[i + 1]) then
+            return false
+        end
+    end
+    if not (self[#self] <= (self[1] + range)) then
+        return false
+    end
+    local layer = self:sum()
+    if not (0 <= layer and layer <= range) then
+        return false
+    end
+    return true
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of OP equivalence.
+
+function Chord:iseOP()
+    return self:iseRP(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of RT equivalence.
+
+function Chord:iseRT(range)
+    if not (self:min() == self[1]) then
+        return false
+    end
+    if not (self:max() <= (self[1] + range)) then
+        return false
+    end
+    if not (self:sum() == 0) then
+        return false
+    end
+    return true
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of OT equivalence.
+
+function Chord:iseOT()
+    return self:iseRT(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of RI equivalence.
+
+function Chord:iseRI(range)
+    if (self:iseR(range) and self:iseI()) then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of OI equivalence.
+
+function Chord:iseOI()
+    return self:iseRI(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of PT equivalence.
+
+function Chord:isePT()
+    if (self:iseP() and self:iseT()) then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of PI equivalence.
+
+function Chord:isePI()
+    if (self:iseP() and self:iseI()) then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of TI equivalence.
+
+function Chord:iseTI()
+    if (self:iseT() and self:iseI()) then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of RPT equivalence.
+
+function Chord:iseRPT(range)
+    if not (self[#self] <= (self[1] + range)) then
+        return false
+    end
+    if not (self:sum() == 0) then
+        return false
+    end
+    for i = 1, #self - 1 do
+        if not ((self[1] + range - self[#self]) <= (self[i + 1] - self[i])) then
+            return false
+        end
+    end
+    return true
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of OPT equivalence.
+
+function Chord:iseOPT()
+    return self:iseRPT(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of RPI equivalence.
+
+function Chord:iseRPI(range)
+    if self:iseRP(range) and self:iseI() then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of OPI equivalence.
+
+function Chord:iseOPI()
+    return self:iseRPI(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of RPTI equivalence.
+
+function Chord:iseRPTI(range)
+    if self:iseRPT(range) and self:iseI() then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of OPTI equivalence.
+
+function Chord:iseOPTI()
+    return self:iseRPTI(OCTAVE)
+end
+
+-- Returns the number of times the pitch occurs in the chord,
+-- under an optional range equivalence (defaulting to the octave).
+
+function Chord:count(pitch, range)
+    range = range or OCTAVE
+    n = 0
+    for voice, value in ipairs(self) do
+        if eR(value, range) == pitch then
+            n = n + 1
         end
     end
     return n
 end
 
--- Returns the sum of the pitches in this.
+-- Returns the sum of the pitches in the chord.
 
 function Chord:sum()
-    s = 0
-    for k, p in ipairs(self) do
-        s = s + p
+    local s = 0
+    for voice, pitch in ipairs(self) do
+        s = s + pitch
     end
     return s
 end
 
+-- Returns a copy of the chord cyclically permuted by stride n.
+
+function Chord:cycle(stride)
+    stride = stride or 1
+    local chord = self:clone()
+    if stride > 0 then
+        for i = 1, stride do
+            local tail = table.remove(chord)
+            table.insert(chord, 1, tail)
+        end
+        return chord
+    end
+    if stride < 0 then
+        for i = 1, math.abs(stride) do
+            local head = table.remove(chord, 1)
+            table.insert(chord, head)
+        end
+    end
+    return chord
+end
+
+function Chord:cyclicalPermutations()
+    local chord = self:eOP()
+    local permutations = {}
+    permutations[1] = c
+    for i = 2, self.N do
+        chord = chord:cycle()
+        permutations[i] = chord
+    end
+    return permutations
+end
+
+-- Returns a copy of the chord 'inverted' in the musician's sense,
+-- i.e. revoiced by cyclically permuting the chord and 
+-- adding (or subtracting) an octave to the highest (or lowest) voice. 
+-- The revoicing will move the chord up or down in pitch.
+
+function Chord:V(direction)
+    direction = direction or 1
+    local chord = self:clone()
+    if direction > 0 then
+        chord = chord:cycle(-1)
+        chord[#chord] = chord[#chord] + OCTAVE   
+    end
+    if direction < 0 then
+        chord = chord:cycle(1)
+        chord[1] = chord[1] - OCTAVE
+    end
+    return chord
+end
+
+-- Returns all the 'inversions' (in the musician's sense) 
+-- or revoicings of the chord.
+
+function Chord:voicings()
+    local chord = self:eP()
+    local voicings = {}
+    voicings[1] = chord
+    for i = 2, #self do
+        chord = chord:V()
+        voicings[i] = chord
+    end
+    return voicings
+end
+
+-- Returns a copy of the chord transposed by x. 
+
+function Chord:T(x)  
+    chord = self:clone()
+    for voice, pitch in ipairs(self) do
+        chord[voice] = T(pitch, x)
+    end
+    return chord
+end
+
+-- Returns a copy of the chord reflected around x.
+
+function Chord:I(x)
+    chord = self:clone()
+    for voice, pitch in ipairs(self) do
+        chord[voice] = I(pitch, x)
+    end
+    return chord
+end
+
+-- Returns the chord under permutational equivalence,
+-- i.e. sorted.
+
+function Chord:eP()
+    local chord = self:clone()
+    table.sort(chord)
+    return chord
+end
+
+-- Returns a copy of the chord under range equivalence.
+
+function Chord:eR(range)
+    local chord = self:clone()
+    -- First bring each voice inside the range.
+    -- This ensures the chord is close enough to the orthogonal axis.
+    for voice, pitch in ipairs(self) do
+        chord[voice] = eR(pitch, range)
+    end
+    -- If the chord is then already inside the orbifold, return it.
+    if chord:iseR(range) then
+        return chord
+    end
+    -- If the chord is below the orbifold, 
+    -- revoice it upwards until it is inside.
+    local sum = chord:sum()
+    while (sum < 0) do
+        chord = chord:V(1)
+        sum = chord:sum()
+        print(sum, chord)
+    end
+    -- If the chord is above the orbifold,
+    -- revoice it downwards until it is inside.
+    while (sum > range) do
+        chord = chord:V(-1)
+        sum = chord:sum()
+        print(sum, chord)
+    end
+    return chord
+end
+
+-- Returns a copy of the cord both under range equivalence and 
+-- under permutational equivalence, i.e. sorted.
+
+function Chord:eRP(range)
+    return self:eR(range):P()
+end
+
+-- Returns a copy of the chord under octave equivalence,
+-- i.e. the pitch-classes in this.
+
+function Chord:eO()
+    return self:eR(OCTAVE)
+end
+
+-- Returns a copy of the chord both under octave equivalence and
+-- under permutational equivalence, i.e. sorted.
+
+function Chord:eOP()
+    return self:eO():eP()
+end
+
+-- Returns the chord transposed stepwise such that its voices sum to
+-- as little greater than 0 as possible.
+
+function Chord:eT(step)
+    step = step or 1
+    local distancePerVoice = self:sum() / #self
+    local fraction = math.fmod(distancePerVoice, step)
+    -- Round off to the size of the pitch step.
+    local distancePerVoice = distancePerVoice - fraction
+    local chord = self:clone()
+    for voice, pitch in ipairs(chord) do
+        chord[voice] = pitch - distancePerVoice
+    end
+    return chord
+end
+
+-- Move 1 voice of the chord,
+-- optionally under range equivalence
+
+function Chord:move(voice, interval, range)
+    chord = self:clone()
+    chord[voice] = T(chord[voice], interval, range)
+    return self:eRP(range)
+end
+
 -- The Orbifold class represents a voice-leading space
--- under either octave or range equivalence, with any number
--- of independent voices.
+-- under either octave or range equivalence, with any 
+-- fixed number of independent voices.
 
 Orbifold = {}
 
 function Orbifold:new(o)
-    local o = o or {N = 3, R = 12, NR = 36, octaves = 1, prismRadius = 0.14}
+    local o = o or {N = 3, R = OCTAVE, NR = 36, octaves = 1, prismRadius = 0.14}
     setmetatable(o, self)
     self.__index = self
     return o
 end
 
-function Orbifold:setOctaves(n)
-    self.octaves = n
-    self.R = self.octaves * 12
+function Orbifold:setOctaves(octaves)
+    self.octaves = octaves
+    self.R = self.octaves * OCTAVE
     self.NR = self.N * self.R
 end
 
-function Orbifold:setVoices(n)
-    self.N = n
+function Orbifold:setVoices(voices)
+    self.N = voices
     self.NR = self.N * self.R
 end
 
@@ -537,238 +927,184 @@ function Orbifold:newChord()
     return chord
 end
 
--- Returns the range, or tessitura, of the orbifold.
-
-function Orbifold:getTessitura()
-    return self.R
-end
-
--- Move 1 voice of the chord within this chord space,
--- optionally under equivalence class r.
-
-function Chord:move(voice, interval, r)
-    c = self:copy()
-    c[voice] = T(c[voice], interval, r)
-    return c
-end
+-- Move 1 voice of the chord within the orbifold,
+-- i.e. under RP equivalence
 
 function Orbifold:move(chord, voice, interval)
-    local c = chord:move(interval, self.R)
-    c = self:keepInside(chord)
-    return c
+    local movedChord = chord:move(interval, self.R)
+    return self:eRP(movedChord)
 end
 
--- Transposes the chord by the interval, 
--- keeping the result within the orbifold
--- (OP or RP equivalence).
+-- Transposes the chord by the interval within the orbifold,
+-- i.e. under RP equivalence.
 
 function Orbifold:T(chord, interval)
-    local c = chord:T(interval, self.R)
-    return self:keepInside(c)
+    local transposedChord = chord:T(interval, self.R)
+    return self:eRP(transposedChord)
 end
 
--- Reflects the chord around the interval, 
--- keeping the result within the orbifold
--- (OP or RP equivalence).
+-- Reflects the chord around the interval within the orbifold,
+-- i.e. under RP equivalence.
 
 function Orbifold:I(chord, interval)
-    local c = chord:I(interval, self.R)
-    return self:keepInside(c)
-end
-
--- Performs the neo-Riemannian leading tone exchange transformation.
-
-function Chord:nrL()
-    local c = self:normalVoicing()
-    local z1 = self:atOriginNormalVoicing()
-    if z1[2] == 4.0 then
-        c[1] = c[1] - 1
-    else
-        if z1[2] == 3.0 then
-            c[3] = c[3] + 1
-        end
-    end
-    return c
+    local invertedChord = chord:I(interval, self.R)
+    return self:eRP(invertedChord)
 end
 
 -- Performs the neo-Riemannian leading tone exchange transformation,
--- keeping the result within the orbifold
--- (OP or RP equivalence).
+-- keeping the result within the orbifold, i.e. under RP equivalence.
 
 function Orbifold:nrL(chord)
-    local c = self:normalVoicing(chord)
-    local z1 = self:atOriginNormalVoicing(c)
-    if z1[2] == 4.0 then
-        c[1] = c[1] - 1
+    local opi = self:eOPI(chord)
+    local opti = self.eOPTI(opi)
+    if opti[2] == 4 then
+        opi[1] = opi[1] - 1
     else
-        if z1[2] == 3.0 then
-            c[3] = c[3] + 1
+        if opti[2] == 3 then
+            opi[3] = opi[3] + 1
         end
     end
-    return self:keepInside(c)
+    return opi
 end
 
 -- Performs the neo-Riemannian parallel transformation.
 
 function Orbifold:nrP(chord)
-    local c = self:normalVoicing(chord)
-    local z1 = self:atOriginNormalVoicing(c)
-    if z1[2] == 4.0 then
-        c[2] = c[2] - 1
+    local opi = self:eOPI(chord)
+    local opti = self:eOPTI(opi)
+    if opti[2] == 4 then
+        opi[2] = opi[2] - 1
     else
-        if z1[2] == 3.0 then
-            c[2] = c[2] + 1
+        if opti[2] == 3 then
+            opi[2] = opi[2] + 1
         end
     end
-    c = self:keepInside(c):copy()
-    return c
+    return opi
 end
 
 -- Performs the neo-Riemannian relative transformation.
 
 function Orbifold:nrR(chord)
-    local c = self:normalVoicing(chord)
-    z1 = self:atOriginNormalVoicing(c)
-    if  z1[2] == 4.0 then
-        c[3] = c[3] + 2
-    else 
-        if z1[2] == 3.0 then
-            c[1] = c[1] - 2 
+    local opi = self:eOPI(chord)
+    local opti = self.eOPTI(opi)
+    if opti[2] == 4 then
+        opi[3] = opi[3] + 2
+    else
+        if opti[2] == 3 then
+            opi[1] = opi[1] - 2
         end
     end
-    c = self:keepInside(c):copy()
-    return c
+    return opi
 end
 
 -- Performs the neo-Riemannian dominant transformation.
 
 function Orbifold:nrD(chord)
-    c = self:normalVoicing(chord)
-    c[1] = c[1] - 7
-    c[2] = c[2] - 7
-    c[3] = c[3] - 7
-    c = self:keepInside(c):copy()
-    return c
+    opi = self:eOPI(chord)
+    opi[1] = opi[1] - 7
+    opi[2] = opi[2] - 7
+    opi[3] = opi[3] - 7
+    return self:eRP(opi)
 end
 
--- Returns the chord transposed so its minimum pitch is 0.
+-- Returns the voicing within the orbifold that is closest 
+-- to the orthogonal axis of the chord space.
+-- Not the same as 'normal form' in atonal set theory,
+-- but used for some of the same purposes.
 
-function Orbifold:atOrigin(chord)
-    local c = chord:copy()
-    local m = c:min(self.N)
-    for i = 1, self.N do
-        c[i] = c[i] - m
+function Orbifold:eOPI(chord)
+    local s = chord:sum()
+    local distancePerVoice = s / #chord
+    local orthogonalProjection = self:newChord()
+    for voice = 1, self.N do
+        orthogonalProjection[voice] = distancePerVoice
     end
-    return c
-end
-
--- Returns the 'first inversion' of the chord, 
--- i.e. the inversion closest to the origin of the chord space.
--- Similar to 'normal form' in atonal set theory.
-
-function Orbifold:normalVoicing(chord)
-    local voicings_ = self:voicings(chord)
-    local voicingsForDistances = {}
-    local minimumDistance = 0
-    local origin = self:newChord()
-    local minimumInversion = voicings_[1]
-    for i = 1, #voicings_ do
-        local inversion = voicings_[i]
-        local zi = self:atOrigin(inversion)
-        local d = self:euclidean(zi, origin)
-        if d < minimumDistance then
-            d = minimumDistance
-            minimumInversion = inversion
-        end
-        -- print(string.format('Distance %f zero-form %s inversion %s.', d, tostring(zi), tostring(inversion)))
-    end
-    return minimumInversion
-end
-
--- Returns the 'first inversion' of the chord 
--- transposed such that its first voice is at the origin.
--- Similar to 'prime form' in atonal set theory.
-
-function Orbifold:atOriginNormalVoicing(chord)
-    return self:atOrigin(self:normalVoicing(chord))
-end
-
--- Returns whether two chords have equal tones.
-
-function Orbifold:equalTones(a, b)
-    local atones = self:tones(a)
-    local btones = self:tones(b)
-    for i = 1, #atones do
-        if atones[i] ~= btones[i] then
-            return false
+    local voicings = chord:voicings()
+    local orthogonalVoicing = voicings[1]
+    local minimumDistance = euclidean(orthogonalProjection, orthogonalVoicing)
+    for i = 2, #voicings do
+        voicing = voicings[i]
+        local voicingDistance = euclidean(orthogonalProjection, voicing)
+        if voicingDistance < minimumDistance then
+            minimumDistance = voicingDistance
+            orthogonalVoicing = voicing
         end
     end
-    if #a ~= #b then
-        return false
-    end
-    return true
+    return orthogonalVoicing
+end
+ 
+function Orbifold:eOPT(chord)
+    return chord:eOP():eT()
 end
 
--- Returns, in the argument, all voicings of the tones
--- that fit within the orbifold.
+function Orbifold:eOPTI(chord)
+    return chord:eOPI(chord):eT()
+end
 
-function Orbifold:voicings_(tones, iterating_chord, voice, voicings)
-    if voice >= self.N then
-        return
+-- Returns the next voicing of the chord that is under RP, 
+-- or nil if the chord is higher than RP.
+
+function Orbifold:V(chord, iterator, zero)
+    if base == nil then
+        zero = chord:eOP()
+        -- Ensure that iteration starts below the lowest layer.
+        for voice = 1, self.N do
+            zero[voice] = zero[voice] - (self.R + OCTAVE)
+        end
     end
-    local beginning = 0
-    local end_ = 0
-    beginning = - self:getTessitura() * 2
-    end_ = self.getTessitura() * 2
-    local p = beginning
-    local increment = 1
-    while p < end_ do
-        if self:pitchclass(p) == tones[voice] then
-            iterating_chord[voice] = p
-            local si = self:sort(iterating_chord)
-            if self:isInside(si, self:getTessitura()) then
-                local ci = self:copy(si)
-                -- Table acts as set since chords compare by value.
-                voicings[ci] = ci
+    if iterator == nil then
+        iterator = chord:clone()
+    end
+    -- Enumerate the next voice by counting voicings in RP.
+    -- iterator[1] is the most significant voice, 
+    -- iterator[self.N] is the least significant voice.
+    while iterator[1] < self.R do
+        iterator[self.N] = iterator[self.N] + OCTAVE
+        local unorderedIterator = iterator:eP()
+        if unorderedIterator:iseRP(self.R) then
+            return unorderedIterator
+        end
+        -- "Carry" octaves.
+        for voice = self.N, 2, -1 do
+            if iterator[voice] >= self.R then
+                iterator[voice] = zero[voice]
+                iterator[voice - 1] = iterator[voice - 1] + OCTAVE
             end
-            self:voicings_(tones, iterating_chord, voice + 1, voicings)
         end
-        p = p + increment
     end
+    return nil
 end
 
--- Returns all voicings of the chord that lie within
--- the range of this chord space.
+-- Returns all voicings of the chord under RP.
 
 function Orbifold:voicings(chord)
     local voicings = {}
-    local ts = self:tones(chord)
-    local iterating_chords = self:voicings(ts)
-    for k, iterating_chord in ipairs(iterating_chords) do
-        local voice = 0
-        self:voicings_(tones, iterating_chord, voice, voicings)
+    local zero = chord:eOP()
+    -- Ensure that iteration starts below the lowest layer.
+    for voice = 1, self.N do
+        zero[voice] = zero[voice] - (self.R + OCTAVE)
+    end
+    iterator = zero:clone()
+    while true do
+        local voicing = self:V(chord, iterator, zero)
+        if voicing == nil then
+            break
+        else
+            table.insert(voicings, voicing)
+        end
     end
     return voicings
 end
 
--- Returns the Euclidean distance between chords a and b.
-
-function Orbifold:euclidean(a, b)
-    local ss = 0
-    for i = 1, self.N do
-        ss = ss + math.pow((a[i] - b[i]), 2)
-    end
-    return math.sqrt(ss)
-end
-
--- Returns the voice-leading between chords a and b.
+-- Returns the voice-leading between chords a and b,
+-- i.e. what you have to add to a to get b.
 
 function Orbifold:voiceleading(a, b)
-    local v = Chord:new()
-    for i = 1, self.N do
-        v[i] = b[i] - a[i]
+    local voiceleading = Chord:new()
+    for voice = 1, self.N do
+        voiceleading[voice] = b[voice] - a[voice]
     end
-    return v
+    return voiceleading
 end
 
 -- Returns whether the voiceleading 
@@ -827,8 +1163,8 @@ function Orbifold:simpler(source, d1, d2, avoidParallels)
             return d1
         end
     end
-    local v1 = self:voiceleading(source, d1):P()
-    local v2 = self:voiceleading(source, d2):P()
+    local v1 = self:voiceleading(source, d1):eP()
+    local v2 = self:voiceleading(source, d2):eP()
     for i = self.N, 1, -1 do
         if v1[i] < v2[i] then
             return d1
@@ -873,139 +1209,7 @@ function Orbifold:closest(source, destinations, avoidParallels)
     end
 end
 
--- Returns whether this chord is in its normal voicing.
-
-function Orbifold:isFirstInversion(chord)
-    local z = self:atOrigin(chord)
-    local z1 = self:atOriginNormalVoicing(chord)
-    return z == z1
-end
-
--- Returns a copy of the chord 'rotated' or permuted.
-
-function Orbifold:rotate(chord, n)
-    n = n or 1
-    local c = chord:copy()
-    if n > 0 then
-        for i = 1, n do
-            tail = table.remove(c)
-            table.insert(c, 1, tail)
-        end
-        return c
-    end
-    if n < 0 then
-        for i = 1, math.abs(n) do
-            head = table.remove(c, 1)
-            table.insert(c, head)
-        end
-    end
-    return c
-end
-
-function Orbifold:rotations(chord)
-    local c = self:tones(chord)
-    local result = {}
-    result[1] = c
-    for i = 2, self.N do
-        c = self:rotate(c)
-        result[i] = c
-    end
-    return result
-end
-
--- Returns a copy of the chord 'inverted' in the musician's sense,
--- i.e. revoiced by adding an octave to the lowest voice and 
--- permuting the chord.
-
-function Orbifold:revoice(chord)
-   local c = self:rotate(chord, -1)
-   c[#c] = c[#c] + 12    
-   return c
-end
-
--- Returns all the 'inversions' (in the musician's sense) 
--- or revoicings of the chord.
-
-function Orbifold:voicings(chord)
-    local c = chord:RP(self.R)
-    local result = {}
-    result[1] = c
-    for i = 1, self.N do
-        c = self:revoice(c)
-        result[i] = c
-    end
-    return result
-end
-
--- Returns whether the chord is within the space.
-
-function Orbifold:isInside(chord, range)
-    return self:isInFundamentalDomain(chord)
-end
-
--- Returns the layer of the orbifold to which the chord belongs.
-
-function Orbifold:layer(chord)
-    return chord:sum()
-end
-
--- Returns whether the chord is inside the orbifold
-
-function Orbifold:isInsidePrism(chord, range)
-    if chord[1] < - range then
-        return false
-    end
-    if chord[1] >   range then
-        return false
-    end
-    for i = 1, self.N do
-        if chord[i] > chord[1] + range then
-            return false
-        end
-        if chord[i] < chord[1] then
-            return false
-        end
-    end
-    local s = self:layer(chord)
-    if 0 <= s and s <= range then
-        return true
-    end
-    return false
-end
-
--- Returns whether the chord is in the fundamental domain of the group.
-
-function Orbifold:isInFundamentalDomain(chord)
-    if self:isInLayer(chord) and self:isInOrder(chord) then
-        -- print(string.format('Chord %s is in F.', tostring(chord)))
-        return true
-    else
-        -- print(string.format('Chord %s is not in F.', tostring(chord)))
-        return false
-    end
-end
-
-function Orbifold:isInLayer(chord)
-    local L = self:layer(chord)
-    if not ((0 <= L) and (L <= self.R)) then
-        return false
-    end
-    return true
-end
-
-function Orbifold:isInOrder(chord)
-    for i = 1, self.N - 1 do
-        if not (chord[i] <= chord[i + 1]) then
-            return false
-        end
-    end
-    if not (chord[self.N] <= (chord[1] + self.R)) then
-        return false
-    end
-    return true
-end
-
-function Orbifold:O(chord)
+function Orbifold:eRP(chord)
     local r = {}
     for i = 2, self.N do
         table.insert(r, chord[i] - (self.R / self.N))
@@ -1017,31 +1221,17 @@ function Orbifold:O(chord)
     return chord
 end
 
---[[
--- Keeps the chord inside the orbifold by reflecting off the sides.
-
-function Orbifold:bounceInside(chord)
-    local voicings_ = self:voicings(chord)
-    for i, inversion in ipairs(voicings_) do
-        if self.trichords[inversion] ~= nil then
-            return inversion
-        end
-    end
-    return nil
-end
-]]
-
-function Orbifold:keepInside(chord)
-    if self:isInFundamentalDomain(chord) == true then
-        return chord
+function Orbifold:eRP(chord)
+    if chord:iseRP(self.R) == true then
+        return chord:clone()
     end
     local voicings = self:voicings(chord)
-    for i, inversion in ipairs(voicings) do
-        if self:isInOrder(inversion) then
-            local c = inversion:copy()
+    for i, voicing in ipairs(voicings) do
+        if voicing:iseP() then
+            local c = voicing:clone()
             for i = 1, self.N do
-                if self.isInLayer then
-                    return c:copy()
+                if c:iseRP(self.R) then
+                    return c:clone()
                 end
                 c = self:O(c)
             end
@@ -1051,7 +1241,7 @@ function Orbifold:keepInside(chord)
 end
 
 function Orbifold:stayInside(chord)
-    if self:isInside(chord, self:getTessitura()) then
+    if self:isInside(chord) then
         return chord
     end
     chord = chord:sort()
@@ -1085,28 +1275,29 @@ end
 -- Returns a label for a chord.
 
 function Orbifold:label(chord)
-    return string.format('C   %s\nT   %s\n0   %s\n1   %s\n0-1 %s\nSum %f', self:tones(c), self:atOrigin(c), self:normalVoicing(c), self:atOriginNormalVoicing(chord), chord:sum())
+    return string.format('C   %s\nT   %s\n0   %s\n1   %s\n0-1 %s\nSum %f', self:tones(c), self:eT(c), self:eOPI(c), self:eOPTI(chord), chord:sum())
 end
 
 -- Returns the chord inverted by the sum of its first two voices.
   
 function Orbifold:K(chord)
-    local c = chord:P()
+    local c = chord:eP()
     if #chord < 2 then
         return chord
     end
     local n = c[1] + c[2]
-    return self:keepInside(c:I(n, self.R))
+    return self:eRP(c:I(n, self.R))
 end
 
--- Returns whether chord X is a transpositional form of Y with minimum interval size g.
+-- Returns whether chord X is a transpositional form of Y with interval size g.
+-- Only works in equal temperament.
 
 function Orbifold:Tform(X, Y, g)
-    local pcsx = X:OP()
+    local pcsx = X:eOP()
     local i = 0
-    while i < 12 do
+    while i < OCTAVE do
         local ty = self:T(Y, i)
-        local pcsty = ty:OP()
+        local pcsty = ty:eOP()
         if pcsx == pcsty then
             return true
         end
@@ -1115,14 +1306,15 @@ function Orbifold:Tform(X, Y, g)
     return false
 end
 
--- Returns whether chord X is an inversional form of Y with minimum interval size g.
+-- Returns whether chord X is an inversional form of Y with interval size g.
+-- Only works in equal temperament.
 
 function Orbifold:Iform(X, Y, g)
-    pcsx = X:OP()
+    pcsx = X:eOP()
     local i = 0
-    while i < 12 do
+    while i < OCTAVE do
         local iy = self:I(Y, i)
-        local pcsiy = iy:OP()
+        local pcsiy = iy:eOP()
         if pcsx == pcsiy then
             return true
         end
@@ -1136,10 +1328,10 @@ end
 
 function Orbifold:Q(chord, n, m, g)
     if self:Tform(chord, m, g) then
-        return self:T(chord,  n):P()
+        return self:T(chord,  n):eP()
     end
     if self:Iform(chord, m, g) then
-        return self:T(chord, -n):P()
+        return self:T(chord, -n):eP()
     end
     return chord
 end
