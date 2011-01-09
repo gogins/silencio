@@ -1,8 +1,12 @@
 #!/usr/bin/lua
 --require 'DataDumper'   -- http://lua-users.org/wiki/DataDumper
 local M = {} -- public interface
-M.Version = '4.2'
-M.VersionDate = '10oct2010'
+M.Version = '4.6'
+M.VersionDate = '08jan2011'
+-- 20110108 4.6 duplicate int2sevenbits removed, passes lualint -r
+-- 20110108 4.5 related end_track bugs fixed around line 516
+-- 20110108 4.4 null text_event bug fixed
+-- 20101026 4.3 segment() remembers all patch_changes, not just the list values
 -- 20101010 4.2 play_score() uses posix.fork if available
 -- 20101009 4.2 merge_scores() moves aside conflicting channels correctly
 -- 20101006 4.1 concatenate_scores() deepcopys also its 1st score
@@ -57,10 +61,6 @@ end
 
 local function int2byte(i)
 	return string.char(math.floor((i+0.5) % 256))
-end
-
-local function int2sevenbits(i)
-	return string.char(math.floor((i+0.5) % 128))
 end
 
 local function int2sevenbits(i)
@@ -182,7 +182,7 @@ The options:
 	if not trackdata then trackdata= '' end
 	if not exclude then exclude = {} end
 	if not include then include = {} end
-	if include and not exclude then exclude = All_events end
+	if include and not exclude then exclude = M.All_events end  -- 4.6
 
 	local event_code = -1 -- used for running status
 	local event_count = 0
@@ -190,7 +190,7 @@ The options:
 
 	local i = 1     -- in Lua, i is the pointer to within the trackdata
 	while i < #trackdata do   -- loop while there's anything to analyze
-		eot = False  -- when True, the event registrar aborts this loop
+		eot = false -- when True, the event registrar aborts this loop 4.6
    		event_count = event_count + 1
 
 		E = {} -- E for event. We feed it to the event registrar at the end.
@@ -463,10 +463,11 @@ The options:
 
 ]]
 		elseif first_byte > 240 then  -- Some unknown F-series event
-			E = {'raw_data', time, string.sub(trackdata,1,length)}
-			trackdata = string.sub(trackdata,length+1)
+			-- Here we only produce a one-byte piece of raw data.
+			E = {'raw_data', time, string.byte(trackdata,i)}  -- 4.6
+			trackdata = string.sub(trackdata,2)  -- 4.6
 		else  -- Fallthru.
-			warn("Aborting track.  Command-byte first_byte="+hex(first_byte))
+			warn(string.format("Aborting track.  Command-byte first_byte=0x%x",first_byte)) --4.6
 			break
 		end
 		-- End of the big if-group
@@ -480,7 +481,7 @@ The options:
 			eot = true
 			if not no_eot_magic then
 				if E[2] > 0 then  -- a null text-event to carry the delta-time
-					E = {'text_event', E[1], ''}
+					E = {'text_event', E[2], ''}  -- 4.4
 				else
 					E = nil   -- EOT with a delta-time of 0; ignore it.
 				end
@@ -503,6 +504,9 @@ end
 
 local function _encode(events_lol)
 	local no_running_status = false
+	local no_eot_magic      = false   -- 4.6
+	local never_add_eot     = false   -- 4.6
+	local unknown_callback  = false   -- 4.6
 	local data = {} -- what I'll store the chunks of byte-data in
 
 	-- This is so my end_track magic won't corrupt the original
@@ -510,10 +514,10 @@ local function _encode(events_lol)
 
 	if not never_add_eot then -- One way or another, tack on an 'end_track'
 		if events then
-			last = events[1]
+			last = events[#events] -- 4.5
 			if not (last[1] == 'end_track') then  -- no end_track already
-				if (last[1] == 'text_event' and len(last[2]) == 0) then
-					-- 0-length text event at track-end.
+				if (last[1] == 'text_event' and last[3] == '') then -- 4.5,4.6
+					-- 0-length text event at track-end. 
 					if no_eot_magic then
 						-- Exceptional case: don't mess with track-final
 						-- 0-length text_events; just peg on an end_track
@@ -716,6 +720,20 @@ local function consistentise_ticks(scores) -- 3.6
 end
 
 -------------------------- public ------------------------------
+M.All_events = readOnly{
+	note_off=true, note_on=true, key_after_touch=true, control_change=true,
+	patch_change=true, channel_after_touch=true, pitch_wheel_change=true,
+	text_event=true, copyright_text_event=true, track_name=true,
+	instrument_name=true, lyric=true, marker=true, cue_point=true,
+	text_event_08=true, text_event_09=true, text_event_0a=true,
+	text_event_0b=true, text_event_0c=true, text_event_0d=true,
+	text_event_0e=true, text_event_0f=true,
+	end_track=true, set_tempo=true, smpte_offset=true,
+	time_signature=true, key_signature=true,
+	sequencer_specific=true, raw_meta_event=true,
+	sysex_f0=true, sysex_f7=true,
+	song_position=true, song_select=true, tune_request=true,
+}
 -- And three dictionaries:
 M.Number2patch = readOnly{   -- General MIDI patch numbers:
 [0]='Acoustic Grand',
@@ -1288,7 +1306,7 @@ function M.score2stats(opus_or_score)
 					nticks = finish_time
 				end
 			elseif event[1] == 'note_on' then
-				is_a_score = False
+				is_a_score = false   -- 4.6
 				if event[3] == 9 then
 					percussion[event[4]] = (percussion[event[4]] or 0) + 1
 				else
@@ -1417,7 +1435,7 @@ function M.segment(...)
 				end
 			end
 			if #new_track > 0 then
-				for c,p in ipairs(channel2patch_num) do
+				for k,c in ipairs(sorted_keys(channel2patch_num)) do -- 4.3
 					new_track[#new_track+1] =
 					 ({'patch_change', start, c, channel2patch_num[c]})
 				end
@@ -1693,9 +1711,9 @@ written to a .mid file, or to stdout.
         {'patch_change', 0, 1, 8},   -- and these are the events...
         {'set_tempo', 0, 750000},    -- microseconds per beat
         {'note_on', 5, 1, 25, 96},
-        {'note_off', 96, 0, 1, 0},
+        {'note_off', 96, 1, 25, 0},
         {'note_on', 0, 1, 29, 96},
-        {'note_off', 96, 0, 1, 0},
+        {'note_off', 96, 1, 29, 0},
     },  -- end of first track
  }
  local my_midi = MIDI.opus2midi(my_opus)
