@@ -9,26 +9,39 @@ of the GNU Lesser General Public License.
 
 This package, part of Silencio, implements a geometric approach 
 to some common operations in neo-Riemannian music theory 
-for use in score generating algorithms.
+for use in score generating programs:
+
+--  Identifying whether a chord belongs to some equivalence class.
+
+--  Causing chord progressions to move strictly within an orbifold induced 
+    by some equivalence class.
+    
+--  Implementing chord progressions based on the L, P, R, D, K, and Q 
+    operations of neo-Riemannian theory (thus implementing some aspects
+    of "harmony").
+    
+--  Implementing chord progressions performed within a more abstract 
+    equivalence class by means of the best-formed voice-leading within 
+    a less abstract equivalence class (thus implementing some rudiments 
+    of "counterpoint").
 
 The associated ChordSpaceView package can display these
-chord spaces in an interactive 3-dimensional view.
+chord spaces and operations in an interactive 3-dimensional view.
 
 DEFINITIONS
+
+A voice is a distinct sound that is heard as having a pitch.
 
 Pitch is the perception that a sound has a distinct frequency.
 It is a logarithmic perception; octaves, which sound 'equivalent' 
 in some sense, represent doublings or halvings of frequency.
 
 Pitches and intervals are represented as real numbers. 
-Middle C is 60 and the octave is 12. The integers are the same 
-as MIDI key numbers and perfectly represent our usual system 
-of 12-tone equal temperament, but any and all other pitches 
-can also be represented, using fractions.
+Middle C is 60 and the octave is 12. Our usual system of 12-tone 
+equal temperament and MIDI are completely represented by the whole numbers, 
+but any and all other pitches can be represented simply by using fractions.
 
-A tone is a sound that is heard as having a pitch.
-
-A chord is simply a set of tones heard at the same time or, 
+A chord is simply a set of voices heard at the same time or, 
 what is the same thing, a point in a chord space having one dimension of 
 pitch for each voice in the chord.
 
@@ -39,97 +52,107 @@ EQUIVALENCE CLASSES
 
 An equivalence class is a property that identifies elements of a 
 set. Equivalence classes induce quotient spaces or orbifolds, where
-the equivalence class glues points on one face of the orbifold together
-with points on an opposing face.
+the equivalence class identifies points on one face of the orbifold 
+with points on an opposing face. The fundamental domain of the group
+that generates the orbifold is the space "within" the orbifold.
 
-Plain chord space has no equivalence classes, and plain chords
-are represented as vectors in braces {p1, ..., pN}. 
+Plain chord space has no equivalence classes. Ordered chords are represented 
+as vectors in braces {p1, ..., pN}. Unordered chords are represented as 
+sorted vectors in parentheses (p1, ..., pN). Unordering is itself an 
+equivalence class.
 
 The following equivalence classes apply to pitches and chords, 
-and induce different orbifolds in chord space:
-
-R       Range equivalence, e.g. for range 60, 61 == 1.
-
-O       Octave equivalence, e.g. 13 == 1.
-        This is a special case of range equivalence.
-        Represented by the chord always lying within the first octave.
-
-P       Permutational equivalence, e.g. {1, 2} == {2, 1}.
-        Represented by the chord always being sorted.
-
-T       Translational equivalence, e.g. {1, 2} == {7, 8}.
-        Represented by the chord always having a sum of pitches
-        as close as possible to 0 (see below).
-
-I       Inversional equivalence, e.g.  {0, 4, 7} == {0, -4, -7}.
-        Represented as the inversion having the first interval between 
-        voices being smaller than or equal to the final interval.
-        Care is needed to distinguish the mathematician's sense of 'invert',
-        which means to reflect around a center, from the musician's sense of 
-        'invert', which varies according to context but in practice often 
-        means 'revoice by adding an octave to the lowest tone of a chord.' 
-        Here, we use 'invert' and 'inversion' in the mathematician's sense, 
-        and we use the terms 'revoice' and 'voicing' for the musician's 
-        'invert' and 'inversion'.
-
+and induce different orbifolds. Classes with lower-case names arise from
+atonal set theory, and classes with upper-case names arise from geometric
+theory. Equivalence classes can be combined (Callendar, Quinn, and Tymoczko, 
+"Generalized Voice-Leading Spaces,"_Science_ 320, 2008).
+ 
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
-        We never not assume cardinality equivalence here, because we are 
+        We never assume cardinality equivalence here, because we are 
         working in chord spaces of fixed dimensionality; e.g. we represent
-        the note C not as {0}, but as {0, 0, ..., 0}.
+        the note middle C not as {60}, but as {60, 60, ..., 60}.
         
-The equivalence classes may be combined as follows,
-and sometimes we distinguish them with different kinds of brackets;
-see Callendar, Quinn, and Tymoczko, "Generalized Voice-Leading Spaces,"
-_Science_ 320, 2008.
+r       Range equivalence in scores, e.g. for range 60, 61 == 1. 
+        Range equivalence is not actually used in either atonal theory or  
+        geometric theory, but it is useful here for implementing voice-leading 
+        between chords generated under other equivalence classes in 
+        actual scores that span more than one octave.
+
+o       Octave equivalence in atonal theory, e.g. 13 == 1 and -1 == 11.
+
+p       Permutational equivalence in atonal theory, e.g. 
+        {2, 3, 1} == {1, 2, 3}.
+        
+t       Transpositional equivalence in atonal theory, e.g.
+        {5, 6, 7} == {0, 1, 2}.
+        
+i       Inversional equivalence in atonal theory, e.g.
+        {0, 4, 7} == {0, -4, -7}.
+        
+op      Combining octave and permutational equivalence in atonal theory
+        defines the "pitch-class sets."
+
+opt     Combining octave, permutational, and transpositional equivalence 
+        in atonal theory defines the "chord types."
+
+opi     Combines octave, permutational, and inversional equivalence.
+
+opti    Combining octave, permutational, transpositional, and inversional 
+        equivalence in atonal theory defines the "prime forms" or 
+        "set classes."
+        
+O       Octave equivalence in geometric theory. The fundamental domain 
+        is defined by the voices in a chord spanning an octave or less and
+        summing to 0. The corresponding orbifold is a hyperprism one 
+        octave long whose base is identified with its top, modulo a twist 
+        by one cyclical permutation of voices.
+
+P       Permutational equivalence in geometric theory, the same as p.
+
+T       Translational equivalence in geometric theory, e.g. {1, 2} == {7, 8}.
+        Represented by the chord always having a sum of pitches as close as 
+        possible to 0 (see below).
+
+I       Inversional equivalence in geometric theory, e.g.  
+        {0, 4, 7} == {0, -4, -7}. Represented as the inversion having the 
+        first interval between voices be smaller than or equal to the final 
+        interval. Care is needed to distinguish the mathematician's sense 
+        of 'invert', which means to reflect around a center, from the 
+        musician's sense of 'invert', which varies according to context but 
+        in practice often means 'revoice by adding an octave to the lowest 
+        tone of a chord.' Here, we use 'invert' and 'inversion' in the 
+        mathematician's sense, and we use the terms 'revoice' and 'voicing' 
+        for the musician's 'invert' and 'inversion'.
 
 OP      Tymoczko's orbifold for chords; i.e. chords with a 
         fixed number of voices in a harmonic context.
-        It forms a hyperprism with as many sides as voices and 
-        the ends identified by octave equivalence and a twist of 
-        voicing. In OP for trichords in 12TET, the augmented triads run up 
-        the middle of the prism, the two-pitch chords form the sides, and 
-        the one-pitch chords form the edges that join the sides.
-        Represented as vectors in parentheses (p1,...,pN);
+        It forms a hyperprism one octave long with as many sides as voices and 
+        the ends identified by octave equivalence and one cyclical permutation 
+        of voices, modulo the unordering. In OP for trichords in 12TET, the 
+        augmented triads run up the middle of the prism, the two-pitch chords 
+        form the sides, and the one-pitch chords form the edges that join the sides.
 
-OPC     Pitch-class set; i.e. chords with varying numbers of voices
-        in a harmonic context; represented as vectors in brackets [p1,...,pN].
-        
-OPT     Chord type; base layer of the OP prism, where the sum of each chord's 
-        pitches are as close as possible to 0. Note that CM and Cm are 
-        different OPT. Because the OP prism is canted down from the origin, 
-        at least one pitch in each OPT chord (excepting the origin itself) 
-        is negative.
+OPI     The OP prism modulo inversion, i.e. half of the OP prism.
 
-OPI     Normal voicing; not the same as 'normal form' 
-        but used for some of the same purposes.
-        In OP for trichords, OPI is the 1/3 of OP bounded by the 
-        orthogonal axis and the column of augmented triads.
-        Represented as vectors in angle brackets <p1,...,pN>
+OPT     Chord type; the base layer of the OP prism modulo the number of voices, 
+        where the sum of each chord's pitches are as close as possible to 0. 
+        Note that CM and Cm are different OPT. Because the OP prism is canted 
+        down from the origin, at least one pitch in each OPT chord (excepting 
+        the origin itself) is negative.
 
 OPTI    Set-class, not the same as 'prime form' but used for some of the same
         purposes. Note that CM and Cm are the same OPTI.
-        In OP for trichords, OPTI is the 1/6 of the OPT layer 
-        bounded by the origin and the augmented triad at the center.
-        Represented as vectors in slash brackets, /p1,...,pN\.
-
-RP      The chord space used in scores; chords with a fixed number of voices
-        in a contrapuntal context. Represented as vectors 
-        in double parentheses ((p1,...,pN)). Note that there exists 
-        RPC as well as OPC, RPT as well as OPT, and so on; if R is an 
-        integral multiple of the octave then these operations sound similar to 
-        the analogous operations under octave equivalence, but there are 
-        more choices of voice-leadings for a given progression.
+        In OP for trichords, OPTI is 1/2 of the OPT layer.
 
 OPERATIONS
 
-Each of the above equivalence classes is, of course, also an operation
-that sends chords outside an orbifold to chords inside the orbifold.
-We also define the following additional operations in OP (some 
-operations take an optional r parameter to apply in RP):
+Each of the above equivalence classes is, of course, an operation that sends 
+chords outside an orbifold to chords inside the orbifold. And we define the 
+following additional operations:
 
-T(c, n [, r])   Translate c by n. 
+T(p, x)         Translate p by x. 
 
-I(c, n [, r])   Reflect c around n.
+I(p [, x])      Reflect p around x, by default the octave.
 
 P               Send a major triad to the minor triad with the same root,      
                 or vice versa.
@@ -140,7 +163,7 @@ L               Send a major triad to the minor triad one major third higher,
 R               Send a major triad to the minor triad one minor third lower,
                 or vice versa.
                 
-D               Send any triad to the next triad a perfect fifth lower.
+D               Send any chord to the next chord a perfect fifth lower.
                 
 P, L, and R have been extended as follows, see Fiore and Satyendra, 
 "Generalized Contextual Groups", _Music Theory Online_ 11, August 2008:
@@ -158,22 +181,22 @@ Q(c, n, m)      Contexual transposition;
                 
 MUSICAL MEANING AND USE
 
-The chord space in most musicians' heads is a combination of OP and RP, 
-with reference to OPI and OPTI (actually, since harmonic analysts do in fact
-ignore unisons and doublings and so do not in fact ignore C, 
-these are OPC, RPC, OPCI, and OPCTI).
+The chord space in most musicians' heads is a combination of OP, OPT, and OPTI
+(actually, since analysts do in fact ignore unisons and doublings and so 
+do not in fact ignore C, these are OPC, OPTC, and OPTIC).
 
 In OP, root progressions are motions more or less up and down 
 the 'columns' of identically structured chords. Changes of chord type are 
 motions across the layers of differently structured chords.
 P, L, and R send major triads to their nearest minor neighbors,
-and vice versa. I reflects a chord across a layer of the prism.
+and vice versa. I reflects a chord across the middle of the prism.
 T moves a chord up and down the orthogonal axis of the prism.
 
 VOICE-LEADING
 
 Those operations that are defined only in OP can be extended to
-RP by revoicing the results (projecting from OP to RP).
+r or rp by revoicing the results (projecting from one point in OP to several 
+points in r or rp).
             
 The closest voice-leadings are between the closest chords in the space.
 The 'best' voice-leadings are closest first by 'smoothness,'
@@ -183,15 +206,15 @@ _The Geometry of Musical Chords_, 2005 (Princeton University).
 This concept of voice-leading applies in all equivalence classes, not 
 only to root progressions of chords, and the meaning of 'well-formed 
 voice-leading' changes according to the equivalence class. In OP it means 
-well-formed harmonic progression, in RP it also means well-formed 
+well-formed harmonic progression, in r or rp it also means well-formed 
 contrapuntal voice-leading.
 
-Or, to make it really simple, OP is harmony and RP is counterpoint.
+Or, to make it really simple, OP is harmony and r or rp is counterpoint.
     
-We do bijective contrapuntal voiceleading by connecting a chord in RP
-to a chord with a different OP by choosing the shortest path 
-through RP, optionally avoiding parallel fifths. 
-This invariably produces a well-formed voice-leading.
+We do bijective contrapuntal voiceleading by connecting a chord in r or rp 
+with one OP to another of the several chords in r or rp with a different OP 
+by choosing the shortest path through r or rp, optionally avoiding 
+parallel fifths. This invariably produces a well-formed voice-leading.
 
 PROJECTIONS
 
@@ -204,7 +227,7 @@ and where each element of the basis may be either identity
 (1) or any multiple of the octave (12).
 
 V(c [, n])      Iterates with optional stride n through all powers of the  
-                basis of OP under RP, for the purpose of revoicing the chord.
+                basis of OP under rp, for the purpose of revoicing the chord.
 
 S(c, v)         Projects the chord to the subspace defined by the basis
                 vector v, e.g. for trichords v := [0, 1, 0] picks the 
@@ -248,20 +271,13 @@ IMPLEMENTATION
 Operations implemented as member functions of Chord  
 do not operate upon self, but return a transformed copy of self.
 
-All functions that take a single Chord parameter are 
-implemented as member functions of Chord.
-
-All functions that take more than one Chord parameter,
-and some that take one Chord but refer to R, are
-implemented as member functions of Orbifold.
-
-Each function that implements an equivalence class has a name
-beginning with 'e', e.g. 'eO' for octave equivalence (pitch class)
-and 'eOPTI' for OPTI equivalence (set class).
-
 Each function that identifies an equivalence class has a name
 beginning with 'ise', e.g. 'iseO' for 'is in the fundamental 
-domain for octave equivalence.'
+domain for octave equivalence in geometric theory.'
+
+Each function that implements an equivalence class has a name
+beginning with 'e', e.g. 'eop' for pitch class or 'eOPTI' for 
+OPTI equivalence (set class).
 ]]
 end
 
@@ -272,42 +288,36 @@ require("Silencio")
 
 OCTAVE = 12
 
--- Returns the pitch under range equivalence.
+-- Middle C.
 
-function eR(pitch, range)
-    if range then
-        return pitch % range
-    else
-        return pitch
-    end
+MIDDLE_C = 60
+C4 = MIDDLE_C
+
+function er(pitch, range)
+    return pitch % range
 end
 
--- Returns the pitch under octave equivalence,
--- i.e. returns the pitch-class of the pitch.
-
-function eO(pitch)
-    return eR(pitch, OCTAVE)
+function eo(pitch)
+    return pitch % OCTAVE
 end
 
--- Returns the pitch translated by x, by default
--- under octave equivalence, optionally under
--- range equivalence.
+-- NOTE: Does NOT return the result under any 
+-- equivalence class.
 
-function T(pitch, x, range)
-    range = range or OCTAVE
-    return eR(pitch + x, range)
+function T(pitch, x)
+    return pitch + x
 end 
 
--- Returns the pitch reflected by x, by default
--- under octave equivalence, optionally under 
--- range equivalence.
+-- NOTE: Does NOT return the result under any 
+-- equivalence class.
 
-function I(pitch, x, range)
-    range = range or OCTAVE
-    return eR((range - eR(pitch, range)) + x, range)
+function I(pitch, x)
+    x = x or OCTAVE
+    return x - pitch
 end    
 
--- Returns the Euclidean distance between chords a and b.
+-- Returns the Euclidean distance between chords a and b,
+-- which must have the same number of voices.
 
 function euclidean(a, b)
     local sumOfSquaredDifferences = 0
@@ -429,11 +439,13 @@ function Chord:max()
     return highest
 end
 
--- Returns the range of the chord.
+-- Returns the range of the pitches in the chord.
 
 function Chord:range()
     return self:max() - self:min()
 end
+
+-- Returns a value copy of the chord.
 
 function Chord:clone()
     local chord = Chord:new()
@@ -455,34 +467,33 @@ function Chord:clone()
     return chord
 end
 
--- Returns whether the chord is in the fundamental domain
--- of R (range) equivalence.
-
-function Chord:iseR(range)
-    -- The chord must have a range less than or equal to the range.
-    if not (self:range() <= range) then
+function Chord:iser(r)
+    if not self:range() <= r then
         return false
     end
-    -- Then the chord must be on the right layer of the range orbifold.
-    -- The layers are perpendicular to the orthogonal axis.
-    local layer = self:sum()
-    if not ((0 <= layer) and (layer <= range)) then
+    if not self:min() >= 0 then
         return false
     end
     return true
 end
 
--- Returns whether the chord is in the fundamental domain
--- of O (octave) equivalence.
-
-function Chord:iseO()
-    return self:iseR(OCTAVE)
+function Chord:er(r)
+    local chord = self:clone()
+    for voice, pitch in ipairs(self) do
+        chord[voice] = pitch % r
+    end
+    return chord
 end
 
--- Returns whether the chord is in the fundamental domain
--- or P (permutational) equivalence.
+function Chord:iseo()
+    return self:iser(OCTAVE)
+end
 
-function Chord:iseP()
+function Chord:eo()
+    return self:er(OCTAVE)
+end
+
+function Chord:isep()
     for i = 1, #self - 1 do
         if not (self[i] <= self[i + 1]) then
             return false
@@ -491,8 +502,77 @@ function Chord:iseP()
     return true
 end
 
--- Returns whether the chord is in the fundamental domain
--- of T (transpositional) equivalence.
+function Chord:ep()
+    local chord = self:clone()
+    table.sort(chord)
+    return chord
+end
+
+function Chord:iset()
+    if self:min() == 0 then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:et()
+    local chord = self:clone()
+    local m = self:min()
+    for voice, pitch in ipairs(self) do
+        chord[voice] = pitch - m
+    end
+    return chord
+end
+
+function Chord:isei()
+    if ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:ei()
+    local chord = self:clone()
+    if chord:isei() then
+        return chord
+    else
+        return chord:I()
+    end
+end
+
+function Chord:eop()
+    return self:eo():ep()
+end
+
+function Chord:eoi()
+    return self:eo():ei()
+end
+
+function Chord:iseR(range)
+    -- The chord must have a range less than or equal to the length
+    -- of the fundamental domain.
+    if not (self:range() <= range) then
+        return false
+    end
+    -- Then the chord must be on the correct layer of the fundamental domain.
+    -- These layers are perpendicular to the orthogonal axis and 
+    -- begin at the origin.
+    local layer = self:sum()
+    if not ((0 <= layer) and (layer <= range)) then
+        return false
+    end
+    return true
+end
+
+function Chord:iseO()
+    return self:iseR(OCTAVE)
+end
+
+function Chord:iseP()
+    return self:isep()
+end
 
 function Chord:iseT()
     if (self:sum() == 0) then
@@ -502,15 +582,8 @@ function Chord:iseT()
     end
 end
 
--- Returns whether the chord is in the fundamental domain
--- of I (inversional) equivalence.
-
 function Chord:iseI()
-    if ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
-        return true
-    else
-        return false
-    end
+    return self:isei()
 end
 
 function Chord:distanceToOrthogonalAxis()
@@ -539,9 +612,6 @@ function Chord:iseV()
     return true
 end
 
--- Returns whether the chord is in the fundamental domain
--- of RP equivalence.
-
 function Chord:iseRP(range) 
     for i = 1, #self - 1 do
         if not (self[i] <= self[i + 1]) then
@@ -558,15 +628,9 @@ function Chord:iseRP(range)
     return true
 end
 
--- Returns whether the chord is in the fundamental domain
--- of OP equivalence.
-
 function Chord:iseOP()
     return self:iseRP(OCTAVE)
 end
-
--- Returns whether the chord is in the fundamental domain
--- of RT equivalence.
 
 function Chord:iseRT(range)
     if not (self:min() == self[1]) then
@@ -581,15 +645,9 @@ function Chord:iseRT(range)
     return true
 end
 
--- Returns whether the chord is in the fundamental domain
--- of OT equivalence.
-
 function Chord:iseOT()
     return self:iseRT(OCTAVE)
 end
-
--- Returns whether the chord is in the fundamental domain
--- of RI equivalence.
 
 function Chord:iseRI(range)
     if (self:iseR(range) and self:iseI()) then
@@ -599,15 +657,9 @@ function Chord:iseRI(range)
     end
 end
 
--- Returns whether the chord is in the fundamental domain
--- of OI equivalence.
-
 function Chord:iseOI()
     return self:iseRI(OCTAVE)
 end
-
--- Returns whether the chord is in the fundamental domain
--- of PT equivalence.
 
 function Chord:isePT()
     if (self:iseP() and self:iseT()) then
@@ -617,9 +669,6 @@ function Chord:isePT()
     end
 end
 
--- Returns whether the chord is in the fundamental domain
--- of PI equivalence.
-
 function Chord:isePI()
     if (self:iseP() and self:iseI()) then
         return true
@@ -628,9 +677,6 @@ function Chord:isePI()
     end
 end
 
--- Returns whether the chord is in the fundamental domain
--- of TI equivalence.
-
 function Chord:iseTI()
     if (self:iseT() and self:iseI()) then
         return true
@@ -638,9 +684,6 @@ function Chord:iseTI()
         return false
     end
 end
-
--- Returns whether the chord is in the fundamental domain
--- of RPT equivalence.
 
 function Chord:iseRPT(range)
     if not (self[#self] <= (self[1] + range)) then
@@ -657,15 +700,9 @@ function Chord:iseRPT(range)
     return true
 end
 
--- Returns whether the chord is in the fundamental domain
--- of OPT equivalence.
-
 function Chord:iseOPT()
     return self:iseRPT(OCTAVE)
 end
-
--- Returns whether the chord is in the fundamental domain
--- of RPI equivalence.
 
 function Chord:iseRPI(range)
     if self:iseRP(range) and self:iseI() then
@@ -675,15 +712,9 @@ function Chord:iseRPI(range)
     end
 end
 
--- Returns whether the chord is in the fundamental domain
--- of OPI equivalence.
-
 function Chord:iseOPI()
     return self:iseRPI(OCTAVE)
 end
-
--- Returns whether the chord is in the fundamental domain
--- of RPTI equivalence.
 
 function Chord:iseRPTI(range)
     if self:iseRPT(range) and self:iseI() then
@@ -692,9 +723,6 @@ function Chord:iseRPTI(range)
         return false
     end
 end
-
--- Returns whether the chord is in the fundamental domain
--- of OPTI equivalence.
 
 function Chord:iseOPTI()
     return self:iseRPTI(OCTAVE)
@@ -789,36 +817,26 @@ function Chord:voicings()
     return voicings
 end
 
--- Returns a copy of the chord transposed by x. 
-
 function Chord:T(x)  
-    chord = self:clone()
+    local chord = self:clone()
     for voice, pitch in ipairs(self) do
         chord[voice] = T(pitch, x)
     end
     return chord
 end
 
--- Returns a copy of the chord reflected around x.
-
 function Chord:I(x)
-    chord = self:clone()
+    x = x or OCTAVE
+    local chord = self:clone()
     for voice, pitch in ipairs(self) do
         chord[voice] = I(pitch, x)
     end
     return chord
 end
 
--- Returns the chord under permutational equivalence,
--- i.e. sorted.
-
 function Chord:eP()
-    local chord = self:clone()
-    table.sort(chord)
-    return chord
+    return self:ep()
 end
-
--- Returns a copy of the chord under range equivalence.
 
 function Chord:eR(range)
     local chord = self:clone()
@@ -849,22 +867,13 @@ function Chord:eR(range)
     return chord
 end
 
--- Returns a copy of the cord both under range equivalence and 
--- under permutational equivalence, i.e. sorted.
-
 function Chord:eRP(range)
     return self:eR(range):P()
 end
 
--- Returns a copy of the chord under octave equivalence,
--- i.e. the pitch-classes in this.
-
 function Chord:eO()
     return self:eR(OCTAVE)
 end
-
--- Returns a copy of the chord both under octave equivalence and
--- under permutational equivalence, i.e. sorted.
 
 function Chord:eOP()
     return self:eO():eP()
@@ -1274,8 +1283,8 @@ end
 
 -- Returns a label for a chord.
 
-function Orbifold:label(chord)
-    return string.format('C   %s\nT   %s\n0   %s\n1   %s\n0-1 %s\nSum %f', self:tones(c), self:eT(c), self:eOPI(c), self:eOPTI(chord), chord:sum())
+function Chord:label()
+    return string.format('C   %s\neo  %s\neop %s\neoi %s', tostring(self), tostring(self:eo()), tostring(self:eop()), tostring(self:ei()))
 end
 
 -- Returns the chord inverted by the sum of its first two voices.
