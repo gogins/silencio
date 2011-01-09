@@ -158,34 +158,57 @@ function canvas:drawChord(chord)
     gl.Translate(chord[1], chord[2], chord[3])
     gl.Begin('QUADS')
     quadric = glu.NewQuadric()
-    
-    --gl.Color(note[CHANNEL] / 16.0, note[CHANNEL] / 16.0, 1.0, note[VELOCITY] / 127)
-    quadric:Sphere(1/10, 32, 32)
+    gl.Color(chord:sum() / 12)
+    local radius = 0
+    if self.chordView:isE(chord) then
+        radius = 1/12
+    else
+        radius = 1/36
+    end
+    quadric:Sphere(radius, 16, 16)
     gl.End()
     gl.PopMatrix()
 end
 
 function canvas:drawGrid()
     gl.Begin('LINES')
-    for xi, x in ipairs(self.gridXs) do
-        for yi, y in ipairs(self.gridYs) do
-            for zi, z in ipairs(self.gridZs) do
-                if y - self.beginY == 36 then
-                    gl.Color(1, 0, 0, 0.5)
-                else
-                    gl.Color(0, 1, 0, 0.5)
-                end
-                gl.Vertex(self.beginX, y, z)
-                gl.Vertex(self.endX, y, z)
-                gl.Vertex(x, self.beginY, z)
-                gl.Vertex(x, self.endY, z)
-                gl.Vertex(x, y, self.beginZ)
-                gl.Vertex(x, y, self.endZ)
+    local range = OCTAVE * self.chordView.octaves
+    gl.Color(1, 0, 0, 0.5)
+    gl.Vertex(0, 0, 0)
+    gl.Vertex(0, 0, range)
+    gl.Vertex(0, 0, 0)
+    gl.Vertex(0, range, 0)
+    gl.Vertex(0, 0, 0)
+    gl.Vertex(range, 0, 0)
+    gl.Color(0, 1, 0, 0.5)
+    gl.Vertex(0, 0, 0)
+    local orthogonalAxisPoints = math.sin(math.pi / 4) * range
+    gl.Vertex(orthogonalAxisPoints, orthogonalAxisPoints, orthogonalAxisPoints)
+    gl.Color(0.3, 0.3, 0.3, 0.5)
+    for i, c0 in ipairs(self.chordView.chords) do
+        if self.chordView:isE(c0) then    
+            c1 = c0:clone()
+            c1[1] = c0[1] + 1
+            if self.chordView:isE(c1) then
+                gl.Vertex(c0[1], c0[2], c0[3])
+                gl.Vertex(c1[1], c1[2], c1[3])
+            end
+            c2 = c0:clone()
+            c2[2] = c0[2] + 1
+            if self.chordView:isE(c2) then
+                gl.Vertex(c0[1], c0[2], c0[3])
+                gl.Vertex(c2[1], c2[2], c2[3])
+            end
+            c3 = c0:clone()
+            c3[3] = c0[3] + 1
+            if self.chordView:isE(c3) then
+                gl.Vertex(c0[1], c0[2], c0[3])
+                gl.Vertex(c3[1], c3[2], c3[3])
             end
         end
     end
     gl.End()
-end
+end 
 
 function canvas:action(x, y)
     iup.GLMakeCurrent(self)
@@ -200,7 +223,7 @@ function canvas:action(x, y)
     gl.Translate(-tx,-ty,-tz)
     gl.Translate(-self.centerX, -self.centerY, -self.centerZ)
     gl.Translate(tx,ty,tz)
-    --self:drawGrid()
+    self:drawGrid()
     for i, chord in ipairs(self.chordView.chords) do
         self:drawChord(chord)
     end
@@ -274,6 +297,9 @@ function canvas:map_cb()
     gl.Material('FRONT_AND_BACK', 'SPECULAR', 1, 1, 1, 1)
     gl.Material('FRONT_AND_BACK', 'EMISSION', 0, 0, 0, 1)
     gl.Enable('NORMALIZE')
+    gl.Enable('LIGHTING')
+    print('Lighting enabled.')
+    light = true
 end
 
 ChordView = {}
@@ -290,45 +316,53 @@ function ChordView:createChords()
         for v2 = -self.octaves * 12, self.octaves * 12 do
             for v3 = -self.octaves * 12, self.octaves * 12 do
                 chord = Chord:new{v1, v2, v3}
-                if self.equivalence == 'RP' then
-                    if chord:iseRP(self.octaves) then
-                        table.insert(self.chords, chord)
-                    end
-                end
-                if self.equivalence == 'OP' then
-                    if chord:iseOP() then
-                        table.insert(self.chords, chord)
-                    end
-                end
-                if self.equivalence == 'OT' then
-                    if chord:iseOT() then
-                        table.insert(self.chords, chord)
-                    end
-                end
-                if self.equivalence == 'OI' then
-                    if chord:iseOI() then
-                        table.insert(self.chords, chord)
-                    end
-                end
-                if self.equivalence == 'OPT' then
-                    if chord:iseOPT() then
-                        table.insert(self.chords, chord)
-                    end
-                end
-                if self.equivalence == 'OPI' then
-                    if chord:iseOPI() then
-                        table.insert(self.chords, chord)
-                    end
-                end
-                if self.equivalence == 'OPTI' then
-                    if chord:iseOPTI() then
-                        table.insert(self.chords, chord)
-                    end
+                if self:isE(chord) then
+                    table.insert(self.chords, chord)
+                    print(chord:label())                    
                 end
             end
         end
     end
     print(string.format('Created %s chords.', #self.chords))
+end
+
+function ChordView:isE(chord)
+    if self.equivalence == 'R' then
+        return chord:iseR(self.octaves * OCTAVE)
+    end
+    if self.equivalence == 'O' then
+        return chord:iseO()
+    end
+    if self.equivalence == 'P' then
+        return chord:iseP()
+    end
+    if self.equivalence == 'T' then
+        return chord:iseT()
+    end
+    if self.equivalence == 'I' then
+        return chord:iseI()
+    end
+    if self.equivalence == 'RP' then
+        return chord:iseRP(self.octaves * OCTAVE)
+    end
+    if self.equivalence == 'OP' then
+        return chord:iseOP()
+    end
+    if self.equivalence == 'OT' then
+        return chord:iseOT()
+    end
+    if self.equivalence == 'OI' then
+        return chord:iseOI()
+    end
+    if self.equivalence == 'OPT' then
+        return chord:iseOPT()
+    end
+    if self.equivalence == 'OPI' then
+        return chord:iseOPI()
+    end
+    if self.equivalence == 'OPTI' then
+        return chord:iseOPTI()
+    end
 end
 
 function ChordView:findSize()
@@ -362,10 +396,10 @@ function ChordView:display()
 end
 
 chordView = ChordView:new()
-chordView.equivalence = 'OP'
+chordView.octaves = 3
+chordView.equivalence = 'OPT'
 chordView:createChords()
 chordView:findSize()
 chordView:display()
-
 
 return ChordSpaceView
