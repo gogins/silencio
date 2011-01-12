@@ -8,7 +8,7 @@ playing the results using Csound. The script demonstrates:
 
 --  The triadic neo-Riemannian transformations
     of leading-tone exchange (press l), 
-    parallel (press p),  relative (press r),
+    parallel (press p), relative (press r),
     and dominant (press d) progression. 
     See Alissa S. Crans, Thomas M. Fiore, and Raymon Satyendra, 
     _Musical Actions of Dihedral Groups_, 2008 
@@ -158,7 +158,7 @@ function canvas:drawChord(chord)
     gl.Translate(chord[1], chord[2], chord[3])
     gl.Begin('QUADS')
     quadric = glu.NewQuadric()
-    gl.Color(chord:sum() / 12)
+    gl.Color(chord:sum() / 12, 0.5, chord:sum() / 12)
     local radius = 0
     if self.chordView:isE(chord) then
         radius = 1/12
@@ -318,10 +318,13 @@ function ChordView:createChords()
                 chord = Chord:new{v1, v2, v3}
                 if self:isE(chord) then
                     table.insert(self.chords, chord)
-                    print(chord:label())                    
                 end
-            end
+             end
         end
+    end
+    table.sort(self.chords)
+    for i, chord in ipairs(self.chords) do
+        print(chord:label())   
     end
     print(string.format('Created %s chords.', #self.chords))
 end

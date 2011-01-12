@@ -38,8 +38,9 @@ in some sense, represent doublings or halvings of frequency.
 
 Pitches and intervals are represented as real numbers. 
 Middle C is 60 and the octave is 12. Our usual system of 12-tone 
-equal temperament and MIDI are completely represented by the whole numbers, 
-but any and all other pitches can be represented simply by using fractions.
+equal temperament, as well as MIDI key numbers, are completely represented 
+by the whole numbers, but any and all other pitches can be represented 
+simply by using fractions.
 
 A chord is simply a set of voices heard at the same time or, 
 what is the same thing, a point in a chord space having one dimension of 
@@ -50,11 +51,11 @@ considered as a sequence of more or less fleeting chords.
 
 EQUIVALENCE CLASSES
 
-An equivalence class is a property that identifies elements of a 
+An equivalence class is an operation that identifies elements of a 
 set. Equivalence classes induce quotient spaces or orbifolds, where
 the equivalence class identifies points on one face of the orbifold 
-with points on an opposing face. The fundamental domain of the group
-that generates the orbifold is the space "within" the orbifold.
+with points on an opposing face. The fundamental domain of the 
+equivalence class is the space "within" the orbifold.
 
 Plain chord space has no equivalence classes. Ordered chords are represented 
 as vectors in braces {p1, ..., pN}. Unordered chords are represented as 
@@ -65,12 +66,16 @@ The following equivalence classes apply to pitches and chords,
 and induce different orbifolds. Classes with lower-case names arise from
 atonal set theory, and classes with upper-case names arise from geometric
 theory. Equivalence classes can be combined (Callendar, Quinn, and Tymoczko, 
-"Generalized Voice-Leading Spaces,"_Science_ 320, 2008).
+"Generalized Voice-Leading Spaces,"_Science_ 320, 2008), and the more 
+equivalence classes are combined, the more abstract is the resulting orbifold
+compared to the original parent space.
  
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
         We never assume cardinality equivalence here, because we are 
         working in chord spaces of fixed dimensionality; e.g. we represent
         the note middle C not as {60}, but as {60, 60, ..., 60}.
+        Retaining cardinality ensures that there is a proto-metric in
+        plain chord space that is inherited by all child chord spaces.
         
 r       Range equivalence in scores, e.g. for range 60, 61 == 1. 
         Range equivalence is not actually used in either atonal theory or  
@@ -87,7 +92,7 @@ t       Transpositional equivalence in atonal theory, e.g.
         {5, 6, 7} == {0, 1, 2}.
         
 i       Inversional equivalence in atonal theory, e.g.
-        {0, 4, 7} == {0, -4, -7}.
+        {0, 4, 7} == {0, 8, 5}.
         
 op      Combining octave and permutational equivalence in atonal theory
         defines the "pitch-class sets."
@@ -102,19 +107,19 @@ opti    Combining octave, permutational, transpositional, and inversional
         "set classes."
         
 O       Octave equivalence in geometric theory. The fundamental domain 
-        is defined by the voices in a chord spanning an octave or less and
+        is defined by the pitches in a chord spanning an octave or less and
         summing to 0. The corresponding orbifold is a hyperprism one 
         octave long whose base is identified with its top, modulo a twist 
         by one cyclical permutation of voices.
 
 P       Permutational equivalence in geometric theory, the same as p.
 
-T       Translational equivalence in geometric theory, e.g. {1, 2} == {7, 8}.
+T       Transpositional equivalence in geometric theory, e.g. {1, 2} == {7, 8}.
         Represented by the chord always having a sum of pitches as close as 
         possible to 0 (see below).
 
-I       Inversional equivalence in geometric theory, e.g.  
-        {0, 4, 7} == {0, -4, -7}. Represented as the inversion having the 
+I       Inversional equivalence in geometric theory, the same as i. 
+        Represented as the inversion having the 
         first interval between voices be smaller than or equal to the final 
         interval. Care is needed to distinguish the mathematician's sense 
         of 'invert', which means to reflect around a center, from the 
@@ -129,20 +134,22 @@ OP      Tymoczko's orbifold for chords; i.e. chords with a
         It forms a hyperprism one octave long with as many sides as voices and 
         the ends identified by octave equivalence and one cyclical permutation 
         of voices, modulo the unordering. In OP for trichords in 12TET, the 
-        augmented triads run up the middle of the prism, the two-pitch chords 
-        form the sides, and the one-pitch chords form the edges that join the sides.
+        augmented triads run up the middle of the prism, the major and minor 
+        triads are in 6 alternating columns around the augmented triads, the 
+        two-pitch chords form the 3 sides, and the one-pitch chords form the 
+        3 edges that join the sides.
 
-OPI     The OP prism modulo inversion, i.e. half of the OP prism.
+OPI     The OP prism, modulo inversion, i.e. 1/2 of the OP prism.
 
-OPT     Chord type; the base layer of the OP prism modulo the number of voices, 
-        where the sum of each chord's pitches are as close as possible to 0. 
-        Note that CM and Cm are different OPT. Because the OP prism is canted 
-        down from the origin, at least one pitch in each OPT chord (excepting 
-        the origin itself) is negative.
+OPT     Chord type; the layer of the OP prism as close as possible to the 
+        origin, modulo the number of voices. Note that CM and Cm are 
+        different OPT. Because the OP prism is canted down from the origin, 
+        at least one pitch in each OPT chord (excepting the origin itself) 
+        is negative.
 
-OPTI    Set-class, not the same as 'prime form' but used for some of the same
-        purposes. Note that CM and Cm are the same OPTI.
-        In OP for trichords, OPTI is 1/2 of the OPT layer.
+OPTI    The OPT layer, modulo inversion, i.e. 1/2 of the OPT layer.
+        Set-class; not the same pitches as 'prime form,' but the same 
+        pitch-class sets. Note that CM and Cm are the same OPTI.
 
 OPERATIONS
 
@@ -155,15 +162,17 @@ T(p, x)         Translate p by x.
 I(p [, x])      Reflect p around x, by default the octave.
 
 P               Send a major triad to the minor triad with the same root,      
-                or vice versa.
+                or vice versa (Riemann's parallel transformation).
 
 L               Send a major triad to the minor triad one major third higher,
-                or vice versa.
+                or vice versa (Riemann's Leittonwechsel or leading-tone 
+                exchange).
 
 R               Send a major triad to the minor triad one minor third lower,
-                or vice versa.
-                
-D               Send any chord to the next chord a perfect fifth lower.
+                or vice versa (Riemann's relative transformation)
+                .
+D               Send a triad to the next triad a perfect fifth lower
+                (dominant transformation).
                 
 P, L, and R have been extended as follows, see Fiore and Satyendra, 
 "Generalized Contextual Groups", _Music Theory Online_ 11, August 2008:
@@ -178,6 +187,14 @@ Q(c, n, m)      Contexual transposition;
                 Q(c, n, m) := T(c, n) if c is a T-form of m,
                 or T(c, -n) if c is an I-form of M. Not a generalized form
                 of L or R; but, like them, K and Q generate the T-I group.
+                
+TODO: Implement Rachel Hall, "Linear Contextual Transformations," 2009, 
+which seems to further generalize the Generalized Contextual Group, and to 
+implement it using affine transformations in chord space, and 
+Maxx Cho, "The Voice-Leading Automorphism and Riemannian Operators," 2009,
+which may show that tonality arises from voice-leading automorphism in the 
+Riemannian group.
+
                 
 MUSICAL MEANING AND USE
 
@@ -277,7 +294,7 @@ domain for octave equivalence in geometric theory.'
 
 Each function that implements an equivalence class has a name
 beginning with 'e', e.g. 'eop' for pitch class or 'eOPTI' for 
-OPTI equivalence (set class).
+set class.
 ]]
 end
 
@@ -427,6 +444,23 @@ function Chord:min()
     return lowest
 end
 
+-- Returns the minimum interval in the chord.
+
+function Chord:minimumInterval()
+    local minimumInterval = math.abs(self[1] - self[2])
+    for v1 = 1, #self do
+        for v2 = 1, #self do
+            if v1 ~= v2 then
+                local interval = math.abs(self[v1] - self[v2])
+                if interval < minimumInterval then
+                    minimumInterval = interval
+                end
+            end
+        end
+    end
+    return minimumInterval
+end
+
 -- Returns the highest pitch in the chord.
 
 function Chord:max()
@@ -468,7 +502,7 @@ function Chord:clone()
 end
 
 function Chord:iser(r)
-    if not self:range() <= r then
+    if not self:range() < r then
         return false
     end
     if not self:min() >= 0 then
@@ -518,11 +552,15 @@ end
 
 function Chord:et()
     local chord = self:clone()
-    local m = self:min()
-    for voice, pitch in ipairs(self) do
-        chord[voice] = pitch - m
+    local minimum = self:min()
+    for voice, pitch in ipairs(chord) do
+        chord[voice] = pitch - minimum
     end
     return chord
+end
+
+function Chord:eot()
+    return self:eo():et()
 end
 
 function Chord:isei()
@@ -550,10 +588,14 @@ function Chord:eoi()
     return self:eo():ei()
 end
 
+function Chord:eopt()
+    return self:eo():et():ep()
+end
+
 function Chord:iseR(range)
     -- The chord must have a range less than or equal to the length
     -- of the fundamental domain.
-    if not (self:range() <= range) then
+    if not (self:max() <= (self:min() + range)) then
         return false
     end
     -- Then the chord must be on the correct layer of the fundamental domain.
@@ -686,22 +728,70 @@ function Chord:iseTI()
 end
 
 function Chord:iseRPT(range)
-    if not (self[#self] <= (self[1] + range)) then
+    if self == self:eRPT(range) then
+        return true
+    else
         return false
     end
-    if not (self:sum() == 0) then
-        return false
-    end
-    for i = 1, #self - 1 do
-        if not ((self[1] + range - self[#self]) <= (self[i + 1] - self[i])) then
-            return false
-        end
-    end
-    return true
 end
 
-function Chord:iseOPT()
-    return self:iseRPT(OCTAVE)
+function Chord:origin()
+    local chord = self:clone()
+    for voice = 1, #chord do
+        chord[voice] = 0
+    end
+    return chord
+end
+
+function Chord:distanceToOrthogonalAxis()
+    local d = self:sum() / #self
+    local intersection = self:clone()
+    for voice = 1, #self do
+        intersection[voice] = d
+    end
+    return euclidean(self, intersection)     
+end
+
+function Chord:closestVoicing()
+    local voicings = self:voicings()
+    local voicing = voicings[1]
+    local minimumDistance = voicing:distanceToOrthogonalAxis()
+    for i = 2, #voicings do
+        local distance = voicings[i]:distanceToOrthogonalAxis()
+        if distance < minimumDistance then
+            minimumDistance = distance
+            voicing = voicings[i]
+        end
+    end
+    print(string.format('Chord: %s  closest voicing: %s  distance from origin: %f', tostring(self), tostring(voicing), minimumDistance))
+    return voicing
+end
+
+function Chord:iseOPT(step)
+    step = step or 1
+    if not chord:iseOP() then
+        return false
+    end
+    local chord = self:clone()
+    while true do
+        local sum = chord:sum()
+        -- Crawl down the orthogonal axis towards the base.
+        if (sum <= 0) then
+            if (sum < 0) then
+                -- The base is actually more than 1 layer thick,
+                -- because the columns of T related chords are canted,
+                -- so if we have gone below the base we must come back up
+                -- by one step of transposition in all voices.
+                chord = chord:T(step)
+            end
+            if chord == chord:closestVoicing() then
+                return true
+            else
+                return false
+            end
+        end
+        chord = chord:T(-step)
+    end
 end
 
 function Chord:iseRPI(range)
@@ -776,8 +866,8 @@ end
 function Chord:cyclicalPermutations()
     local chord = self:eOP()
     local permutations = {}
-    permutations[1] = c
-    for i = 2, self.N do
+    permutations[1] = chord
+    for i = 2, #self do
         chord = chord:cycle()
         permutations[i] = chord
     end
@@ -839,30 +929,11 @@ function Chord:eP()
 end
 
 function Chord:eR(range)
-    local chord = self:clone()
-    -- First bring each voice inside the range.
-    -- This ensures the chord is close enough to the orthogonal axis.
-    for voice, pitch in ipairs(self) do
-        chord[voice] = eR(pitch, range)
-    end
-    -- If the chord is then already inside the orbifold, return it.
-    if chord:iseR(range) then
-        return chord
-    end
-    -- If the chord is below the orbifold, 
-    -- revoice it upwards until it is inside.
-    local sum = chord:sum()
-    while (sum < 0) do
-        chord = chord:V(1)
-        sum = chord:sum()
-        print(sum, chord)
-    end
+    local chord = self:eop()
     -- If the chord is above the orbifold,
     -- revoice it downwards until it is inside.
-    while (sum > range) do
+    while (chord:sum() > range) do
         chord = chord:V(-1)
-        sum = chord:sum()
-        print(sum, chord)
     end
     return chord
 end
@@ -879,20 +950,11 @@ function Chord:eOP()
     return self:eO():eP()
 end
 
--- Returns the chord transposed stepwise such that its voices sum to
--- as little greater than 0 as possible.
+-- Returns the chord transposed such that its voices sum to 0.
 
-function Chord:eT(step)
-    step = step or 1
-    local distancePerVoice = self:sum() / #self
-    local fraction = math.fmod(distancePerVoice, step)
-    -- Round off to the size of the pitch step.
-    local distancePerVoice = distancePerVoice - fraction
-    local chord = self:clone()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = pitch - distancePerVoice
-    end
-    return chord
+function Chord:eT()
+    local chord = self:eopt()
+    return chord:eR()
 end
 
 -- Move 1 voice of the chord,
@@ -1042,14 +1104,6 @@ function Orbifold:eOPI(chord)
     return orthogonalVoicing
 end
  
-function Orbifold:eOPT(chord)
-    return chord:eOP():eT()
-end
-
-function Orbifold:eOPTI(chord)
-    return chord:eOPI(chord):eT()
-end
-
 -- Returns the next voicing of the chord that is under RP, 
 -- or nil if the chord is higher than RP.
 
@@ -1284,7 +1338,7 @@ end
 -- Returns a label for a chord.
 
 function Chord:label()
-    return string.format('C   %s\neo  %s\neop %s\neoi %s', tostring(self), tostring(self:eo()), tostring(self:eop()), tostring(self:ei()))
+    return string.format('C     %s\neo    %s\neop   %s\neoi   %s\neopt  %s\nsum   %f', tostring(self), tostring(self:eo()), tostring(self:eop()), tostring(self:eoi()), tostring(self:eopt()), self:sum())
 end
 
 -- Returns the chord inverted by the sum of its first two voices.
