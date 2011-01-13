@@ -27,10 +27,23 @@ function result(...)
     end
 end
 
+chord = Chord:new{7, 0, 4}
+for i = -12, 12 do
+    c = chord:T(i)
+    print('c', c, 'eo', c:eo(), 'eop', c:eop(), 'et', c:et(), 'eopt', c:eopt())
+end
+
+
+voicings = Chord:new{0, 4, 7}:voicings()
+for i, v in ipairs(voicings) do
+    print('v', v, 'eOP', v:eOP())
+end
+os.exit()
+
 test('a = Chord:new()')
 result('a', a)
 test('a = Chord:new(); a:resize(3)')
-result('a', a, 'a.channel[3]', a.channel[3])
+result('a', a, 'a.channel[3]', a.channel[3])    
 result('a[1]', a[1])
 test('a[1] = 2')
 result('a', a)

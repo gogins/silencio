@@ -158,7 +158,16 @@ function canvas:drawChord(chord)
     gl.Translate(chord[1], chord[2], chord[3])
     gl.Begin('QUADS')
     quadric = glu.NewQuadric()
-    gl.Color(chord:sum() / 12, 0.5, chord:sum() / 12)
+    eopt = chord:eopt()
+    if eopt      == self.chordView.augmentedTriad then
+        gl.Color(1, 1, 1)
+    else if eopt == self.chordView.majorTriad1 or eopt == self.chordView.majorTriad2 or eopt == self.chordView.majorTriad3 then
+        gl.Color(1, 0, 0)
+    else if eopt == self.chordView.minorTriad1 or eopt == self.chordView.minorTriad2 or eopt == self.chordView.minorTriad3 then
+        gl.Color(0, 0, 1)
+    else
+        gl.Color(chord:sum() / 36, 1, chord:sum() / 36)
+    end end end
     local radius = 0
     if self.chordView:isE(chord) then
         radius = 1/12
@@ -312,6 +321,13 @@ function ChordView:new(o)
 end
 
 function ChordView:createChords()
+    self.augmentedTriad = Chord:new{0, 4, 8}
+    self.majorTriad1 = Chord:new{0, 4, 7}
+    self.majorTriad2 = Chord:new{0, 3, 8}
+    self.majorTriad3 = Chord:new{0, 5, 9}
+    self.minorTriad1 = Chord:new{0, 3, 7}
+    self.minorTriad2 = Chord:new{0, 5, 8}
+    self.minorTriad3 = Chord:new{0, 4, 9}
     for v1 = -self.octaves * 12, self.octaves * 12 do
         for v2 = -self.octaves * 12, self.octaves * 12 do
             for v3 = -self.octaves * 12, self.octaves * 12 do
@@ -326,7 +342,7 @@ function ChordView:createChords()
     for i, chord in ipairs(self.chords) do
         print(chord:label())   
     end
-    print(string.format('Created %s chords.', #self.chords))
+    print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 
 function ChordView:isE(chord)
