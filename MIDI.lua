@@ -1,8 +1,10 @@
 #!/usr/bin/lua
 --require 'DataDumper'   -- http://lua-users.org/wiki/DataDumper
 local M = {} -- public interface
-M.Version = '4.6'
-M.VersionDate = '08jan2011'
+M.Version = '4.8'
+M.VersionDate = '10jan2011'
+-- 20110110 4.8 note_on with velocity=0 treated as a note-off
+-- 20110109 4.7 many global vars localised, passes lualint :-)
 -- 20110108 4.6 duplicate int2sevenbits removed, passes lualint -r
 -- 20110108 4.5 related end_track bugs fixed around line 516
 -- 20110108 4.4 null text_event bug fixed
@@ -190,10 +192,10 @@ The options:
 
 	local i = 1     -- in Lua, i is the pointer to within the trackdata
 	while i < #trackdata do   -- loop while there's anything to analyze
-		eot = false -- when True, the event registrar aborts this loop 4.6
+		local eot = false -- when True event registrar aborts this loop 4.6,4.7
    		event_count = event_count + 1
 
-		E = {} -- E for event. We feed it to the event registrar at the end.
+		local E = {} -- event; feed it to the event registrar at the end. 4.7
 
 		-- Slice off the delta time code, and analyze it
 		local time
@@ -514,7 +516,7 @@ local function _encode(events_lol)
 
 	if not never_add_eot then -- One way or another, tack on an 'end_track'
 		if events then
-			last = events[#events] -- 4.5
+			local last = events[#events] -- 4.5, 4.7
 			if not (last[1] == 'end_track') then  -- no end_track already
 				if (last[1] == 'text_event' and last[3] == '') then -- 4.5,4.6
 					-- 0-length text event at track-end. 
@@ -536,20 +538,20 @@ local function _encode(events_lol)
 		end
 	end
 
-	maybe_running_status = not no_running_status
-	last_status = -1
+	-- maybe_running_status = not no_running_status  -- unused? 4.7
+	local last_status = -1 -- 4.7
 
 	for k,E in ipairs(events) do
 		-- get rid of the two pop's and increase the other E[] indices by two
 		if not E then break end
 
-		event = E[1]
+		local event = E[1] -- 4.7
 		if #event < 1 then break end
 
-		dtime = E[2]
+		local dtime = E[2] -- 4.7
 		-- print('event='..event..' dtime='..dtime)
 
-		event_data = ''
+		local event_data = '' -- 4.7
 
 		if    -- MIDI events -- eligible for running status
 			 event	== 'note_on'
@@ -561,6 +563,8 @@ local function _encode(events_lol)
 			 or event == 'pitch_wheel_change'   then
 
 			-- This block is where we spend most of the time.  Gotta be tight.
+			local status = nil     -- 4.7
+			local parameters = nil -- 4.7
 			if (event == 'note_off') then
 				status = 128 + (E[3] % 16)
 				parameters = int2sevenbits(E[4]%128)..int2sevenbits(E[5]%128)
@@ -1063,8 +1067,9 @@ function M.midi2opus(s)
 			warn('midi2opus: track_length '..track_length..' is too large')
 			return {}
 		end
-		my_midi_track = string.sub(s, i, i+track_length-1); i = i+track_length
-		my_track = _decode(my_midi_track)
+		local my_midi_track = string.sub(s, i, i+track_length-1) -- 4.7
+		i = i+track_length
+		local my_track = _decode(my_midi_track) -- 4.7
 		my_opus[#my_opus+1] = my_track
 	end
 	return my_opus
@@ -1126,17 +1131,8 @@ function M.opus2score(opus)
 		local chapitch2note_on_events = {}   -- 4.0
 		local k; for k,opus_event in ipairs(opus_track) do
 			ticks_so_far = ticks_so_far + opus_event[2]
-			if opus_event[1] == 'note_on' then
-				local cha = opus_event[3]  -- 4.0
-				local pitch = opus_event[4]
-				local new_e = {'note',ticks_so_far,0,cha,pitch,opus_event[5]}
-				local key = cha*128 + pitch  -- 4.0
-				if chapitch2note_on_events[key] then
-					table.insert(chapitch2note_on_events[key], new_e)
-				else
-					chapitch2note_on_events[key] = {new_e,}
-				end
-			elseif opus_event[1] == 'note_off' then
+			if opus_event[1] == 'note_off' or
+			 (opus_event[1] == 'note_on' and opus_event[5] == 0) then -- 4.8
 				local cha = opus_event[3]  -- 4.0
 				local pitch = opus_event[4]
 				local key = cha*128 + pitch  -- 4.0
@@ -1146,6 +1142,16 @@ function M.opus2score(opus)
 					score_track[#score_track+1] = new_e
 				else
 					warn('note_off without a note_on, cha='..tostring(cha)..' pitch='..tostring(pitch))
+				end
+			elseif opus_event[1] == 'note_on' then
+				local cha = opus_event[3]  -- 4.0
+				local pitch = opus_event[4]
+				local new_e = {'note',ticks_so_far,0,cha,pitch,opus_event[5]}
+				local key = cha*128 + pitch  -- 4.0
+				if chapitch2note_on_events[key] then
+					table.insert(chapitch2note_on_events[key], new_e)
+				else
+					chapitch2note_on_events[key] = {new_e,}
 				end
 			else
 				local new_e = copy(opus_event)
@@ -1170,9 +1176,9 @@ function M.score2opus(score)
 		local k,scoreevent; for k,scoreevent in ipairs(score_track) do
 			local continue = false
 			if scoreevent[1] == 'note' then
-				note_on_event = {'note_on',scoreevent[2],
+				local note_on_event = {'note_on',scoreevent[2],
 				 scoreevent[4],scoreevent[5],scoreevent[6]}
-				note_off_event = {'note_off',scoreevent[2]+scoreevent[3],
+				local note_off_event = {'note_off',scoreevent[2]+scoreevent[3],
 				 scoreevent[4],scoreevent[5],scoreevent[6]}
 				if time2events[note_on_event[2]] then
 				   table.insert(time2events[note_on_event[2]], note_on_event)
@@ -1223,7 +1229,7 @@ end
 
 function M.score_type(t)
 	if t == nil or type(t) ~= 'table' or #t < 2 then return '' end
-	i = 2   -- ignore first element
+	local i = 2   -- ignore first element  -- 4.7
 	while i <= #t do
 		local k,event; for k,event in ipairs(t[i]) do
 			if event[1] == 'note' then
@@ -1279,13 +1285,13 @@ function M.score2stats(opus_or_score)
 		 ticks_per_quarter=0, pitch_range_sum=0
 		}
 	end
-	ticks_per_quarter = opus_or_score[1]
-	nticks = 0
-	for i = 2,#opus_or_score do -- ignore first element, which is ticks
-		highest_pitch = 0
-		lowest_pitch = 128
-		channels_this_track = {}
-		patch_changes_this_track = {}
+	local ticks_per_quarter = opus_or_score[1]
+	local nticks = 0 -- 4.7
+	for i = 2,#opus_or_score do  -- ignore first element, which is ticks
+		local highest_pitch = 0  -- 4.7
+		local lowest_pitch = 128 -- 4.7
+		local channels_this_track = {}      -- 4.7
+		local patch_changes_this_track = {} -- 4.7
 		for k,event in ipairs(opus_or_score[i]) do
 			if event[1] == 'note' then
 				if event[4] == 9 then
@@ -1301,7 +1307,7 @@ function M.score2stats(opus_or_score)
 				end
 				channels_this_track[event[4]] = true
 				channels_total[event[4]] = true
-				finish_time = event[2] + event[3]
+				local finish_time = event[2] + event[3] -- 4.7
 				if finish_time > nticks then
 					nticks = finish_time
 				end
@@ -1321,7 +1327,7 @@ function M.score2stats(opus_or_score)
 				channels_this_track[event[3]] = true
 				channels_total[event[3]] = true
 			elseif event[1] == 'note_off' then
-				finish_time = event[2]
+				local finish_time = event[2] -- 4.7
 				if finish_time > nticks then
 					nticks = finish_time
 				end
@@ -1415,7 +1421,7 @@ function M.segment(...)
 			local earliest_note_time = endt
 			for k,event in ipairs(score[i]) do
 				if event[1] == 'patch_change' then
-					patch_time = channel2patch_time[event[3]] or 0
+					local patch_time = channel2patch_time[event[3]] or 0 -- 4.7
 					if event[2] < start and event[2] >= patch_time then  -- 2.0
 						channel2patch_num[event[3]]  = event[4]
 						channel2patch_time[event[3]] = event[2]
@@ -1510,16 +1516,16 @@ function M.timeshift(...)
 		shift = 0 - earliest
 	end
 
-	i = 2   -- ignore first element (ticks)
+	local i = 2   -- ignore first element (ticks) -- 4.7
 	while i <= #score do
 		if not tracks[i-1] then
 			new_score[#new_score+1] = deepcopy(score[i])
 			i = i + 1
 		else
-			new_track = {}
+			local new_track = {} -- 4.7
 			for k,event in ipairs(score[i]) do
 				local continue = false
-				new_event = copy(event)
+				local new_event = copy(event) -- 4.7
 				if new_event[2] >= from_time then
 					-- 4.1 must not rightshift set_tempo
 					if new_event[1] ~= 'set_tempo' or shift<0 then
@@ -1556,7 +1562,7 @@ function M.to_millisecs(old_opus)
 				warn('to_millisecs needs an opus, not a score')
 				return {1000,{},}
 			end
-			new_event = copy(old_event)
+			local new_event = copy(old_event) -- 4.7
 			millisec_so_far = millisec_so_far +
 			 (millisec_per_old_tick * old_event[2])
 			new_event[2] = math.floor(0.5 + millisec_so_far - previous_millisec_so_far)
