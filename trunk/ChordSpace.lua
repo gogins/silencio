@@ -589,7 +589,7 @@ function Chord:eoi()
 end
 
 function Chord:eopt()
-    return self:eo():et():ep()
+    return self:et():eop()
 end
 
 function Chord:iseR(range)
@@ -763,34 +763,34 @@ function Chord:closestVoicing()
             voicing = voicings[i]
         end
     end
-    print(string.format('Chord: %s  closest voicing: %s  distance from origin: %f', tostring(self), tostring(voicing), minimumDistance))
+    -- print(string.format('Chord: %s  closest voicing: %s  distance from origin: %f', tostring(self), tostring(voicing), minimumDistance))
     return voicing
 end
 
 function Chord:iseOPT(step)
-    step = step or 1
-    if not chord:iseOP() then
+    if not self:iseOP() then
         return false
     end
-    local chord = self:clone()
+    local iterator = self:clone()
     while true do
-        local sum = chord:sum()
-        -- Crawl down the orthogonal axis towards the base.
-        if (sum <= 0) then
-            if (sum < 0) then
-                -- The base is actually more than 1 layer thick,
-                -- because the columns of T related chords are canted,
-                -- so if we have gone below the base we must come back up
-                -- by one step of transposition in all voices.
-                chord = chord:T(step)
+        local sum = iterator:sum()
+        if sum <= 0 then
+            if sum < 0 then
+                iterator = iterator:T(1)
             end
-            if chord == chord:closestVoicing() then
-                return true
-            else
+            break
+        end
+        iterator = iterator:T(-1)
+    end
+    if self == iterator then
+        for voice = 1, #self - 1 do
+            if not (self[1] + OCTAVE - self[#self] <= self[voice + 1] - self[voice]) then
                 return false
             end
         end
-        chord = chord:T(-step)
+        return true
+    else
+        return false
     end
 end
 
