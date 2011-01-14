@@ -161,7 +161,7 @@ function canvas:drawChord(chord)
     eopt = chord:eopt()
     if eopt      == self.chordView.augmentedTriad then
         gl.Color(1, 1, 1)
-    else if eopt == self.chordView.majorTriad1 or eopt == self.chordView.majorTriad2 or eopt == self.chordView.majorTriad3 then
+    else if eopt == self.chordView.majorTriad1 -- or eopt == self.chordView.majorTriad2 or eopt == self.chordView.majorTriad3 then
         gl.Color(1, 0, 0)
     else if eopt == self.chordView.minorTriad1 or eopt == self.chordView.minorTriad2 or eopt == self.chordView.minorTriad3 then
         gl.Color(0, 0, 1)
@@ -239,20 +239,21 @@ function canvas:action(x, y)
     iup.GLSwapBuffers(self)
 end
 
+
 function canvas:k_any(c)
   if c == iup.K_q or c == iup.K_ESC then
     return iup.CLOSE
   end
   if c == iup.K_F1 then
     if fullscreen then
-      fullscreen = false
-      dialog.fullscreen = "No"
+        fullscreen = false
+        dialog.fullscreen = "No"
     else
-      fullscreen = true
-      dialog.fullscreen = "Yes"
+        fullscreen = true
+        dialog.fullscreen = "Yes"
     end
     iup.SetFocus(canvas)
-  end
+  end    
   if c == iup.K_l then   -- 'L' Key Being Pressed ?
     if (light) then
       gl.Disable('LIGHTING')
@@ -314,7 +315,7 @@ end
 ChordView = {}
 
 function ChordView:new(o)
-    local o = o or {title = 'Chord View', octaves = 3, equivalence = 'OP', chords = {}, minima = {}, maximuma = {}, ranges = {}}
+    local o = o or {title = 'Chord View', octaves = 3, equivalence = 'OP', chords = {}, minima = {}, maximuma = {}, ranges = {}, fullscreen = true}
     setmetatable(o, self)
     self.__index = self
     return o
@@ -416,7 +417,7 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 3
-chordView.equivalence = 'OPT'
+chordView.equivalence = 'OP'
 chordView:createChords()
 chordView:findSize()
 chordView:display()
