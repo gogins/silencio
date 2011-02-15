@@ -168,8 +168,8 @@ L               Send a major triad to the minor triad one major third higher,
                 exchange).
 
 R               Send a major triad to the minor triad one minor third lower,
-                or vice versa (Riemann's relative transformation)
-                .
+                or vice versa (Riemann's relative transformation).
+
 D               Send a triad to the next triad a perfect fifth lower
                 (dominant transformation).
                 
@@ -560,6 +560,8 @@ function Chord:eot()
     return self:eo():et()
 end
 
+-- Probably wrong.
+
 function Chord:isei()
     if ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
         return true
@@ -587,6 +589,10 @@ end
 
 function Chord:eopt()
     return self:et():eop()
+end
+
+function Chord:eopti()
+    return self:eopt():closestVoicing()
 end
 
 function Chord:iseR(range)
@@ -741,6 +747,20 @@ function Chord:distanceToOrthogonalAxis()
     return euclidean(self, intersection)     
 end
 
+-- Returns all the 'inversions' (in the musician's sense) 
+-- or revoicings of the chord.
+
+function Chord:voicings()
+    local chord = self:eP()
+    local voicings = {}
+    voicings[1] = chord
+    for i = 2, #self do
+        chord = chord:v()
+        voicings[i] = chord
+    end
+    return voicings
+end
+
 function Chord:closestVoicing()
     local voicings = self:voicings()
     local voicing = voicings[1]
@@ -864,7 +884,7 @@ end
 -- adding (or subtracting) an octave to the highest (or lowest) voice. 
 -- The revoicing will move the chord up or down in pitch.
 
-function Chord:V(direction)
+function Chord:v(direction)
     direction = direction or 1
     local chord = self:clone()
     if direction > 0 then
@@ -876,20 +896,6 @@ function Chord:V(direction)
         chord[1] = chord[1] - OCTAVE
     end
     return chord
-end
-
--- Returns all the 'inversions' (in the musician's sense) 
--- or revoicings of the chord.
-
-function Chord:voicings()
-    local chord = self:eP()
-    local voicings = {}
-    voicings[1] = chord
-    for i = 2, #self do
-        chord = chord:V()
-        voicings[i] = chord
-    end
-    return voicings
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
@@ -1130,7 +1136,7 @@ end
 
 -- Returns all voicings of the chord under RP.
 
-function Chord:voicings(range)
+function Chord:Voicings(range)
     range = range or OCTAVE
     local voicings = {}
     local zero = self:eOP()
