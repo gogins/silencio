@@ -180,21 +180,9 @@ end
 
 function ChordView:draw(picking)
     picking = picking or false
-    gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-    if picking then
-        gl.glDisable(gl.GL_BLEND);
-        gl.glDisable(gl.GL_DITHER);
-        gl.glDisable(gl.GL_FOG);
-        gl.glDisable(gl.GL_LIGHTING);
-        gl.glDisable(gl.GL_TEXTURE_1D);
-        gl.glDisable(gl.GL_TEXTURE_2D);
-        gl.glDisable(gl.GL_TEXTURE_3D);
-        gl.glShadeModel(gl.GL_FLAT);
-        print('Depth:', redbits, greenbits, bluebits)
-        self.c = {1, 1, 1}
-    else
-        self:material()
-    end
+    --gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+    --gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+    self:material()
     gl.glClear(gl.GL_COLOR_BUFFER_BIT)
     gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
     gl.glLoadIdentity()
@@ -206,13 +194,15 @@ function ChordView:draw(picking)
     gl.glTranslatef(-tx,-ty,-tz)
     gl.glTranslatef(-self.centerX, -self.centerY, -self.centerZ)
     gl.glTranslatef(tx,ty,tz)
-    self:drawGrid()
-    for i, chord in ipairs(self.chords) do
-        self:drawChord(chord, picking)
-    end
     if not picking then
-        glfw.glfwSwapBuffers()
+        self:drawGrid()
     end
+    for name, chord in ipairs(self.chords) do
+        self:drawChord(chord, name, picking)
+    end
+    --if not picking then
+        glfw.glfwSwapBuffers()
+    --end
 end
 
 function ChordView:drawGrid()
@@ -257,7 +247,12 @@ end
 
 function ChordView:resize(width, height)
     gl.glViewport(0, 0, width, height)
+    local viewport = ffi.new('GLint[4]')
+	gl.glGetIntegerv(gl.GL_VIEWPORT, viewport);
     gl.glMatrixMode(gl.GL_PROJECTION)
+    gl.glLoadIdentity()
+    glu.gluPerspective(45, (viewport[2] - viewport[0]) / (viewport[3] - viewport[1]), 0.1, 1000.0)
+    gl.glMatrixMode(gl.GL_MODELVIEW)
     gl.glLoadIdentity()
     self.width_ = width
     self.height_ = height
@@ -295,11 +290,8 @@ function ChordView:resize(width, height)
     end
     self.front = self.centerZ + boundingSize * 2
     self.back = self.centerZ - boundingSize * 2
-    glu.gluPerspective(45, self.aspect, 1, 50000)
     print(string.format('Center: x: %9.4f, y: %9.4f, z: %9.4f', self.centerX, self.centerY, self.centerZ))
     print(string.format('Front: %9.4f, back: %9.4f', self.front, self.back))
-    gl.glMatrixMode(gl.GL_MODELVIEW)
-    gl.glLoadIdentity()
     tx = -self.centerX
     ty = -self.centerY
     tz = -boundingSize * 3
@@ -330,32 +322,29 @@ function ChordView:resize(width, height)
     self.gridZs[i] = self.endZ
 end
 
-function ChordView:drawChord(chord, picking)
+function ChordView:drawChord(chord, name, picking)
     picking = picking or false
+    if picking then
+        gl.glPushName(name)
+    end
     gl.glPushMatrix()
     gl.glTranslatef(chord[1], chord[2], chord[3])
     gl.glBegin(gl.GL_QUADS)                                                       
     local quadric = glu.gluNewQuadric()
-    if not picking then
-        local z = chord:eop():closestVoicing():et()
-        if z      == self.augmentedTriad then
-            gl.glColor3f(1, 1, 1)
-        else if z == self.majorTriad1 then
-            gl.glColor3f(1, 0, 0)
-        else if z == self.minorTriad1 then
-            gl.glColor3f(0, 0, 1)
-        else
-            local hue = (z[1] + z[2] * 2.0 + z[3]) * 10
-            local saturation = 1.0
-            local value = 1.0
-            local red, green, blue = hsv_to_rgb(hue, saturation, value)
-            gl.glColor3f(red, green, blue)
-        end end end
+    local z = chord:eop():closestVoicing():et()
+    if z      == self.augmentedTriad then
+        gl.glColor3f(1, 1, 1)
+    else if z == self.majorTriad1 then
+        gl.glColor3f(1, 0, 0)
+    else if z == self.minorTriad1 then
+        gl.glColor3f(0, 0, 1)
     else
-        iterateColor(self.c)
-        print(string.format('c[1]: %s c[2]: %s  c[3] %s  chord: %s', self.c[1], self.c[2], self.c[3], tostring(chord)))
-        gl.glColor3i(self.c[1], self.c[2], self.c[3])
-    end
+        local hue = (z[1] + z[2] * 2.0 + z[3]) * 10
+        local saturation = 1.0
+        local value = 1.0
+        local red, green, blue = hsv_to_rgb(hue, saturation, value)
+        gl.glColor3f(red, green, blue)
+    end end end
     local radius = 0
     if self:isE(chord) then
         radius = 1/12
@@ -446,55 +435,92 @@ function ChordView:findSize()
     end
 end
 
+function ChordView:startPicking(cursorX, cursorY) 
+    local viewport = ffi.new('GLint[4]')
+	gl.glGetIntegerv(gl.GL_VIEWPORT, viewport);
+	gl.glSelectBuffer(self.pickbuffercount, self.pickbuffer);
+	gl.glRenderMode(gl.GL_SELECT);
+    gl.glMatrixMode(gl.GL_PROJECTION);
+	gl.glPushMatrix();
+	gl.glLoadIdentity();
+	glu.gluPickMatrix(cursorX, viewport[3] - cursorY, 5, 5, viewport);
+    glu.gluPerspective(45, (viewport[2] - viewport[0]) / (viewport[3] - viewport[1]), 0.1, 1000.0)
+	gl.glMatrixMode(gl.GL_MODELVIEW);
+	gl.glInitNames();
+    gl.glPushName(-1)
+end
+
+function ChordView:stopPicking()
+	gl.glMatrixMode(gl.GL_PROJECTION);
+	gl.glPopMatrix();
+	gl.glMatrixMode(gl.GL_MODELVIEW);
+	--gl.glFlush();
+	local hits = gl.glRenderMode(gl.GL_RENDER);
+    print('hits:', hits)
+	if hits ~= 0 then
+		self:processHits(hits);
+    end
+end
+
+function ChordView:processHits(hits)
+end
+
 function ChordView:display()
     glfw.glfwInit()
     local window = glfw.glfwOpenWindow( 0, 0, glfw.GLFW_WINDOWED, "Chord Space", nil)
     glfw.glfwSwapInterval(1)
     glfw.glfwEnable(window, glfw.GLFW_STICKY_KEYS)
     glfw.glfwDisable(window, glfw.GLFW_AUTO_POLL_EVENTS)
-    local newwidth = ffi.new("int[1]")
-    local newheight = ffi.new("int[1]")
-    local oldwidth = ffi.new("int[1]")
-    local oldheight = ffi.new("int[1]")
-    local newmousex = ffi.new("int[1]")
-    local newmousey = ffi.new("int[1]")
-    local oldmousex = ffi.new("int[1]")
-    local oldmousey = ffi.new("int[1]")
+    local redbits = glfw.glfwGetWindowParam(window, glfw.GLFW_RED_BITS)
+    local greenbits = glfw.glfwGetWindowParam(window, glfw.GLFW_GREEN_BITS)
+    local bluebits = glfw.glfwGetWindowParam(window, glfw.GLFW_BLUE_BITS)
+    print('Color bits:', redbits, greenbits, bluebits)
+    local intparamptr_t = ffi.typeof('int[1]')
+    local newwidth = intparamptr_t()
+    local newheight = intparamptr_t()
+    local oldwidth = intparamptr_t()
+    local oldheight = intparamptr_t()
+    local newmousex = intparamptr_t()
+    local newmousey = intparamptr_t()
+    local oldmousex = intparamptr_t()
+    local oldmousey = intparamptr_t()
+    local color_t = ffi.typeof('unsigned int[5]')
+    local color = color_t()
     glfw.glfwGetWindowSize(window, newwidth, newheight)
     glfw.glfwGetWindowSize(window, oldwidth, oldheight)
     glfw.glfwGetMousePos(window, newmousex, newmousey)
     glfw.glfwGetMousePos(window, oldmousex, oldmousey)
-    self:resize(newheight[0], newwidth[0])
+    self:resize(newwidth[0], newheight[0])
+    self.pickbuffercount = 1000
+    self.pickbuffer = ffi.new('int[?]', self.pickbuffercount)
     while true do
-        self:draw()
+        glfw.glfwPollEvents()
         -- Check for resizing.
         oldwidth[0] = newwidth[0]
         oldheight[0] = newheight[0]
         glfw.glfwGetWindowSize(window, newwidth, newheight)
         if (newheight[0] ~= oldheight[0]) or (newwidth[0] ~= oldwidth[0]) then
             print('New size:', newwidth[0], newheight[0])
-            self:resize(newheight[0], newwidth[0])
+            self:resize(newwidth[0], newheight[0])
         end
-        glfw.glfwPollEvents()
         -- Get key input.
         -- Get mouse input.
-        local button = glfw.glfwGetMouseButton(window, glfw.GLFW_MOUSE_BUTTON_LEFT)
-        if button == glfw.GLFW_PRESS then
-            self:draw(true)
-            -- void glReadPixels (GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
-            local color = ffi.new('int[4]')
-            gl.glReadPixels(x, y, 1, 1, gl.GL_RGB, gl.GL_INT, colorp)
-            print('Left button - color:', color[0], color[1], color[2])
-        end
         oldmousex[0] = newmousex[0]
         oldmousey[0] = newmousey[0]
         glfw.glfwGetMousePos(window, newmousex, newmousey)
         if (newmousex[0] ~= oldmousex[0] or newmousey[0] ~= oldmousey[0]) then
-            print('New mouse:', newmousex[0], newmousey[0])
+            --print('New mouse:', newmousex[0], newmousey[0])
+        end
+        local button = glfw.glfwGetMouseButton(window, glfw.GLFW_MOUSE_BUTTON_LEFT)
+        if button == glfw.GLFW_PRESS then
+            self:startPicking(newmousex[0], newmousey[0])
+            self:draw(true)
+            self:stopPicking()
+        else
+            self:draw()
         end
     end
 end
-
 chordView = ChordView:new()
 chordView.octaves = 3
 chordView.equivalence = 'OP'
