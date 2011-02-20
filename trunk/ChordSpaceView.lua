@@ -10,7 +10,6 @@ require "ChordSpace"
 
 ChordSpaceView = {}
 
-light = false
 lp = true
 fp = false
 
@@ -22,34 +21,31 @@ rx = 0
 ry = 0
 rz = 0
 
-light = true
-lp = true
-fp = false
-
 LightAmbient = ffi.new("float[4]")
-LightAmbient[0] = .1
-LightAmbient[1] = .1
-LightAmbient[2] = .1
+LightAmbient[0] = .05
+LightAmbient[1] = .05
+LightAmbient[2] = .05
 LightAmbient[3] = 1
 LightDiffuse = ffi.new("float[4]")
 LightDiffuse[0] = 1
 LightDiffuse[1] = 1
 LightDiffuse[2] = 1
 LightDiffuse[3] = 1
-LightPosition = ffi.new("float[3]")
-LightPosition[0] = 1000
-LightPosition[1] = 1000
+LightPosition = ffi.new("float[4]")
+LightPosition[0] = 100
+LightPosition[1] = 100
 LightPosition[2] = 1000
+LightPosition[2] = 1
 Ambient = ffi.new("float[4]")
 Ambient[0] = 1
 Ambient[1] = 1
 Ambient[2] = 1
-Ambient[3] = 0
+Ambient[3] = 1
 Diffuse = ffi.new("float[4]")
 Diffuse[0] = 1
 Diffuse[1] = 1
 Diffuse[2] = 1
-Diffuse[3] = 0
+Diffuse[3] = 1
 Specular = ffi.new("float[4]")
 Specular[0] = 1
 Specular[1] = 1
@@ -102,59 +98,10 @@ end
 ChordView = {}
 
 function ChordView:new(o)
-    local o = o or {title = 'Chord View', octaves = 3, equivalence = 'OP', chords = {}, minima = {}, maximuma = {}, ranges = {}, fullscreen = true, minima = {}, maxima = {}, ranges = {}}
+    local o = o or {title = 'Chord View', octaves = 3, equivalence = 'OP', chords = {}, minima = {}, maximuma = {}, ranges = {}, fullscreen = true, minima = {}, maxima = {}, ranges = {}, pickedChord = nil}
     setmetatable(o, self)
     self.__index = self
     return o
-end
-
-function ChordView:k_any(c)
-  if c == iup.K_q or c == iup.K_ESC then
-    return iup.CLOSE
-  end
-  if c == iup.K_F1 then
-    if fullscreen then
-        fullscreen = false
-        dialog.fullscreen = "No"
-    else
-        fullscreen = true
-        dialog.fullscreen = "Yes"
-    end
-    iup.SetFocus(canvas)
-  end    
-  if c == iup.K_l then   -- 'L' Key Being Pressed ?
-    if (light) then
-      gl.Disable('LIGHTING')
-      print('Lighting disabled.')
-      light = false
-    else
-      gl.Enable('LIGHTING')
-      print('Lighting enabled.')
-      light = true
-    end
-  end
-    if c == iup.K_RIGHT     then tx = tx + 1 end
-    if c == iup.K_LEFT      then tx = tx - 1 end
-    if c == iup.K_UP        then ty = ty + 1 end
-    if c == iup.K_DOWN      then ty = ty - 1 end
-    if c == iup.K_PGUP      then tz = tz + 1 end
-    if c == iup.K_PGDN      then tz = tz - 1 end
-    if c == iup.K_cRIGHT    then rx = rx + 1 end
-    if c == iup.K_cLEFT     then rx = rx - 1 end
-    if c == iup.K_cUP       then ry = ry + 1 end
-    if c == iup.K_cDOWN     then ry = ry - 1 end
-    if c == iup.K_cPGUP     then rz = rz + 1 end
-    if c == iup.K_cPGDN     then rz = rz - 1 end
-    if c == iup.K_r         then
-        tx = 0
-        ty = 0
-        tz = 0
-        rx = 0
-        ry = 0
-        rz = 0
-        self:resize_cb(self.width_, self.height_)
-    end
-    print(string.format('tx: %9.4f  ty: %9.4f  tz: %9.4f  rx: %9.4f  ry: %9.4f  rz: %9.4f', tx, ty, tz, rx, ry, rz))
 end
 
 function ChordView:material()
@@ -175,16 +122,16 @@ function ChordView:material()
     gl.glMaterialfv(gl.GL_FRONT_AND_BACK, gl.GL_EMISSION, Emission)
     gl.glEnable(gl.GL_NORMALIZE)
     gl.glEnable(gl.GL_LIGHTING)
-    light = true
+    gl.glEnable(gl.GL_BLEND)
+    gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+
 end
 
 function ChordView:draw(picking)
     picking = picking or false
-    --gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-    --gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
-    self:material()
     gl.glClear(gl.GL_COLOR_BUFFER_BIT)
     gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+    self:material()
     gl.glLoadIdentity()
     gl.glTranslatef(tx,ty,tz)
     gl.glTranslatef(self.centerX, self.centerY, self.centerZ)
@@ -200,9 +147,9 @@ function ChordView:draw(picking)
     for name, chord in ipairs(self.chords) do
         self:drawChord(chord, name, picking)
     end
-    --if not picking then
+    if not picking then
         glfw.glfwSwapBuffers()
-    --end
+    end
 end
 
 function ChordView:drawGrid()
@@ -219,7 +166,7 @@ function ChordView:drawGrid()
     gl.glVertex3f(0, 0, 0)
     local orthogonalAxisPoints = math.sin(math.pi / 4) * range
     gl.glVertex3f(orthogonalAxisPoints, orthogonalAxisPoints, orthogonalAxisPoints)
-    gl.glColor4f(0.3, 0.3, 0.3, 0.5)
+    gl.glColor4f(1, 1, 1, 0.5)
     for i, c0 in ipairs(self.chords) do
         if self:isE(c0) then    
             c1 = c0:clone()
@@ -325,33 +272,40 @@ end
 function ChordView:drawChord(chord, name, picking)
     picking = picking or false
     if picking then
-        gl.glPushName(name)
+        gl.glLoadName(name)
     end
     gl.glPushMatrix()
     gl.glTranslatef(chord[1], chord[2], chord[3])
     gl.glBegin(gl.GL_QUADS)                                                       
     local quadric = glu.gluNewQuadric()
+    glu.gluQuadricNormals(quadric, glu.GLU_SMOOTH)
     local z = chord:eop():closestVoicing():et()
+    local alpha = 0.75
     if z      == self.augmentedTriad then
-        gl.glColor3f(1, 1, 1)
+        gl.glColor4f(1, 1, 1, alpha)
     else if z == self.majorTriad1 then
-        gl.glColor3f(1, 0, 0)
+        gl.glColor4f(1, 0, 0, alpha)
     else if z == self.minorTriad1 then
-        gl.glColor3f(0, 0, 1)
+        gl.glColor4f(0, 0, 1, alpha)
     else
         local hue = (z[1] + z[2] * 2.0 + z[3]) * 10
         local saturation = 1.0
         local value = 1.0
         local red, green, blue = hsv_to_rgb(hue, saturation, value)
-        gl.glColor3f(red, green, blue)
+        gl.glColor4f(red, green, blue, alpha)
     end end end
     local radius = 0
     if self:isE(chord) then
         radius = 1/12
+        if self.pickedChord ~= nil then
+            if self.pickedChord:label() == chord:label() then
+                radius = 1/6
+            end
+        end
     else
         radius = 1/36
     end
-    glu.gluSphere(quadric, radius, 16, 16)
+    glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
     gl.glPopMatrix()
 end
@@ -371,9 +325,9 @@ function ChordView:createChords()
         end
     end
     table.sort(self.chords)
-    for i, chord in ipairs(self.chords) do
-        print(chord:label())   
-    end
+    --for i, chord in ipairs(self.chords) do
+    --    print(chord:label())   
+    --end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 
@@ -438,12 +392,12 @@ end
 function ChordView:startPicking(cursorX, cursorY) 
     local viewport = ffi.new('GLint[4]')
 	gl.glGetIntegerv(gl.GL_VIEWPORT, viewport);
-	gl.glSelectBuffer(self.pickbuffercount, self.pickbuffer);
+	gl.glSelectBuffer(ffi.sizeof(self.pickbuffer), self.pickbuffer);
 	gl.glRenderMode(gl.GL_SELECT);
     gl.glMatrixMode(gl.GL_PROJECTION);
 	gl.glPushMatrix();
 	gl.glLoadIdentity();
-	glu.gluPickMatrix(cursorX, viewport[3] - cursorY, 5, 5, viewport);
+	glu.gluPickMatrix(cursorX, viewport[3] - cursorY, 1, 1, viewport);
     glu.gluPerspective(45, (viewport[2] - viewport[0]) / (viewport[3] - viewport[1]), 0.1, 1000.0)
 	gl.glMatrixMode(gl.GL_MODELVIEW);
 	gl.glInitNames();
@@ -454,15 +408,45 @@ function ChordView:stopPicking()
 	gl.glMatrixMode(gl.GL_PROJECTION);
 	gl.glPopMatrix();
 	gl.glMatrixMode(gl.GL_MODELVIEW);
-	--gl.glFlush();
+	gl.glFlush();
 	local hits = gl.glRenderMode(gl.GL_RENDER);
-    print('hits:', hits)
 	if hits ~= 0 then
 		self:processHits(hits);
+    else
+        self.pickedChord = nil
     end
 end
 
 function ChordView:processHits(hits)
+    local i = 0
+    local hitsSelected = self.pickbuffer[i]
+    i = i + 1
+    local hitsMinimumDepth = self.pickbuffer[i]
+    i = i + 1
+    local hitsMaximumDepth = self.pickbuffer[i]
+    i = i + 1
+    local hitsName= self.pickbuffer[i]
+    i = i + 1
+    local pickedDepth = hitsMinimumDepth
+    local pickedName = hitsName
+    for hit = 1, hits - 1 do
+        hitsSelected = self.pickbuffer[i]
+        i = i + 1
+        hitsMinimumDepth = self.pickbuffer[i]
+        i = i + 1
+        hitsMaximumDepth = self.pickbuffer[i]
+        i = i + 1
+        hitsName= self.pickbuffer[i]
+        i = i + 1
+        if hitsMinimumDepth < pickedDepth then
+            pickedDepth = hitsMinimumDepth
+            pickedName = hitsName
+        end
+    end
+    self.pickedChord = self.chords[pickedName]
+    print(string.format('hits: %d  pickedName: %d  pickedDepth: %d', hits, pickedName, pickedDepth))
+    print(self.pickedChord:label())
+    print()
 end
 
 function ChordView:display()
@@ -500,27 +484,72 @@ function ChordView:display()
         oldheight[0] = newheight[0]
         glfw.glfwGetWindowSize(window, newwidth, newheight)
         if (newheight[0] ~= oldheight[0]) or (newwidth[0] ~= oldwidth[0]) then
-            print('New size:', newwidth[0], newheight[0])
             self:resize(newwidth[0], newheight[0])
         end
-        -- Get key input.
-        -- Get mouse input.
+        -- Get key input...
+        -- Zoom in?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_ADD) == glfw.GLFW_PRESS then
+            tz = tz + .3
+        end
+        -- Zoom out?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_SUBTRACT) == glfw.GLFW_PRESS then
+            tz = tz - .3
+        end
+        -- Move left?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT) == glfw.GLFW_PRESS then
+            tx = tx - .1
+        end
+        -- Move right?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_RIGHT) == glfw.GLFW_PRESS then
+            tx = tx + .1
+        end
+        -- Move up?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_UP) == glfw.GLFW_PRESS then
+            ty = ty + .1
+        end
+        -- Move down?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_DOWN) == glfw.GLFW_PRESS then
+            ty = ty - .1
+        end
+        -- Spin in?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_9) == glfw.GLFW_PRESS then
+            rz = rz - .7
+        end
+        -- Spin out?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_3) == glfw.GLFW_PRESS then
+            rz = rz + .7
+        end
+        -- Spin left?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_7) == glfw.GLFW_PRESS then
+            rx = rx - .7
+        end
+        -- Spin right?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_1) == glfw.GLFW_PRESS then
+            rx = rx + .7
+        end
+        -- Spin up?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_8) == glfw.GLFW_PRESS then
+            ry = ry - .7
+        end
+        -- Spin down?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_2) == glfw.GLFW_PRESS then
+            ry = ry + .7
+        end
+        -- Get mouse input...
         oldmousex[0] = newmousex[0]
         oldmousey[0] = newmousey[0]
         glfw.glfwGetMousePos(window, newmousex, newmousey)
-        if (newmousex[0] ~= oldmousex[0] or newmousey[0] ~= oldmousey[0]) then
-            --print('New mouse:', newmousex[0], newmousey[0])
-        end
         local button = glfw.glfwGetMouseButton(window, glfw.GLFW_MOUSE_BUTTON_LEFT)
         if button == glfw.GLFW_PRESS then
             self:startPicking(newmousex[0], newmousey[0])
             self:draw(true)
             self:stopPicking()
         else
-            self:draw()
+            self:draw(false)
         end
     end
 end
+
 chordView = ChordView:new()
 chordView.octaves = 3
 chordView.equivalence = 'OP'
@@ -530,63 +559,4 @@ chordView:display()
 
 return ChordSpaceView
 
-
---[[
-local function main()
-   assert( glfw.glfwInit() )
-   local window = glfw.glfwOpenWindow( -1, -1, glfw.GLFW_WINDOWED, "Spinning Triangle", nil)
-   assert( window )
-   glfw.glfwEnable(window, glfw.GLFW_STICKY_KEYS);
-   glfw.glfwSwapInterval(1);
-   while glfw.glfwIsWindow(window) and glfw.glfwGetKey(window, glfw.GLFW_KEY_ESCAPE) ~= glfw.GLFW_PRESS 
-   do
-      local double t = glfw.glfwGetTime()
-
-      local x = ffi.new( "int[1]" )
-      glfw.glfwGetMousePos(window, x, nil)
-      x = x[0]
-
-      local width, height = ffi.new( "int[1]" ), ffi.new( "int[1]" )
-      glfw.glfwGetWindowSize(window, width, height);
-      width, height = width[0], height[0]
-      if height < 1 then
-	 height = 1
-      end
-
-      gl.glViewport(0, 0, width, height);
-      gl.glClearColor(0, 0, 0, 0);
-      gl.glClear(gl.GL_COLOR_BUFFER_BIT);
-
-      gl.glMatrixMode(gl.GL_PROJECTION);
-      gl.glLoadIdentity();
-      glu.gluPerspective(65, width / height, 1, 100);
-      
-      gl.glMatrixMode( gl.GL_MODELVIEW );
-      gl.glLoadIdentity();
-      glu.gluLookAt(
-	 0,  1, 0,   -- Eye-position
-	 0, 20, 0,   -- View-point
-	 0,  0, 1    -- Up Vector
-      );
-      
-      gl.glTranslatef(0, 14, 0);
-      gl.glRotatef(0.3 * x + t * 100, 0, 0, 1);
-      
-      gl.glBegin(gl.GL_TRIANGLES);
-      gl.glColor3f(1, 0, 0);
-      gl.glVertex3f(-5, 0, -4);
-      gl.glColor3f(0, 1, 0);
-      gl.glVertex3f(5, 0, -4);
-      gl.glColor3f(0, 0, 1);
-      gl.glVertex3f(0, 0, 6);
-      gl.glEnd();
-      
-      glfw.glfwSwapBuffers();
-      glfw.glfwPollEvents();
-   end
-   glfw.glfwTerminate();
-end
-
-main()
-]]
 
