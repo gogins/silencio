@@ -498,6 +498,14 @@ function Chord:clone()
     return chord
 end
 
+function Chord:er(r)
+    local chord = self:clone()
+    for voice, pitch in ipairs(self) do
+        chord[voice] = pitch % r
+    end
+    return chord
+end
+
 function Chord:iser(r)
     if not self:range() < r then
         return false
@@ -508,20 +516,18 @@ function Chord:iser(r)
     return true
 end
 
-function Chord:er(r)
-    local chord = self:clone()
-    for voice, pitch in ipairs(self) do
-        chord[voice] = pitch % r
-    end
-    return chord
+function Chord:eo()
+    return self:er(OCTAVE)
 end
 
 function Chord:iseo()
     return self:iser(OCTAVE)
 end
 
-function Chord:eo()
-    return self:er(OCTAVE)
+function Chord:ep()
+    local chord = self:clone()
+    table.sort(chord)
+    return chord
 end
 
 function Chord:isep()
@@ -533,9 +539,12 @@ function Chord:isep()
     return true
 end
 
-function Chord:ep()
+function Chord:et()
     local chord = self:clone()
-    table.sort(chord)
+    local minimum = self:min()
+    for voice, pitch in ipairs(chord) do
+        chord[voice] = pitch - minimum
+    end
     return chord
 end
 
@@ -547,28 +556,20 @@ function Chord:iset()
     end
 end
 
-function Chord:et()
-    local chord = self:clone()
-    local minimum = self:min()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = pitch - minimum
-    end
-    return chord
-end
-
 function Chord:eot()
     return self:eo():et()
 end
 
--- Probably wrong.
-
-function Chord:isei()
-    if ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+function Chord:iseot()
+    local eot = self:eot()
+    if self == eot then
         return true
     else
         return false
     end
 end
+
+-- Probably wrong.
 
 function Chord:ei()
     local chord = self:clone()
@@ -579,155 +580,77 @@ function Chord:ei()
     end
 end
 
+function Chord:isei()
+    if ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+        return true
+    else
+        return false
+    end
+end
+
 function Chord:eop()
     return self:eo():ep()
+end
+
+function Chord:iseop()
+    local chord = self:eop()
+    if self == chord then
+        return true
+    else
+        return false
+    end
 end
 
 function Chord:eoi()
     return self:eo():ei()
 end
 
+function Chord:iseoi()
+    local chord = self:eoi()
+    if self == chord then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:eopi()
+    return self:eoi():ep()
+end
+
+function Chord:iseopi()
+    local chord = self:eopi()
+    if self == chord then
+        return true
+    else
+        return false
+    end
+end
+
 function Chord:eopt()
     return self:et():eop()
+end
+
+function Chord:iseopt()
+    local chord = self:eopt()
+    if self == chord then
+        return true
+    else
+        return false
+    end
 end
 
 function Chord:eopti()
     return self:eopt():closestVoicing()
 end
 
-function Chord:iseR(range)
-    -- The chord must have a range less than or equal to the length
-    -- of the fundamental domain.
-    if not (self:max() <= (self:min() + range)) then
-        return false
-    end
-    -- Then the chord must be on the correct layer of the fundamental domain.
-    -- These layers are perpendicular to the orthogonal axis and 
-    -- begin at the origin.
-    local layer = self:sum()
-    if not ((0 <= layer) and (layer <= range)) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseO()
-    return self:iseR(OCTAVE)
-end
-
-function Chord:iseP()
-    return self:isep()
-end
-
-function Chord:iseT()
-    if self == self:eT() then
+function Chord:iseopti()
+    local chord = self:eopti()
+    if self == chord then
         return true
     else
         return false
     end
-end
-
-function Chord:iseI()
-    return self:isei()
-end
-
-function Chord:distanceToOrthogonalAxis()
-    local layer = self:sum()
-    local distancePerVoice = layer / #self
-    local orthogonalChord = Chord:new()
-    for voice = 1, #self do
-        orthogonalChord[voice] = distancePerVoice
-    end
-    local distanceToOrthogonalAxis = euclidean(self, orthogonalChord)
-    -- print(distanceToOrthogonalAxis)
-    return distanceToOrthogonalAxis
-end
-
--- Returns whether the chord is in the fundamental domain
--- of V (voicing) equivalence.
-
-function Chord:iseV()
-    local distanceToOrthogonalAxis = self:distanceToOrthogonalAxis()
-    local voicings = self:voicings()
-    for i, voicing in ipairs(voicings) do
-        if voicing:distanceToOrthogonalAxis() < distanceToOrthogonalAxis then
-            return false
-        end
-    end
-    return true
-end
-
-function Chord:iseRP(range) 
-    for i = 1, #self - 1 do
-        if not (self[i] <= self[i + 1]) then
-            return false
-        end
-    end
-    if not (self[#self] <= (self[1] + range)) then
-        return false
-    end
-    local layer = self:sum()
-    if not (0 <= layer and layer <= range) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOP()
-    return self:iseRP(OCTAVE)
-end
-
-function Chord:iseRT(range)
-    if not self:iseR(range) then
-        return false
-    end
-    if not self:iseT() then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOT()
-    return self:iseRT(OCTAVE)
-end
-
-function Chord:iseRI(range)
-    if (self:iseR(range) and self:iseI()) then
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:iseOI()
-    return self:iseRI(OCTAVE)
-end
-
-function Chord:isePT()
-    if (self:iseP() and self:iseT()) then
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:isePI()
-    if (self:iseP() and self:iseI()) then
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:iseTI()
-    if (self:iseT() and self:iseI()) then
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:iseRPT(range)
 end
 
 function Chord:origin()
@@ -774,53 +697,6 @@ function Chord:closestVoicing()
     end
     -- print(string.format('Chord: %s  closest voicing: %s  distance from origin: %f', tostring(self), tostring(voicing), minimumDistance))
     return voicing
-end
-
-function Chord:iseRPT(range, step)
-    step = step or 1
-    if not self:iseRP(range) then
-        return false
-    end
-    local chord = self:eT()
-    if self == chord then
-        for voice = 1, #self - 1 do
-            if not (self[1] + range - self[#self] <= self[voice + 1] - self[voice]) then
-                return false
-            end
-        end
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:iseOPT(step)
-    step = step or 1
-    return self:iseRPT(OCTAVE, step)
-end
-
-function Chord:iseRPI(range)
-    if self:iseRP(range) and self:iseI() then
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:iseOPI()
-    return self:iseRPI(OCTAVE)
-end
-
-function Chord:iseRPTI(range)
-    if self:iseRPT(range) and self:iseI() then
-        return true
-    else
-        return false
-    end
-end
-
-function Chord:iseOPTI()
-    return self:iseRPTI(OCTAVE)
 end
 
 -- Returns the number of times the pitch occurs in the chord,
@@ -898,6 +774,18 @@ function Chord:v(direction)
     return chord
 end
 
+function Chord:distanceToOrthogonalAxis()
+    local layer = self:sum()
+    local distancePerVoice = layer / #self
+    local orthogonalChord = Chord:new()
+    for voice = 1, #self do
+        orthogonalChord[voice] = distancePerVoice
+    end
+    local distanceToOrthogonalAxis = euclidean(self, orthogonalChord)
+    -- print(distanceToOrthogonalAxis)
+    return distanceToOrthogonalAxis
+end
+
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:T(x)  
@@ -919,26 +807,202 @@ function Chord:I(x)
     return chord
 end
 
-function Chord:eP()
-    return self:ep()
+function Chord:iseR(range)
+    -- The chord must have a range less than or equal to the length
+    -- of the fundamental domain.
+    if self:range() > range then
+        return false
+    end
+    -- Then the chord must be on a layer of the fundamental domain.
+    -- These layers are perpendicular to the orthogonal axis and 
+    -- begin at the origin.
+    local layer = self:sum()
+    if ((0 <= layer) and (layer <= range)) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseO()
+    return self:iseR(OCTAVE)
+end
+
+function Chord:iseP()
+    return self:isep()
+end
+
+function Chord:iseT()
+    if self == self:eT() then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseI()
+    return self:isei()
+end
+
+function Chord:iseRP(range) 
+    for i = 1, #self - 1 do
+        if not (self[i] <= self[i + 1]) then
+            return false
+        end
+    end
+    if not (self[#self] <= (self[1] + range)) then
+        return false
+    end
+    local layer = self:sum()
+    if not (0 <= layer and layer <= range) then
+        return false
+    end
+    return true
+end
+
+function Chord:iseOP()
+    return self:iseRP(OCTAVE)
+end
+
+function Chord:iseRT(range)
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:iseT() then
+        return false
+    end
+    return true
+end
+
+function Chord:iseOT()
+    return self:iseRT(OCTAVE)
+end
+
+function Chord:iseRI(range)
+    if (self:iseR(range) and self:iseI()) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseOI()
+    return self:iseRI(OCTAVE)
+end
+
+function Chord:isePT()
+    if (self:iseP() and self:iseT()) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:isePI()
+    if (self:iseP() and self:iseI()) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseTI()
+    if (self:iseT() and self:iseI()) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseRPT(range)
+    if (self:iseRP(range) and self:iseT()) then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseRPT(range, step)
+    step = step or 1
+    if not self:iseRP(range) then
+        return false
+    end
+    local chord = self:eT()
+    if self == chord then
+        for voice = 1, #self - 1 do
+            if not (self[1] + range - self[#self] <= self[voice + 1] - self[voice]) then
+                return false
+            end
+        end
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseOPT(step)
+    step = step or 1
+    return self:iseRPT(OCTAVE, step)
+end
+
+function Chord:iseRPI(range)
+    if self:iseRP(range) and self:iseI() then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseOPI()
+    return self:iseRPI(OCTAVE)
+end
+
+function Chord:iseRPTI(range)
+    if self:iseRPT(range) and self:iseI() then
+        return true
+    else
+        return false
+    end
+end
+
+function Chord:iseOPTI()
+    return self:iseRPTI(OCTAVE)
+end
+
+-- Returns whether the chord is in the fundamental domain
+-- of V (voicing) equivalence.
+
+function Chord:iseV()
+    local distanceToOrthogonalAxis = self:distanceToOrthogonalAxis()
+    local voicings = self:voicings()
+    for i, voicing in ipairs(voicings) do
+        if voicing:distanceToOrthogonalAxis() < distanceToOrthogonalAxis then
+            return false
+        end
+    end
+    return true
 end
 
 function Chord:eR(range)
     local chord = self:eop()
     -- If the chord is above the orbifold,
     -- revoice it downwards until it is inside.
-    while (chord:sum() > range) do
-        chord = chord:V(-1)
+    while not chord:iseR(range) do
+        chord = chord:v(-1)
     end
     return chord
 end
 
-function Chord:eRP(range)
-    return self:eR(range):P()
-end
-
 function Chord:eO()
     return self:eR(OCTAVE)
+end
+
+function Chord:eP()
+    return self:ep()
+end
+
+function Chord:eRP(range)
+    return self:eR(range):P()
 end
 
 function Chord:eOP()
@@ -946,91 +1010,44 @@ function Chord:eOP()
 end
 
 -- Returns the chord transposed such that its 
--- O sums as close to 0 as possible.
+-- O sums as close to 0 as possible in equal temperament.
 -- NOTE: Does NOT return the result under any other equivalence class.
 
-function Chord:eT()
+function Chord:eT(divisionsPerOctave)
+    divisionsPerOctave = divisionsPerOctave or 12
+    local increment = 12 / divisionsPerOctave
     local iterator = self:clone()
     while true do
         local sum = iterator:sum()
         if sum <= 0 then
             if sum < 0 then
-                iterator = iterator:T(1)
+                iterator = iterator:T(increment)
             end
             break
         end
-        iterator = iterator:T(-1)
+        iterator = iterator:T(-increment)
     end
     return iterator
 end
 
--- Move 1 voice of the chord,
--- optionally under range equivalence
--- NOTE: Does NOT return the result under any equivalence class.
-
-function Chord:move(voice, interval)
-    chord = self:clone()
-    chord[voice] = T(chord[voice], interval)
-    return chord
+function Chord:eOPT()
+    return self:eO():eT():eP()
 end
 
-function Chord:nrL()
-    local opi = self:eopi()
-    local opti = self.eopti()
-    if opti[2] == 4 then
-        opi[1] = opi[1] - 1
+function Chord:eI()
+    if self:iseI() then
+        return self
     else
-        if opti[2] == 3 then
-            opi[3] = opi[3] + 1
-        end
+        return self:I()
     end
-    return opi
 end
 
--- Performs the neo-Riemannian parallel transformation.
--- NOTE: Does NOT return the result under any equivalence class.
-
-function Chord:nrP()
-    local opi = self:eopi()
-    local opti = self:eopti()
-    if opti[2] == 4 then
-        opi[2] = opi[2] - 1
-    else
-        if opti[2] == 3 then
-            opi[2] = opi[2] + 1
-        end
-    end
-    return opi
-end
-
--- Performs the neo-Riemannian relative transformation.
--- NOTE: Does NOT return the result under any equivalence class.
-
-function Chord:nrR()
-    local opi = self:eopi()
-    local opti = self.eopti()
-    if opti[2] == 4 then
-        opi[3] = opi[3] + 2
-    else
-        if opti[2] == 3 then
-            opi[1] = opi[1] - 2
-        end
-    end
-    return opi
-end
-
--- Performs the neo-Riemannian dominant transformation.
--- NOTE: Does NOT return the result under any equivalence class.
-
-function Chord:nrD()
-    return self:eopi():T(-7)
-end
-
-function Chord:eOPI(chord)
+function Chord:eOPI()
+    local chord = self:clone()
     local s = chord:sum()
     local distancePerVoice = s / #chord
-    local orthogonalProjection = self:newChord()
-    for voice = 1, self.N do
+    local orthogonalProjection = chord:clone()
+    for voice = 1, #self do
         orthogonalProjection[voice] = distancePerVoice
     end
     local voicings = chord:voicings()
@@ -1047,6 +1064,75 @@ function Chord:eOPI(chord)
     return orthogonalVoicing
 end
  
+function Chord:eOPTI()
+    return self:eOP():eI():eT():eP()
+end
+
+-- Move 1 voice of the chord,
+-- optionally under range equivalence
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:move(voice, interval)
+    chord = self:clone()
+    chord[voice] = T(chord[voice], interval)
+    return chord
+end
+
+-- Performs the neo-Riemannian Lettonwechsel transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrL()
+    local cv = self:closestVoicing()
+    local cvt = self:closestVoicing():et()
+    if cvt[2] == 4 then
+        cv[1] = cv[1] - 1
+    else
+        if cvt[2] == 3 then
+            cv[3] = cv[3] + 1
+        end
+    end
+    return cv
+end
+
+-- Performs the neo-Riemannian parallel transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrP()
+    local cv = self:closestVoicing()
+    local cvt = self:closestVoicing():et()
+    if cvt[2] == 4 then
+        cv[2] = cv[2] - 1
+    else
+        if cvt[2] == 3 then
+            cv[2] = cv[2] + 1
+        end
+    end
+    return cv
+end
+
+-- Performs the neo-Riemannian relative transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrR()
+    local cv = self:closestVoicing()
+    local cvt = self:closestVoicing():et()
+    if cvt[2] == 4 then
+        cv[3] = cv[3] + 2
+    else
+        if cvt[2] == 3 then
+            cv[1] = cv[1] - 2
+        end
+    end
+    return cv
+end
+
+-- Performs the neo-Riemannian dominant transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrD()
+    return self:eopi():T(-7)
+end
+
 -- Returns the chord inverted by the sum of its first two voices.
 -- NOTE: Does NOT return the result under any equivalence class.
   
@@ -1055,8 +1141,8 @@ function Chord:K(range)
     if #chord < 2 then
         return chord
     end
-    local x = ep[1] + ep[2]
     local ep = chord:ep()
+    local x = ep[1] + ep[2]
     return self:I(x)
 end
 
@@ -1099,6 +1185,7 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:Q(x, m, g)
+    g = g or 1
     if self:Tform(m, g) then
         return self:T(x)
     end
@@ -1279,7 +1366,25 @@ end
 -- Returns a label for a chord.
 
 function Chord:label()
-    return string.format('C     %s\neo    %s\neop   %s\neoi   %s\neopt  %s\nsum   %f', tostring(self), tostring(self:eo()), tostring(self:eop()), tostring(self:eoi()), tostring(self:eopt()), self:sum())
+    local C = self:__tostring()
+    local eop = self:eop():__tostring()
+    local eOP = self:eOP():__tostring()
+    local eopi = self:eopi():__tostring()
+    local eOPI = self:eOPI():__tostring()
+    local eopt = self:eopt():__tostring()
+    local eOPT = self:eOPT():__tostring()
+    local eopti = self:eopti():__tostring()
+    local eOPTI = self:eOPTI():__tostring()
+    return string.format([[Chord: %s
+eop:   %s
+eOP:   %s
+eopi:  %s
+eOPI:  %s
+eopt:  %s
+eOPT:  %s
+eopti: %s
+eOPTI: %s
+sum:       %f]], C, eop, eOP, eopi, eOPI, eopt, eOPT, eopti, eOPTI, self:sum())
 end
 
 return ChordSpace
