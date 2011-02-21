@@ -65,7 +65,7 @@ print('Current directory: "' .. cwd .. '".\n')
 print('Invoking script: "' .. arg[0] .. '".\n')
 end
 
-local function clone(object)
+function clone(object)
     local lookup_table = {}
     local function _copy(object)
         if type(object) ~= "table" then
@@ -101,7 +101,6 @@ local function split(str, pat)
    end
    return t
 end
-
 
 function os.capture(cmd, raw)
   local f = assert(io.popen(cmd, 'r'))
