@@ -316,8 +316,7 @@ function eo(pitch)
     return pitch % OCTAVE
 end
 
--- NOTE: Does NOT return the result under any 
--- equivalence class.
+-- NOTE: Does NOT return the result under any equivalence class.
 
 function T(pitch, x)
     return pitch + x
@@ -417,7 +416,8 @@ function Chord:__lt(other)
     voices = math.min(#self, #other)
     for voice = 1, voices do
         if self[voice] < other[voice] then
-            return true
+
+        return true
         end
         if self[voice] > other[voice] then
             return false
@@ -437,7 +437,23 @@ function Chord:min()
         if self[voice] < lowest then
             lowest = self[voice]
         end
-    end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        end
     return lowest
 end
 
