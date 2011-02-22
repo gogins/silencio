@@ -380,6 +380,45 @@ function ChordView:isE(chord)
     end
 end
 
+function ChordView:E(chord)
+    if self.equivalence == 'R' then
+        return chord:eR(self.octaves * OCTAVE)
+    end
+    if self.equivalence == 'O' then
+        return chord:eO()
+    end
+    if self.equivalence == 'P' then
+        return chord:eP()
+    end
+    if self.equivalence == 'T' then
+        return chord:eT()
+    end
+    if self.equivalence == 'I' then
+        return chord:eI()
+    end
+    if self.equivalence == 'RP' then
+        return chord:eRP(self.octaves * OCTAVE)
+    end
+    if self.equivalence == 'OP' then
+        return chord:eOP()
+    end
+    if self.equivalence == 'OT' then
+        return chord:eOT()
+    end
+    if self.equivalence == 'OI' then
+        return chord:eOI()
+    end
+    if self.equivalence == 'OPT' then
+        return chord:eOPT()
+    end
+    if self.equivalence == 'OPI' then
+        return chord:eOPI()
+    end
+    if self.equivalence == 'OPTI' then
+        return chord:eOPTI()
+    end
+end
+
 function ChordView:findSize()
     self.minima = self.chords[1]:clone()
     self.maxima = self.chords[1]:clone()
@@ -496,6 +535,9 @@ function ChordView:display()
     local dpressed = false
     local kpressed = false
     local qpressed = false    
+    local _1pressed = false    
+    local _2pressed = false    
+    local _3pressed = false    
     self.tonality = Chord:new{0, 4, 7}
     while true do
         glfw.glfwPollEvents()
@@ -559,93 +601,123 @@ function ChordView:display()
             ry = ry + .7
         end
         if self.pickedChord ~= nil then
-        -- T1?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_T) == glfw.GLFW_PRESS and not tpressed then
-            tpressed = true
-            if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
-                self.pickedChord = self.pickedChord:T(1):eOP()
-            else
-                self.pickedChord = self.pickedChord:T(-1):eOP()
+            -- T1?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_T) == glfw.GLFW_PRESS and not tpressed then
+                tpressed = true
+                if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
+                    self.pickedChord = self.pickedChord:T(1):eOP()
+                else
+                    self.pickedChord = self.pickedChord:T(-1):eOP()
+                end
+                print(self.pickedChord:label())
             end
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_T) == glfw.GLFW_RELEASE then
-            tpressed = false
-        end
-        -- I?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
-            ipressed = true
-            self.pickedChord = self.pickedChord:I():eOP()
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_RELEASE then
-            ipressed = false
-        end
-        -- P?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_P) == glfw.GLFW_PRESS and not ppressed then
-            ppressed = true
-            self.pickedChord = self.pickedChord:nrP():eOP()
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_P) == glfw.GLFW_RELEASE then
-            ppressed = false
-        end
-        -- L?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_L) == glfw.GLFW_PRESS and not lpressed then
-            lpressed = true
-            self.pickedChord = self.pickedChord:nrL():eOP()
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_L) == glfw.GLFW_RELEASE then
-            lpressed = false
-        end
-        -- R?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_R) == glfw.GLFW_PRESS and not rpressed then
-            rpressed = true
-            self.pickedChord = self.pickedChord:nrR():eOP()
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_R) == glfw.GLFW_RELEASE then
-            rpressed = false
-        end
-        -- D?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_D) == glfw.GLFW_PRESS and not dpressed then
-            dpressed = true
-            self.pickedChord = self.pickedChord:nrD():eOP()
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_D) == glfw.GLFW_RELEASE then
-            dpressed = false
-        end
-        -- K (M)?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_K) == glfw.GLFW_PRESS and not kpressed then
-            kpressed = true
-            self.pickedChord = self.pickedChord:K(self.octaves * 12):eOP()
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_K) == glfw.GLFW_RELEASE then
-            kpressed = false
-        end
-        -- Q1 (M)?
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_Q) == glfw.GLFW_PRESS and not qpressed then
-            qpressed = true
-            if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
-                self.pickedChord = self.pickedChord:Q(1, self.tonality):eOP()
-            else
-                self.pickedChord = self.pickedChord:Q(-1, self.tonality):eOP()
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_T) == glfw.GLFW_RELEASE then
+                tpressed = false
             end
-            print(self.pickedChord:label())
-        end
-        if glfw.glfwGetKey(window, glfw.GLFW_KEY_Q) == glfw.GLFW_RELEASE then
-            qpressed = false
-        end
-        -- C[1] += 1?
-        -- C[1] -= 1?
-        -- C[2] += 1?
-        -- C[2] -= 1?
-        -- C[3] += 1?
-        -- C[3] -= 1?
-        -- Voicelead from prior to current?
+            -- I?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
+                ipressed = true
+                self.pickedChord = self.pickedChord:I():eOP()
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_RELEASE then
+                ipressed = false
+            end
+            -- P?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_P) == glfw.GLFW_PRESS and not ppressed then
+                ppressed = true
+                self.pickedChord = self.pickedChord:nrP():eOP()
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_P) == glfw.GLFW_RELEASE then
+                ppressed = false
+            end
+            -- L?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_L) == glfw.GLFW_PRESS and not lpressed then
+                lpressed = true
+                self.pickedChord = self.pickedChord:nrL():eOP()
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_L) == glfw.GLFW_RELEASE then
+                lpressed = false
+            end
+            -- R?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_R) == glfw.GLFW_PRESS and not rpressed then
+                rpressed = true
+                self.pickedChord = self.pickedChord:nrR():eOP()
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_R) == glfw.GLFW_RELEASE then
+                rpressed = false
+            end
+            -- D?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_D) == glfw.GLFW_PRESS and not dpressed then
+                dpressed = true
+                self.pickedChord = self.pickedChord:nrD():eOP()
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_D) == glfw.GLFW_RELEASE then
+                dpressed = false
+            end
+            -- K (M)?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_K) == glfw.GLFW_PRESS and not kpressed then
+                kpressed = true
+                self.pickedChord = self.pickedChord:K(self.octaves * 12):eOP()
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_K) == glfw.GLFW_RELEASE then
+                kpressed = false
+            end
+            -- Q1 (M)?
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_Q) == glfw.GLFW_PRESS and not qpressed then
+                qpressed = true
+                if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
+                    self.pickedChord = self.pickedChord:Q(1, self.tonality):eOP()
+                else
+                    self.pickedChord = self.pickedChord:Q(-1, self.tonality):eOP()
+                end
+                print(self.pickedChord:label())
+            end
+            -- C[1] moves,
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_1) == glfw.GLFW_PRESS and not _1pressed then
+                _1pressed = true
+                if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
+                    self.pickedChord = self.pickedChord:move(1, -1):eOP()
+                else
+                    self.pickedChord = self.pickedChord:move(1,  1):eOP()
+                end
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_1) == glfw.GLFW_RELEASE then
+                _1pressed = false
+            end
+            -- C[2] moves,
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_2) == glfw.GLFW_PRESS and not _2pressed then
+                _2pressed = true
+                if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
+                    self.pickedChord = self.pickedChord:move(2, -1):eOP()
+                else
+                    self.pickedChord = self.pickedChord:move(2,  1):eOP()
+                end
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_2) == glfw.GLFW_RELEASE then
+                _2pressed = false
+            end
+            -- C[2] moves,
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_3) == glfw.GLFW_PRESS and not _3pressed then
+                _3pressed = true
+                if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
+                    self.pickedChord = self.pickedChord:move(3, -1):eOP()
+                else
+                    self.pickedChord = self.pickedChord:move(3,  1):eOP()
+                end
+                print(self.pickedChord:label())
+            end
+            if glfw.glfwGetKey(window, glfw.GLFW_KEY_3) == glfw.GLFW_RELEASE then
+                _3pressed = false
+            end
+            -- Voicelead from prior to current?
         end
         -- Get mouse input...
         oldmousex[0] = newmousex[0]
