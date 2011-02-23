@@ -17,10 +17,10 @@ thought of doing high-performance computing in a dynamic language
 not only possible, but attractive (http:luajit.org).
 ]]
 
-require "Silenceio"
-require "ffi"
--- Remember to cache namespaces to let LuaJIT optimize.
+-- Remember to cache namespaces in local variables to let LuaJIT optimize.
+local ffi = require("ffi")
 local C = ffi.C
+local Silencio = require("Silencio")
 local sndfile = ffi.load('libsndfile.so')
 
 ControlSignal = {}
