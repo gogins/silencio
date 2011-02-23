@@ -269,6 +269,7 @@ but they can still be very useful in score generation.
 
 Any Chord object can be written to any time slice of a Silence score.
 
+
 SCORE APPLICATION
 
 Any chord can be applied under any equivalence class to any time slice
@@ -296,7 +297,7 @@ set class.
 ]]
 end
 
-require("Silencio")
+local Silencio = require("Silencio")
 
 -- The size of the octave, defined to be consistent with 
 -- 12 tone equal temperament and MIDI.
@@ -437,23 +438,7 @@ function Chord:min()
         if self[voice] < lowest then
             lowest = self[voice]
         end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        end
+    end
     return lowest
 end
 
@@ -1059,6 +1044,13 @@ function Chord:eI()
 end
 
 function Chord:eOPI()
+    local chord = self:eOP()
+    if chord:iseOPI() then
+        return chord
+    end
+    chord = chord:eI()
+    return chord
+--[[
     local chord = self:clone()
     local s = chord:sum()
     local distancePerVoice = s / #chord
@@ -1078,6 +1070,7 @@ function Chord:eOPI()
         end
     end
     return orthogonalVoicing
+    ]]
 end
  
 function Chord:eOPTI()
@@ -1402,5 +1395,6 @@ eopti: %s
 eOPTI: %s
 sum:       %f]], C, eop, eOP, eopi, eOPI, eopt, eOPT, eopti, eOPTI, self:sum())
 end
+
 
 return ChordSpace
