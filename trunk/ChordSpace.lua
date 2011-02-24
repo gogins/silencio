@@ -430,6 +430,15 @@ function Chord:__lt(other)
     return false
 end
 
+function Chord:contains(pitch)
+    for voice, pitch_ in ipairs(self) do
+        if pitch_ == pitch then
+            return true
+        end
+    end
+    return false
+end
+
 -- Returns the lowest pitch in the chord.
 
 function Chord:min()
@@ -1396,5 +1405,124 @@ eOPTI: %s
 sum:       %f]], C, eop, eOP, eopi, eOPI, eopt, eOPT, eopti, eOPTI, self:sum())
 end
 
+-- Creates a complete Silencio "note on" event for the 
+-- indicated voice of the chord. The other parameters are used
+-- if the internal duration, channel, velocity, and pan of the 
+-- chord are nil.
+
+function Chord:note(voice, time_, duration, channel, velocity, pan)
+    time_ = time_ or 0
+    duration = duration or 0.25
+    channel = channel or 1
+    velocity = velocity or 80
+    pan = pan or 0
+    local note = Event:new()
+    note[1] = time_
+    note[2] = self:duration[voice] or duration
+    note[4] = self:channel[voice] or channel
+    note[5] = self[voice]
+    note[6] = self:velocity[voice] or velocity
+    note[7] = self:pan[voice] or pan
+    return note
+end
+
+-- Returns an individual note for each voice of the chord.
+-- The chord's duration, instrument, and loudness are used if present,
+-- if not the specified values are used.
+
+function Chord:notes(time_, duration, channel, velocity, pan)
+    local notes_ = Score:new()
+    for voice, key in ipairs(self) do
+        table.insert(notes_, self:note(voice, time_, duration, channel, velocity, pan))
+    end
+    return notes_
+end
+
+-- If the event is a note, moves its pitch
+-- to the closest pitch of the chord. 
+-- If octaveEquivalence is true (the default),
+-- the pitch-class of the note is moved to the closest pitch-class 
+-- of the chord; otherwise, the pitch of the note is moved to the closest 
+-- absolute pitch of the chord.
+
+function conformToChord(event, chord, octaveEquivalence)
+    octaveEquivalence = octaveEquivalence or true
+    if event[STATUS] != 144 then
+        return
+    else
+        local pitch = event[KEY]
+        if octaveEquivalence then
+            local pitchClass = pitch % OCTAVE
+            local octave = pitch - pitchClass
+            local chordPitchClass = chord[1] % OCTAVE
+            local distance = math.abs(chordPitchClass - pitchClass)
+            closestPitchClass = chordPitchClass
+            minimumDistance = distance
+            for voice = 2, #chord do
+                chordPitchClass = chord[voice] % OCTAVE
+                distance = math.abs(chordPitchClass - pitchClass)
+                if distance < minimumDistance then
+                    minimumDistance = distance
+                    closestPitchClass = chordPitchClass
+                end
+            end
+            event[KEY] = octave + closestPitchClass
+        else
+            local chordPitch = chord[1]
+            local distance = math.abs(chordPitch - pitch)
+            local closestPitch = chordPitch
+            local minimumDistance = distance
+            for voice = 2, #chord do
+                chordPitch = chord[voice]
+                distance = math.abs(chordPitch - pitch)
+                if distance < minimumDistance then
+                    minimumDistance = distance
+                    closestPitch = chordPitch
+                end
+            end
+            event[KEY] = closestPitch
+        end
+    end
+end
+
+-- Inserts the notes of the chord into the score at the specified time.
+-- The internal duration, instrument, and loudness are used if present,
+-- if not the specified values are used.
+
+function insert(score, chord, time_, duration, channel, velocity, pan)
+    for voice = 1, #score do
+        table.insert(score, chord:note(voice, time_, curation, channel, velocity, pan))
+    end
+end
+
+-- For all the notes in the score
+-- beginning at or later than the start time, 
+-- and up to but not including the end time,
+-- moves the pitch of the note to belong to the chord, using the 
+-- conformToChord function. 
+
+function apply(score, chord, start, end_, octaveEquivalence)
+    octaveEquivalence = octaveEquivalence or true
+    local slice = score:slice(start, end_)
+    for index, event in ipairs(slice) do
+        conformToChord(event, chord, octaveEquivalence)
+    end
+end
+
+-- Returns a chord containing all the pitches of the score 
+-- beginning at or later than the start time, 
+-- and up to but not including the end time.
+
+function gather(score, start, end_)
+    local chord = Chord:new()
+    local slice = score:slice(start, end_)
+    for index, event in ipairs(slice) do
+        local pitch = event[KEY]
+        if not chord:contains(pitch) then
+            table.insert(chord, pitch)
+        end
+    end
+    return chord
+end
 
 return ChordSpace

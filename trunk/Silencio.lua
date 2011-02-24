@@ -785,6 +785,21 @@ function Score:tieOverlaps()
     end
 end
 
+-- Returns the sub-score containing events 
+-- starting at or later than the begin time,
+-- and up to but not including the end time.
+
+function Score:slice(begin, end_)
+    self:sort()
+    local slice = Score:new()
+    for index, event in ipairs(self) do
+        local time_ = event[TIME]
+        if time_ >= begin and time < end_ then
+            table.insert(slice, event)
+        end
+    return slice
+end
+
 function Score:display()
     if scoreView then
         ScoreView.display(self)
