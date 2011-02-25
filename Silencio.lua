@@ -788,6 +788,7 @@ end
 -- Returns the sub-score containing events 
 -- starting at or later than the begin time,
 -- and up to but not including the end time.
+-- The events in the slice are references.
 
 function Score:slice(begin, end_)
     self:sort()
@@ -797,6 +798,7 @@ function Score:slice(begin, end_)
         if time_ >= begin and time < end_ then
             table.insert(slice, event)
         end
+    end
     return slice
 end
 
