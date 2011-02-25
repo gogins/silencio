@@ -386,7 +386,7 @@ function ChordView:isE(chord)
 end
 
 function ChordView:E(chord)
-    print('E:chord:', chord)
+    print('E: chord:', chord)
     if self.equivalence == 'R' then
         return chord:eR(self.octaves * OCTAVE)
     end
@@ -561,11 +561,11 @@ function ChordView:display()
         end
         -- Zoom in?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_ADD) == glfw.GLFW_PRESS then
-            tz = tz + .3
+            tz = tz + 3
         end
         -- Zoom out?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_SUBTRACT) == glfw.GLFW_PRESS then
-            tz = tz - .3
+            tz = tz - 3
         end
         -- Move left?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT) == glfw.GLFW_PRESS then
@@ -615,7 +615,7 @@ function ChordView:display()
                 if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then
                     self.pickedChord = self:E(self.pickedChord:T(-1))
                 else
-                    self.pickedChord = self:E(self.pickedChord:T(1))
+                    self.pickedChord = self:E(self.pickedChord:T( 1))
                 end
                 print(self.pickedChord:label())
             end
@@ -756,7 +756,7 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 2
-chordView.equivalence = 'OPI'
+chordView.equivalence = 'RP'
 chordView:createChords()
 chordView:findSize()
 chordView:display()

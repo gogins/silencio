@@ -1012,7 +1012,7 @@ function Chord:eP()
 end
 
 function Chord:eRP(range)
-    return self:eR(range):P()
+    return self:eR(range):eP()
 end
 
 function Chord:eOP()
@@ -1410,30 +1410,30 @@ end
 -- if the internal duration, channel, velocity, and pan of the 
 -- chord are nil.
 
-function Chord:note(voice, time_, duration, channel, velocity, pan)
+function Chord:note(voice_, time_, duration_, channel_, velocity_, pan_)
     time_ = time_ or 0
-    duration = duration or 0.25
-    channel = channel or 1
-    velocity = velocity or 80
-    pan = pan or 0
-    local note = Event:new()
-    note[1] = time_
-    note[2] = self:duration[voice] or duration
-    note[4] = self:channel[voice] or channel
-    note[5] = self[voice]
-    note[6] = self:velocity[voice] or velocity
-    note[7] = self:pan[voice] or pan
-    return note
+    duration_ = duration_ or 0.25
+    channel_ = channel_ or 1
+    velocity_ = velocity_ or 80
+    pan_ = pan_ or 0
+    local note_ = Event:new()
+    note_[TIME] = time_
+    note_[DURATION] = self.duration[voice_] or duration_
+    note_[CHANNEL] = self.channel[voice_] or channel_
+    note_[KEY] = self[voice_]
+    note_[VELOCITY] = self.velocity[voice_] or velocity_
+    note_[PAN] = self.pan[voice_] or pan_
+    return note_
 end
 
 -- Returns an individual note for each voice of the chord.
 -- The chord's duration, instrument, and loudness are used if present,
 -- if not the specified values are used.
 
-function Chord:notes(time_, duration, channel, velocity, pan)
+function Chord:notes(time_, duration_, channel_, velocity_, pan_)
     local notes_ = Score:new()
     for voice, key in ipairs(self) do
-        table.insert(notes_, self:note(voice, time_, duration, channel, velocity, pan))
+        table.insert(notes_, self:note(voice, time_, duration_, channel_, velocity_, pan_))
     end
     return notes_
 end
@@ -1447,7 +1447,7 @@ end
 
 function conformToChord(event, chord, octaveEquivalence)
     octaveEquivalence = octaveEquivalence or true
-    if event[STATUS] != 144 then
+    if event[STATUS] ~= 144 then
         return
     else
         local pitch = event[KEY]
