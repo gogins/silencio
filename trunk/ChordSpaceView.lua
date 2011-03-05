@@ -311,10 +311,11 @@ function ChordView:drawChord(chord, name, picking)
     end end end
     local radius = 0
     if self:isE(chord) then
-        radius = 1/12
+        radius = 1/16
         if self.pickedChord ~= nil then
             if self.pickedChord:label() == chord:label() then
-                radius = 1/6
+                radius = 1/8
+                gl.glColor4f(1, 1, 1, 1)
             end
         end
     else
@@ -715,7 +716,7 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_2) == glfw.GLFW_RELEASE then
                 _2pressed = false
             end
-            -- C[2] moves,
+            -- C[3] moves,
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_3) == glfw.GLFW_PRESS and not _3pressed then
                 _3pressed = true
                 if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT_SHIFT) == glfw.GLFW_PRESS then

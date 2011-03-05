@@ -440,15 +440,18 @@ function Chord:contains(pitch)
 end
 
 -- Returns the lowest pitch in the chord.
+-- and also its voice index.
 
 function Chord:min()
     local lowest = self[1]
+    local lowestVoice = 1
     for voice = 2, #self do
         if self[voice] < lowest then
             lowest = self[voice]
+            lowestVoice = voice
         end
     end
-    return lowest
+    return lowest, lowestVoice
 end
 
 -- Returns the minimum interval in the chord.
@@ -468,16 +471,19 @@ function Chord:minimumInterval()
     return minimumInterval
 end
 
--- Returns the highest pitch in the chord.
+-- Returns the highest pitch in the chord,
+-- and also its voice index.
 
 function Chord:max()
     local highest = self[1]
+    local highestVoice = 1
     for voice = 2, #self do
         if self[voice] > highest then
             highest = self[voice]
+            highestVoice = voice
         end
     end
-    return highest
+    return highest, highestVoice
 end
 
 -- Returns the range of the pitches in the chord.
@@ -800,7 +806,7 @@ end
 
 function Chord:T(x)  
     local chord = self:clone()
-    for voice, pitch in ipairs(self) do
+    for voice, pitch in ipairs(chord) do
         chord[voice] = T(pitch, x)
     end
     return chord
@@ -811,14 +817,14 @@ end
 function Chord:I(x)
     x = x or OCTAVE
     local chord = self:clone()
-    for voice, pitch in ipairs(self) do
+    for voice, pitch in ipairs(chord) do
         chord[voice] = I(pitch, x)
     end
     return chord
 end
 
 function Chord:iseR(range)
-    -- The chord must have a range less than or equal to the length
+    -- The chord must have a range less than or equal to that 
     -- of the fundamental domain.
     if self:range() > range then
         return false
@@ -994,11 +1000,36 @@ function Chord:iseV()
 end
 
 function Chord:eR(range)
-    local chord = self:eop()
-    -- If the chord is above the orbifold,
-    -- revoice it downwards until it is inside.
-    while not chord:iseR(range) do
-        chord = chord:v(-1)
+    local chord = self:clone()
+    -- Return a copy of this if it is already in the fundamental domain.
+    if chord:iseR(range) then
+        return chord
+    end
+    -- The clue here is that at least one voice must be >= 0,
+    -- but no voice can be > range.
+    -- Move all pitches inside the interval [0, range] 
+    -- (which is not the same as the fundamental domain).
+    for i = 1, #chord do
+        local pitch = chord[i]
+        while pitch < 0 do
+            pitch = pitch + range
+        end
+        while pitch > range do
+            pitch = pitch - range
+        end
+        chord[i] = pitch
+    end
+    -- Reflect voices that are outside of the fundamental domain
+    -- back into it, which will revoice the chord.
+    while true do
+        local layer = chord:sum()
+        if 0 <= layer and layer <= range then
+            break
+        end
+        maximumPitch, maximumVoice = chord:max()
+        -- Because no voice is above the range,
+        -- any voices that need to be revoiced will now be negative.
+        chord[maximumVoice] = maximumPitch - range
     end
     return chord
 end
