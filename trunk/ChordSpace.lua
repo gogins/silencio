@@ -11,12 +11,14 @@ This package, part of Silencio, implements a geometric approach
 to some common operations on chords in neo-Riemannian music theory 
 for use in score generating programs:
 
---  Identifying whether a chord belongs to some equivalence class.
-
+--  Identifying whether a chord belongs to some equivalence class,
+    or moving a chord inside the fundamental domain of some 
+    equivalence class.
+    
 --  Causing chord progressions to move strictly within an orbifold induced 
     by some equivalence class.
     
---  Implementing chord progressions based on the L, P, R, D, K, and Q 
+--  Implementing chord progressions based on the L, P, R, D, K, and Q    
     operations of neo-Riemannian theory (thus implementing some aspects
     of "harmony").
     
@@ -58,9 +60,9 @@ with points on an opposing face. The fundamental domain of the
 equivalence class is the space "within" the orbifold.
 
 Plain chord space has no equivalence classes. Ordered chords are represented 
-as vectors in braces {p1, ..., pN}. Unordered chords are represented as 
-sorted vectors in parentheses (p1, ..., pN). Unordering is itself an 
-equivalence class.
+as vectors in parentheses (p1, ..., pN). Unordered chords are represented as 
+sorted vectors in braces {p1, ..., pN}. Unordering is itself an equivalence 
+class.
 
 The following equivalence classes apply to pitches and chords, 
 and induce different orbifolds. Classes with lower-case names arise from
@@ -122,12 +124,13 @@ I       Inversional equivalence in geometric theory, the same as i.
         Represented as the inversion having the 
         first interval between voices be smaller than or equal to the final 
         interval. Care is needed to distinguish the mathematician's sense 
-        of 'invert', which means to reflect around a center, from the 
-        musician's sense of 'invert', which varies according to context but 
-        in practice often means 'revoice by adding an octave to the lowest 
-        tone of a chord.' Here, we use 'invert' and 'inversion' in the 
-        mathematician's sense, and we use the terms 'revoice' and 'voicing' 
-        for the musician's 'invert' and 'inversion'.
+        of 'invert', which means 'pitch-space inversion' or 'reflect around a 
+        fixed point', from the musician's sense of 'invert', which varies 
+        according to context but in practice often means 'registral inversion' 
+        or 'revoice by adding an octave to the lowest tone of a chord.' Here, 
+        we use 'invert' and 'inversion' in the mathematician's sense, and we 
+        use the terms 'revoice' and 'voicing' for the musician's 'invert' and 
+        'inversion'.
 
 OP      Tymoczko's orbifold for chords; i.e. chords with a 
         fixed number of voices in a harmonic context.
@@ -193,6 +196,8 @@ affine transformations in chord space, and Maxx Cho, "The Voice-Leading
 Automorphism and Riemannian Operators," 2009, which may show that tonality 
 arises from a voice-leading automorphism in the Riemannian group.
 
+TODO: Implement various scales found on 20th and 21st century harmony
+along with 'splitting' and 'merging' operations.
                 
 MUSICAL MEANING AND USE
 

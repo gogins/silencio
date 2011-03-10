@@ -1,4 +1,6 @@
---[[
+local ScoreView = {}
+function ScoreView.help()
+print [[
 What we want here is the following:
 (1) Display a 3-dimensional piano roll view of a score:
     Time -- X axis
@@ -11,22 +13,13 @@ What we want here is the following:
 (4) It should be possible to pick notes using the mouse; doing so will toggle a display of the actual values of the note and/or play the note.
 (5) The user should be able to navigate in the score by translating and rotating on all 3 dimensions.
 ]]
-print('package.path:', package.path)
-print('package.cpath:', package.cpath)
+end
 
-require "iuplua"
-require "iupluagl"
-require "luagl"
-require "luaglu"
-require "LoadTGA"
-
-ScoreView = {}
-
-iup.key_open()
-
-light = false
-lp = true
-fp = false
+local ffi =         require("ffi")
+local gl =          require("gl")
+local glu =         require("glu")
+local glfw =        require("glfw")
+local Silencio =    require("Silencio")
 
 tx = 0
 ty = 0
@@ -36,29 +29,168 @@ rx = 0
 ry = 0
 rz = 0
 
-iup.key_open()
+LightAmbient = ffi.new("float[4]")
+LightAmbient[0] = .25
+LightAmbient[1] = .25
+LightAmbient[2] = .25
+LightAmbient[3] = 1
+LightDiffuse = ffi.new("float[4]")
+LightDiffuse[0] = 1
+LightDiffuse[1] = 1
+LightDiffuse[2] = 1
+LightDiffuse[3] = 1
+LightPosition = ffi.new("float[4]")
+LightPosition[0] = 100
+LightPosition[1] = 100
+LightPosition[2] = 1000
+LightPosition[2] = 1
+Ambient = ffi.new("float[4]")
+Ambient[0] = 1
+Ambient[1] = 1
+Ambient[2] = 1
+Ambient[3] = 1
+Diffuse = ffi.new("float[4]")
+Diffuse[0] = 1
+Diffuse[1] = 1
+Diffuse[2] = 1
+Diffuse[3] = 1
+Specular = ffi.new("float[4]")
+Specular[0] = 1
+Specular[1] = 1
+Specular[2] = 1
+Specular[3] = 1
+Emission = ffi.new("float[4]")
+Emission[0] = 0
+Emission[1] = 0
+Emission[2] = 0
+Emission[3] = 1
 
-light = true
-lp = true
-fp = false
+-- Return the red, green, blue color corresponding to a hue, saturation, value color.
 
-LightAmbient = {.1, .1, .1, 1}   
-LightDiffuse = {1, 1, 1, 1}       
-LightPosition = {1000, 1000, 1000}     
-
-canvas = iup.glcanvas{buffer="DOUBLE", rastersize = "1200x600"}
-
-timer = iup.timer{time=10}
-
-function timer:action_cb()
-    iup.Update(canvas)
+function hsv_to_rgb(h, s, v)
+    local hi = math.floor(h / 60.0) % 6
+    local f =  (h / 60.0) - math.floor(h / 60.0)
+    local p = v * (1.0 - s)
+    local q = v * (1.0 - (f * s))
+    local t = v * (1.0 - ((1.0 - f) * s))
+    if      hi == 0 then
+        return v, t, p
+    else if hi == 1 then
+        return q, v, p
+    else if hi == 2 then
+        return p, v, t
+    else if hi == 3 then
+        return p, q, v
+    else if hi == 4 then
+        return t, p, v
+    else if hi == 5 then
+        return v, p, q
+    end end end end end end
+end
+ 
+function iterateColor(c)
+    r = c[1] + 1
+    if r < 100 then
+        c[1] = r
+    else
+        c[1] = 1
+        g = c[2] + 1
+        if g < 100 then
+            c[2] = g
+        else
+            c[2] = 1
+            c[3] = c[3] + 1
+        end
+    end
 end
 
-function canvas:resize_cb(width, height)
-    iup.GLMakeCurrent(self)
-    gl.Viewport(0, 0, width, height)
-    gl.MatrixMode('PROJECTION')
-    gl.LoadIdentity()
+ScoreViewer = {}
+
+function ScoreViewer:new(o)
+    local o = o or {score = nil, title = 'Score View', fullscreen = true, minima = {}, maxima = {}, ranges = {}, pickedNote = nil}
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+function ScoreViewer:material()
+    gl.glShadeModel(gl.GL_SMOOTH)           
+    gl.glClearColor(0, 0, 0, 0.5)       
+    gl.glClearDepth(1.0)                 
+    gl.glEnable(gl.GL_DEPTH_TEST)          
+    gl.glDepthFunc(gl.GL_LEQUAL)           
+    gl.glHint(gl.GL_PERSPECTIVE_CORRECTION_HINT, gl.GL_NICEST)
+    gl.glEnable(gl.GL_COLOR_MATERIAL)
+    gl.glLightfv(gl.GL_LIGHT1, gl.GL_AMBIENT, LightAmbient)
+    gl.glLightfv(gl.GL_LIGHT1, gl.GL_DIFFUSE, LightDiffuse)
+    gl.glLightfv(gl.GL_LIGHT1, gl.GL_POSITION, LightPosition)
+    gl.glEnable(gl.GL_LIGHT1)
+    gl.glMaterialfv(gl.GL_BACK, gl.GL_AMBIENT, Ambient)
+    gl.glMaterialfv(gl.GL_BACK, gl.GL_DIFFUSE, Diffuse)
+    gl.glMaterialfv(gl.GL_FRONT_AND_BACK, gl.GL_SPECULAR, Specular)
+    gl.glMaterialfv(gl.GL_FRONT_AND_BACK, gl.GL_EMISSION, Emission)
+    gl.glEnable(gl.GL_NORMALIZE)
+    gl.glEnable(gl.GL_LIGHTING)
+    gl.glEnable(gl.GL_BLEND)
+    gl.glBlendFunc(gl.GL_SRC_ALPHA, gl.GL_ONE_MINUS_SRC_ALPHA)
+end
+
+function ScoreViewer:draw(picking)
+    picking = picking or false
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+    gl.glClear(gl.GL_DEPTH_BUFFER_BIT)
+    self:material()
+    gl.glLoadIdentity()
+    gl.glTranslatef(tx,ty,tz)
+    gl.glTranslatef(self.centerX, self.centerY, self.centerZ)
+    gl.glRotatef(rx,1,0,0)
+    gl.glRotatef(ry,0,1,0)
+    gl.glRotatef(rz,0,0,1)
+    gl.glTranslatef(-tx,-ty,-tz)
+    gl.glTranslatef(-self.centerX, -self.centerY, -self.centerZ)
+    gl.glTranslatef(tx,ty,tz)
+    if not picking then
+        self:drawGrid()
+    end
+    for i, note in ipairs(self.score) do
+        self:drawNote(note)
+    end
+    if not picking then
+        glfw.glfwSwapBuffers()
+    end
+end
+
+function ScoreViewer:drawGrid()
+    gl.glBegin(gl.GL_LINES)
+    for xi, x in ipairs(self.gridXs) do
+        for yi, y in ipairs(self.gridYs) do
+            for zi, z in ipairs(self.gridZs) do
+                if y - self.beginY == 36 then
+                    gl.glColor4f(1, 0, 0, 0.5)
+                else
+                    gl.glColor4f(1, 0, 0, 0.5)
+                end
+                gl.glVertex3f(self.beginX, y, z)
+                gl.glVertex3f(self.endX, y, z)
+                gl.glVertex3f(x, self.beginY, z)
+                gl.glVertex3f(x, self.endY, z)
+                gl.glVertex3f(x, y, self.beginZ)
+                gl.glVertex3f(x, y, self.endZ)
+            end
+        end
+    end
+    gl.glEnd()
+end 
+
+function ScoreViewer:resize(width, height)
+    gl.glViewport(0, 0, width, height)
+    local viewport = ffi.new('GLint[4]')
+	gl.glGetIntegerv(gl.GL_VIEWPORT, viewport);
+    gl.glMatrixMode(gl.GL_PROJECTION)
+    gl.glLoadIdentity()
+    glu.gluPerspective(45, (viewport[2] - viewport[0]) / (viewport[3] - viewport[1]), 0.1, 1000.0)
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glLoadIdentity()
     self.width_ = width
     self.height_ = height
     self.aspect = width / height
@@ -129,177 +261,248 @@ function canvas:resize_cb(width, height)
         i = i + 1
     end
     self.gridZs[i] = self.endZ
- end
+end
 
-function canvas:drawNote(note)
-    gl.PushMatrix()
-    gl.Translate(note[TIME], note[KEY], note[CHANNEL])
+function ScoreViewer:startPicking(cursorX, cursorY) 
+    local viewport = ffi.new('GLint[4]')
+	gl.glGetIntegerv(gl.GL_VIEWPORT, viewport);
+	gl.glSelectBuffer(ffi.sizeof(self.pickbuffer), self.pickbuffer);
+	gl.glRenderMode(gl.GL_SELECT);
+    gl.glMatrixMode(gl.GL_PROJECTION);
+	gl.glPushMatrix();
+	gl.glLoadIdentity();
+	glu.gluPickMatrix(cursorX, viewport[3] - cursorY, 1, 1, viewport);
+    glu.gluPerspective(45, (viewport[2] - viewport[0]) / (viewport[3] - viewport[1]), 0.1, 1000.0)
+	gl.glMatrixMode(gl.GL_MODELVIEW);
+	gl.glInitNames();
+    gl.glPushName(-1)
+end
+
+function ScoreViewer:stopPicking()
+	gl.glMatrixMode(gl.GL_PROJECTION);
+	gl.glPopMatrix();
+	gl.glMatrixMode(gl.GL_MODELVIEW);
+	gl.glFlush();
+	local hits = gl.glRenderMode(gl.GL_RENDER);
+	if hits ~= 0 then
+		self:processHits(hits);
+    else
+        self.pickedChord = nil
+    end
+end
+
+function ScoreViewer:processHits(hits)
+    local i = 0
+    local hitsSelected = self.pickbuffer[i]
+    i = i + 1
+    local hitsMinimumDepth = self.pickbuffer[i]
+    i = i + 1
+    local hitsMaximumDepth = self.pickbuffer[i]
+    i = i + 1
+    local hitsName= self.pickbuffer[i]
+    i = i + 1
+    local pickedDepth = hitsMinimumDepth
+    local pickedName = hitsName
+    for hit = 1, hits - 1 do
+        hitsSelected = self.pickbuffer[i]
+        i = i + 1
+        hitsMinimumDepth = self.pickbuffer[i]
+        i = i + 1
+        hitsMaximumDepth = self.pickbuffer[i]
+        i = i + 1
+        hitsName= self.pickbuffer[i]
+        i = i + 1
+        if hitsMinimumDepth < pickedDepth then
+            pickedDepth = hitsMinimumDepth
+            pickedName = hitsName
+        end
+    end
+    self.pickedChord = self.chords[pickedName]
+    print(string.format('hits: %d  pickedName: %d  pickedDepth: %d', hits, pickedName, pickedDepth))
+    print(self.pickedChord:__tostring())
+    print(self.pickedChord:label())
+    print()
+end
+
+function ScoreViewer:display()
+    glfw.glfwInit()
+    local window = glfw.glfwOpenWindow( 800, 600, glfw.GLFW_WINDOWED, "Score View", nil)
+    glfw.glfwEnable(window, glfw.GLFW_STICKY_KEYS)
+    glfw.glfwDisable(window, glfw.GLFW_AUTO_POLL_EVENTS)
+    glfw.glfwSwapInterval(1)
+    local redbits = glfw.glfwGetWindowParam(window, glfw.GLFW_RED_BITS)
+    local greenbits = glfw.glfwGetWindowParam(window, glfw.GLFW_GREEN_BITS)
+    local bluebits = glfw.glfwGetWindowParam(window, glfw.GLFW_BLUE_BITS)
+    print('Color bits:', redbits, greenbits, bluebits)
+    local intparamptr_t = ffi.typeof('int[1]')
+    local newwidth = intparamptr_t()
+    local newheight = intparamptr_t()
+    local oldwidth = intparamptr_t()
+    local oldheight = intparamptr_t()
+    local newmousex = intparamptr_t()
+    local newmousey = intparamptr_t()
+    local oldmousex = intparamptr_t()
+    local oldmousey = intparamptr_t()
+    local color_t = ffi.typeof('unsigned int[5]')
+    local color = color_t()
+    glfw.glfwGetWindowSize(window, newwidth, newheight)
+    glfw.glfwGetWindowSize(window, oldwidth, oldheight)
+    glfw.glfwGetMousePos(window, newmousex, newmousey)
+    glfw.glfwGetMousePos(window, oldmousex, oldmousey)
+    self:resize(newwidth[0], newheight[0])
+    self.pickbuffercount = 1000
+    self.pickbuffer = ffi.new('int[?]', self.pickbuffercount)
+    local tpressed = false
+    local ipressed = false
+    local ppressed = false
+    local rpressed = false
+    local lpressed = false
+    local dpressed = false
+    local kpressed = false
+    local qpressed = false    
+    local _1pressed = false    
+    local _2pressed = false    
+    local _3pressed = false    
+    local mpressed = false
+    while true do
+        glfw.glfwPollEvents()
+        -- Check for resizing.
+        oldwidth[0] = newwidth[0]
+        oldheight[0] = newheight[0]
+        glfw.glfwGetWindowSize(window, newwidth, newheight)
+        if (newheight[0] ~= oldheight[0]) or (newwidth[0] ~= oldwidth[0]) then
+            self:resize(newwidth[0], newheight[0])
+        end
+        -- Get key input...
+       if glfw.glfwGetKey(window, glfw.GLFW_KEY_ESCAPE) == glfw.GLFW_PRESS then
+            break
+        end
+        -- Zoom in?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_ADD) == glfw.GLFW_PRESS then
+            tz = tz + 3
+        end
+        -- Zoom out?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_SUBTRACT) == glfw.GLFW_PRESS then
+            tz = tz - 3
+        end
+        -- Move left?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_LEFT) == glfw.GLFW_PRESS then
+            tx = tx - .1
+        end
+        -- Move right?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_RIGHT) == glfw.GLFW_PRESS then
+            tx = tx + .1
+        end
+        -- Move up?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_UP) == glfw.GLFW_PRESS then
+            ty = ty + .1
+        end
+        -- Move down?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_DOWN) == glfw.GLFW_PRESS then
+            ty = ty - .1
+        end
+        -- Spin in?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_9) == glfw.GLFW_PRESS then
+            rz = rz - .7
+        end
+        -- Spin out?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_3) == glfw.GLFW_PRESS then
+            rz = rz + .7
+        end
+        -- Spin left?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_7) == glfw.GLFW_PRESS then
+            rx = rx - .7
+        end
+        -- Spin right?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_1) == glfw.GLFW_PRESS then
+            rx = rx + .7
+        end
+        -- Spin up?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_8) == glfw.GLFW_PRESS then
+            ry = ry - .7
+        end
+        -- Spin down?
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_2) == glfw.GLFW_PRESS then
+            ry = ry + .7
+        end
+        -- Operate on a note, if one has been picked.
+        if self.pickedNote ~= nil then
+        end
+        oldmousex[0] = newmousex[0]
+        oldmousey[0] = newmousey[0]
+        glfw.glfwGetMousePos(window, newmousex, newmousey)
+        local button = glfw.glfwGetMouseButton(window, glfw.GLFW_MOUSE_BUTTON_LEFT)
+        if button == glfw.GLFW_PRESS then
+            self:startPicking(newmousex[0], newmousey[0])
+            self:draw(true)
+            self:stopPicking()
+        else
+            self:draw(false)
+        end
+    end
+end
+
+function ScoreViewer:drawNote(note)
+    gl.glPushMatrix()
+    gl.glTranslate(note[TIME], note[KEY], note[CHANNEL])
     gl.Begin('QUADS')
-    gl.Color(note[CHANNEL] / 16.0, note[CHANNEL] / 16.0, 1.0, note[VELOCITY] / 127)
+    gl.glColor4f(note[CHANNEL] / 16.0, note[CHANNEL] / 16.0, 1.0, note[VELOCITY] / 127)
     local d = note[DURATION]
     local w = 1
     local t = 0.25
     -- Front Face
-    gl.Normal( 0,  0,  1)
-    gl.Vertex( 0,  0,  w, 1)
-    gl.Vertex( d,  0,  w, 1)
-    gl.Vertex( d,  t,  w, 1)
-    gl.Vertex( 0,  t,  w, 1)
+    gl.glNormal3f( 0,  0,  1)
+    gl.glVertex4f( 0,  0,  w, 1)
+    gl.glVertex4f( d,  0,  w, 1)
+    gl.glVertex4f( d,  t,  w, 1)
+    gl.glVertex4f( 0,  t,  w, 1)
     -- Back Face
-    gl.Normal( 0,  0, -1)
-    gl.Vertex( 0,  0,  0, 1)
-    gl.Vertex( d,  0,  0, 1)
-    gl.Vertex( d,  t,  0, 1)
-    gl.Vertex( 0,  t,  0, 1)
+    gl.glVertex4f( 0,  0, -1)
+    gl.glVertex4f( 0,  0,  0, 1)
+    gl.glVertex4f( d,  0,  0, 1)
+    gl.glVertex4f( d,  t,  0, 1)
+    gl.glVertex4f( 0,  t,  0, 1)
     -- Top Face
-    gl.Normal( 0,  1,  0)
-    gl.Vertex( 0,  t,  0, 1)
-    gl.Vertex( d,  t,  0, 1)
-    gl.Vertex( d,  t,  w, 1)
-    gl.Vertex( 0,  t,  w, 1)
+    gl.glNormal3f( 0,  1,  0)
+    gl.glVertex4f( 0,  t,  0, 1)
+    gl.glVertex4f( d,  t,  0, 1)
+    gl.glVertex4f( d,  t,  w, 1)
+    gl.glVertex4f( 0,  t,  w, 1)
     -- Bottom Face
-    gl.Normal( 0, -1,  0)
-    gl.Vertex( 0,  0,  0, 1)
-    gl.Vertex( d,  0,  0, 1)
-    gl.Vertex( d,  0,  w, 1)
-    gl.Vertex( 0,  0,  w, 1)
+    gl.glNormal3f( 0, -1,  0)
+    gl.glVertex4f( 0,  0,  0, 1)
+    gl.glVertex4f( d,  0,  0, 1)
+    gl.glVertex4f( d,  0,  w, 1)
+    gl.glVertex4f( 0,  0,  w, 1)
     -- Right Face
-    gl.Normal( 1,  0,  0)
-    gl.Vertex( d,  0,  0, 1)
-    gl.Vertex( d,  t,  0, 1)
-    gl.Vertex( d,  t,  w, 1)
-    gl.Vertex( d,  0,  w, 1)
+    gl.glNormal3f( 1,  0,  0)
+    gl.glVertex4f( d,  0,  0, 1)
+    gl.glVertex4f( d,  t,  0, 1)
+    gl.glVertex4f( d,  t,  w, 1)
+    gl.glVertex4f( d,  0,  w, 1)
     -- Left Face
-    gl.Normal(-1,  0,  0)
-    gl.Vertex( 0,  0,  0, 1)
-    gl.Vertex( 0,  t,  0, 1)
-    gl.Vertex( 0,  t,  w, 1)
-    gl.Vertex( 0,  0,  w, 1)
+    gl.glNormal3f(-1,  0,  0)
+    gl.glVertex4f( 0,  0,  0, 1)
+    gl.glVertex4f( 0,  t,  0, 1)
+    gl.glVertex4f( 0,  t,  w, 1)
+    gl.glVertex4f( 0,  0,  w, 1)
 
-    gl.End()
-    gl.PopMatrix()
-end
-
-function canvas:drawGrid()
-    gl.Begin('LINES')
-    for xi, x in ipairs(self.gridXs) do
-        for yi, y in ipairs(self.gridYs) do
-            for zi, z in ipairs(self.gridZs) do
-                if y - self.beginY == 36 then
-                    gl.Color(1, 0, 0, 0.5)
-                else
-                    gl.Color(0, 1, 0, 0.5)
-                end
-                gl.Vertex(self.beginX, y, z)
-                gl.Vertex(self.endX, y, z)
-                gl.Vertex(x, self.beginY, z)
-                gl.Vertex(x, self.endY, z)
-                gl.Vertex(x, y, self.beginZ)
-                gl.Vertex(x, y, self.endZ)
-            end
-        end
-    end
-    gl.End()
-end
-
-function canvas:action(x, y)
-    iup.GLMakeCurrent(self)
-    gl.Clear('COLOR_BUFFER_BIT')
-    gl.Clear('DEPTH_BUFFER_BIT')
-    gl.LoadIdentity()
-    gl.Translate(tx,ty,tz)
-    gl.Translate(self.centerX, self.centerY, self.centerZ)
-    gl.Rotate(rx,1,0,0)
-    gl.Rotate(ry,0,1,0)
-    gl.Rotate(rz,0,0,1)
-    gl.Translate(-tx,-ty,-tz)
-    gl.Translate(-self.centerX, -self.centerY, -self.centerZ)
-    gl.Translate(tx,ty,tz)
-    self:drawGrid()
-    for i, note in ipairs(self.score) do
-        self:drawNote(note)
-    end
-    iup.GLSwapBuffers(self)
-end
-
-function canvas:k_any(c)
-  if c == iup.K_q or c == iup.K_ESC then
-    return iup.CLOSE
-  end
-  if c == iup.K_F1 then
-    if fullscreen then
-      fullscreen = false
-      dialog.fullscreen = "No"
-    else
-      fullscreen = true
-      dialog.fullscreen = "Yes"
-    end
-    iup.SetFocus(canvas)
-  end
-  if c == iup.K_l then   -- 'L' Key Being Pressed ?
-    if (light) then
-      gl.Disable('LIGHTING')
-      print('Lighting disabled.')
-      light = false
-    else
-      gl.Enable('LIGHTING')
-      print('Lighting enabled.')
-      light = true
-    end
-  end
-    if c == iup.K_RIGHT     then tx = tx + 1 end
-    if c == iup.K_LEFT      then tx = tx - 1 end
-    if c == iup.K_UP        then ty = ty + 1 end
-    if c == iup.K_DOWN      then ty = ty - 1 end
-    if c == iup.K_PGUP      then tz = tz + 1 end
-    if c == iup.K_PGDN      then tz = tz - 1 end
-    if c == iup.K_cRIGHT    then rx = rx + 1 end
-    if c == iup.K_cLEFT     then rx = rx - 1 end
-    if c == iup.K_cUP       then ry = ry + 1 end
-    if c == iup.K_cDOWN     then ry = ry - 1 end
-    if c == iup.K_cPGUP     then rz = rz + 1 end
-    if c == iup.K_cPGDN     then rz = rz - 1 end
-    if c == iup.K_r         then
-        tx = 0
-        ty = 0
-        tz = 0
-        rx = 0
-        ry = 0
-        rz = 0
-        self:resize_cb(self.width_, self.height_)
-    end
-    print(string.format('tx: %9.4f  ty: %9.4f  tz: %9.4f  rx: %9.4f  ry: %9.4f  rz: %9.4f', tx, ty, tz, rx, ry, rz))
-end
-
-function canvas:map_cb()
-    iup.GLMakeCurrent(self)
-    gl.ShadeModel('SMOOTH')            -- Enable Smooth Shading
-    gl.ClearColor(0, 0, 0, 0.5)        -- Black Background
-    gl.ClearDepth(1.0)                 -- Depth Buffer Setup
-    gl.Enable('DEPTH_TEST')            -- Enables Depth Testing
-    gl.DepthFunc('LEQUAL')             -- The Type Of Depth Testing To Do
-    gl.Hint('PERSPECTIVE_CORRECTION_HINT','NICEST')
-    gl.Enable('COLOR_MATERIAL')
-    gl.Light('LIGHT1', 'AMBIENT', LightAmbient)
-    gl.Light('LIGHT1', 'DIFFUSE', LightDiffuse)
-    gl.Light('LIGHT1', 'POSITION', LightPosition)
-    gl.Enable('LIGHT1')
-    gl.Material('BACK', 'AMBIENT', 1, 1, 1, 0)
-    gl.Material('BACK', 'DIFFUSE', 1, 1, 1, 0)
-    gl.Material('FRONT_AND_BACK', 'SPECULAR', 1, 1, 1, 1)
-    gl.Material('FRONT_AND_BACK', 'EMISSION', 0, 0, 0, 1)
-    gl.Enable('NORMALIZE')
+    gl.glEnd()
+    gl.glPopMatrix()
 end
 
 function ScoreView.display(score_)
-    dialog = iup.dialog{canvas; title=score.title}
-    canvas.score = score_
-    dialog:show()
-    canvas.rastersize = nil
-    timer.run = "YES"
-    if (not iup.MainLoopLevel or iup.MainLoopLevel()==0) then
-      iup.MainLoop()
-    end
+    print('BEGAN ScoreView.display()...')
+    local scoreViewer = ScoreViewer:new()
+    scoreViewer.score = score_
+    scoreViewer:display()
+    print('ENDED ScoreView.display().')
 end
 
+print 'ScoreView:'
+for k, v in pairs(ScoreView) do
+    print(k, v)
+end
 return ScoreView
+
+
