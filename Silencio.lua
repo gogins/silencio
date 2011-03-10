@@ -41,14 +41,14 @@ rendered using Csound on a computer.
 Pass the invoking script's arg table to Score:processArg() 
 and it will perform the following commands:
 
---csound        Render generated score using set Csound orchestra, 
+--csound        Render generated score using set Csound orchestra.
 --dir           Sets directory in which to render files (must come first;
                 default is cwd or, on Android, scripts). Script is copied 
                 to this directory.
 --display       Display the generated score as a 3-D piano roll using OpenGL.
 --fomus         Render generated score as Fomus music notation file.
 --midi          Render generated score as MIDI file and play it (default).
---pianoteq      Play generated MIDI sequence file with Pianoteq.sc
+--pianoteq      Play generated MIDI sequence file with Pianoteq.
 --pianoteq-wav  Render score to soundfile using Pianoteq, 
                 post-process it, and play it.
 --playmidi      Play generated MIDI file.
@@ -804,8 +804,9 @@ end
 
 function Score:display()
     if scoreView then
+        print('scoreView:', scoreView)
         ScoreView.display(self)
     else
-        print('Score:display() not available: check LuaGL.')
+        print('ScoreView.display(score) not available: check for OpenGL and glfw.')
     end
 end

@@ -1,4 +1,4 @@
-ChordSpaceView = {}
+local ChordSpaceView = {}
 function ChordSpaceView.help()
 print [[
 '''
@@ -13,12 +13,9 @@ The purposes of this package are:
 (2) To demonstrate chord space for trichords.
 
 TODO: Actually play chords, perhaps using Csound via FFI, or using fluidsynth.
-
--- 
+ 
 ]]
 end
-
-package.path = package.path .. ';/home/mkg/scripts/?.lua;/media/3935-3164/sl4a/scripts/?.lua;/home/mkg/Downloads/iup/?.lua'
 
 local ffi =         require("ffi")
 local gl =          require("gl")
@@ -756,8 +753,8 @@ function ChordView:display()
 end
 
 chordView = ChordView:new()
-chordView.octaves = 2
-chordView.equivalence = 'RP'
+chordView.octaves = 1
+chordView.equivalence = 'OP'
 chordView:createChords()
 chordView:findSize()
 chordView:display()
