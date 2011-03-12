@@ -141,7 +141,7 @@ end
 
 MIDI = require("MIDI")
 
-local scoreView = pcall(require, "ScoreView")
+local result, ScoreView = pcall(require, "ScoreView")
 
 TIME        =  1
 DURATION    =  2
@@ -803,8 +803,8 @@ function Score:slice(begin, end_)
 end
 
 function Score:display()
-    if scoreView then
-        print('scoreView:', scoreView)
+    if ScoreView then
+        print('ScoreView:', ScoreView)
         ScoreView.display(self)
     else
         print('ScoreView.display(score) not available: check for OpenGL and glfw.')

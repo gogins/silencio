@@ -1,16 +1,10 @@
-package.path = package.path .. ';/media/3935-3164/sl4a/scripts/?.lua;/home/mkg/Downloads/iup/?.lua'
-package.cpath = package.cpath .. ';/home/mkg/Downloads/iup/?.so;/home/mkg/Downloads/iup/lib?51.so;/home/mkg/Downloads/iup/libiup?.so;/home/mkg/Downloads/iup/libiup?51.so;/usr/local/lib/lua/5.1/?.so;/usr/local/lib/lua/5.1/lib?51.so;/usr/local/lib/lua/5.1/loadall.so'
-
-print('package.path:', package.path)
-print('package.cpath:', package.cpath)
-
 require "Silencio"
 require("ChordSpace")
 
 print("CHORDSPACE UNIT TESTS")
 print()
-print(package.path)
-print(package.cpath)
+print('package.path:', package.path)
+print('package.cpath:', package.cpath)
 
 function test(chunk, ...)
     local result = assert(loadstring(chunk))()
