@@ -19,7 +19,7 @@ local ffi =         require("ffi")
 local gl =          require("gl")
 local glu =         require("glu")
 local glfw =        require("glfw")
-local Silencio =    require("Silencio")
+--local Silencio =    require("Silencio")
 
 tx = 0
 ty = 0
@@ -107,7 +107,7 @@ end
 ScoreViewer = {}
 
 function ScoreViewer:new(o)
-    local o = o or {score = nil, title = 'Score View', fullscreen = true, minima = {}, maxima = {}, ranges = {}, pickedNote = nil}
+    local o = o or {score = nil, title = 'Score View', fullscreen = true, minima = {}, maxima = {}, scales = {}, pickedNote = nil}
     setmetatable(o, self)
     self.__index = self
     return o
@@ -165,10 +165,10 @@ function ScoreViewer:drawGrid()
     for xi, x in ipairs(self.gridXs) do
         for yi, y in ipairs(self.gridYs) do
             for zi, z in ipairs(self.gridZs) do
-                if y - self.beginY == 36 then
+                if y - self.beginY == 36 or x == self.beginX then
                     gl.glColor4f(1, 0, 0, 0.5)
                 else
-                    gl.glColor4f(1, 0, 0, 0.5)
+                    gl.glColor4f(0.25, 0.25, 0.25, 0.75)
                 end
                 gl.glVertex3f(self.beginX, y, z)
                 gl.glVertex3f(self.endX, y, z)
@@ -195,13 +195,13 @@ function ScoreViewer:resize(width, height)
     self.height_ = height
     self.aspect = width / height
     print('aspect:', self.aspect)
-    local scales = self.score:findScales()
-    self.beginX = scales[1][TIME]
-    self.beginY = scales[1][KEY]
-    self.beginZ = scales[1][CHANNEL]
-    self.sizeX = scales[2][TIME]
-    self.sizeY = scales[2][KEY]
-    self.sizeZ = scales[2][CHANNEL]
+    self.scales = self.score:findScales()
+    self.beginX = self.scales[1][TIME]
+    self.beginY = self.scales[1][KEY]
+    self.beginZ = self.scales[1][CHANNEL]
+    self.sizeX = self.scales[2][TIME]
+    self.sizeY = self.scales[2][KEY]
+    self.sizeZ = self.scales[2][CHANNEL]
     self.endX = self.beginX + self.sizeX
     self.endY = self.beginY + self.sizeY
     self.endZ = self.beginZ + self.sizeZ
@@ -228,11 +228,11 @@ function ScoreViewer:resize(width, height)
     end
     self.front = self.centerZ + boundingSize * 2
     self.back = self.centerZ - boundingSize * 2
-    glu.Perspective(45, self.aspect, 1, 50000)
+    glu.gluPerspective(45, self.aspect, 1, 500)
     print(string.format('Center: x: %9.4f, y: %9.4f, z: %9.4f', self.centerX, self.centerY, self.centerZ))
     print(string.format('Front: %9.4f, back: %9.4f', self.front, self.back))
-    gl.MatrixMode('MODELVIEW')
-    gl.LoadIdentity()
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glLoadIdentity()
     tx = -self.centerX
     ty = -self.centerY
     tz = -boundingSize * 3
@@ -444,9 +444,17 @@ end
 
 function ScoreViewer:drawNote(note)
     gl.glPushMatrix()
-    gl.glTranslate(note[TIME], note[KEY], note[CHANNEL])
-    gl.Begin('QUADS')
-    gl.glColor4f(note[CHANNEL] / 16.0, note[CHANNEL] / 16.0, 1.0, note[VELOCITY] / 127)
+    gl.glTranslatef(note[TIME], note[KEY], note[CHANNEL])
+    gl.glBegin(gl.GL_QUADS)
+    local hue = (note[CHANNEL] - self.scales[1][CHANNEL]) / self.scales[2][CHANNEL]
+    hue = 60 + hue * 300
+    local saturation = 1
+    local value = (note[VELOCITY] - self.scales[1][VELOCITY]) / self.scales[2][VELOCITY]
+    value = 0.5 + (value * 0.5)
+    local alpha = 0.5
+    local r, g, b = hsv_to_rgb(hue, value, value, alpha)
+    --print('hsv:', hue, saturation, value    )
+    gl.glColor3f(r, g, b)
     local d = note[DURATION]
     local w = 1
     local t = 0.25
@@ -457,7 +465,7 @@ function ScoreViewer:drawNote(note)
     gl.glVertex4f( d,  t,  w, 1)
     gl.glVertex4f( 0,  t,  w, 1)
     -- Back Face
-    gl.glVertex4f( 0,  0, -1)
+    gl.glNormal3f( 0,  0, -1)
     gl.glVertex4f( 0,  0,  0, 1)
     gl.glVertex4f( d,  0,  0, 1)
     gl.glVertex4f( d,  t,  0, 1)
@@ -491,8 +499,10 @@ function ScoreViewer:drawNote(note)
     gl.glPopMatrix()
 end
 
+
 function ScoreView.display(score_)
     print('BEGAN ScoreView.display()...')
+    print(score_)
     local scoreViewer = ScoreViewer:new()
     scoreViewer.score = score_
     scoreViewer:display()
