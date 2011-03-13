@@ -8,8 +8,9 @@ Copyright (C) 2010 by Michael Gogins
 This software is licensed under the terms 
 of the GNU Lesser General Public License.
 
-Som is a user-programmable system for doing software sound synthesis in Lua.
-Som is part of Silencio, a system for making music by programming in Lua.
+Som is a user-programmable and user-extensible software sound synthesizer 
+written for LuaJIT + FFI. Som is part of Silencio, a system for making music 
+by programming in Lua.
 
 Thanks to Mike Pall for his Lua Just-in-Time compiler (LuaJIT) and
 native Foreign Function Interface (FFI) for LuaJIT, which make the
@@ -29,8 +30,8 @@ may change to permit true metatables with ctypes, however, which
 would make this unnecessary.
 
 Keep constants (any non-variable expression) inline.
-
 ]]
+end
 
 local ffi = require("ffi")
 local C = ffi.C
@@ -39,32 +40,59 @@ local sndfile = ffi.load('libsndfile.so')
 
 -- Forward declarations of all core synthesizer classes.
 
+-- Signals carry audio or control events for one time step.
+
 Signal = {}
-ControlSignal = {}
-AudioSignal = {}
+-- ControlSignal = Signal:new()
+-- AudioSignal = Signal:new()
+
+-- Nodes are what are run by the SignalFlowGraph,
+-- and implement a contract to process signals,
+-- time step by time step.
+
 Node = {}
-Port = {}
-Outlet = {}
-Inlet = {}
-ControlInlet = {}
-AudioInlet = {}
-FileAudioInlet = {}
-RealtimeAudioInlet = {}
-ControlOutlet = {}
-AudioOutlet = {}
-FileAudioOutlet = {}
-RealtimeAudioOutlet = {}
-Instrument = {}
-Processor = {}
-AudioPanner = {}
-Polyphonic = {}
-SignalFlowGraph = {}
+-- Outlet = Node:new()
+-- Inlet = Outlet:new()
+-- ControlOutlet = Outlet:new()
+-- AudioOutlet = Outlet:new()
+-- ControlInlet = Inlet:new()
+-- AudioInlet = Inlet:new()
+-- ScoreSource = Node:new()
+-- MidiFileSource = Node:new()
+-- MidiSource = Node:new()
+-- AudioFileSource = Node:new()
+-- AudioSource = Node:new()
+-- ScoreSink = Node:new()
+-- MidiFileSink = Node:new()
+-- MidiSink = Node:new()
+-- AudioFileSink = Node:new()
+-- AudioSink = Node:new()
+-- Processor = Node:new()
+-- Panner = Processor:new()
+-- Mixer = Processor:new()
+-- Instrument = Node:new()
+-- Polyphonic = Instrument:new()
+-- SignalFlowGraph = Node:new()
+
+-- Unit generators process signals for one time step,
+-- but do so in the context of the Node:tick() function.
+-- They use standard object-oriented procedural code.
+
+Oscillator = {}
+PhaseOscillator = {}
+QuadrupoleFilter = {}
+StateVariableFilter = {}
+LinearEnvelopeGenerator = {}
+ExponentialEnvelopeGenerator = {}
+DelayLine = {}
+InterpolatingDelayLine = {}
+RandomVariable = {}
 
 -- A Signal carries one time step's worth of some 
 -- type of value from one node to another in a SignalFlowGraph.
 -- Examples: audio samples, control events, time/frequency frames.
 
-Signal:new(o)
+function Signal:new(o)
     o = o or {}
     setmetatable(o, self)
     self.__index = self
@@ -73,23 +101,26 @@ end
 
 -- Make the value of the Signal empty or zero.
 
-Signal:clear()
+function Signal:clear()
+    
 end
 
 -- Add the value of another Signal of the same type to this Signal.
 
-Signal:sum(other)
+function Signal:sum(other)
 end
 
 -- Replace the value of this Signal with a copy of the value 
 -- of the other Signal.
 
-Signal:assign(other)
+function Signal:assign(other)
 end
 
 -- A control signal represents the state of a MIDI-like control channel 
 -- during one tick. This includes event triggering, key and velocity, 
 -- and MIDI controller numbers.
+
+ControlSignal = Signal:new()
 
 ffi.cdef([[
 struct ControlSignal
@@ -106,6 +137,9 @@ local ControlSignal_t = ffi.typeof('struct ControlSignal')
 
 function ControlSignal:new(o)
     o = o or {this = ControlSignal_t()}
+    setmetatable(o, self)
+    self.__index = self
+    return o
 end
 
 function ControlSignal:clear()
@@ -164,14 +198,21 @@ end
 function isMatchingNoteNoteOn(note)
     local this = self.this
     local other = note.this
-    if this.status == 144 and this.velocity ~= 0 and ((other.status == 128) or (other.status == 144 and other.velocity == 0)) and this.channel == other.channel and this.key = other.key then
-        return true
-    else
+    if this.channel ~= other.channel then
         return false
     end
+    if not ((this.status == 144 and this.velocity ~= 0) and (other.status == 128 or (other.status == 144 and other.velocity == 0))) then
+        return false
+    end
+    if this.key ~= other.key then
+        return false
+    end
+    return true
 end
 
 -- An audio signal buffer represents the state of one channel of PCM audio during one tick.
+
+AudioSignal = Signal:new()
 
 function AudioSignal:new(o)
     o = o or {frames = 64, buffer = nil}
@@ -179,6 +220,7 @@ function AudioSignal:new(o)
     self.__index = self
     if self.buffer == nil then
        self:resize(frames)
+    end
     return o
 end
 
@@ -222,6 +264,7 @@ function Node:new(o)
     o = o or {status = NODE_PROCESSOR, color = NODE_WHITE}
     setmetatable(o, self)
     self.__index = self
+    return o
 end
 
 -- Called by Som just before the signal flow graph starts running.
@@ -307,32 +350,37 @@ end
 function Node:close(signalFlowGraph)
 end
 
-SignalFlowGraph:new(o)
+SignalFlowGraph = Node:new()
+
+function SignalFlowGraph:new(o)
     o = o or {currentFrame = 0, currentTick = 0, currentSecond = 0, framesPerSecond = 48000, framesPerTick = 64, secondsPerFrame = 0, ticksPerSecond = 0, secondsPerTick = 0, ticklist = {}, adjacencies = {}, nodes = {}, play = false, needsCompilation = false}
     self:setFramesPerSecond()
+    setmetatable(o, self)
+    self.__index = self
+    return o
 end
 
-SignalFlowGraph:setFramesPerSecond(value)
+function SignalFlowGraph:setFramesPerSecond(value)
     self.framesPerSecond = value
     self.secondsPerFrame = 1 / self.framesPerSecond
     self:setFramesPerTick(self.ticksPerFrame)
     self:resetTime()
 end
 
-SignalFlowGraph:setFramesPerTick(value)
+function SignalFlowGraph:setFramesPerTick(value)
     self.framesPerTick = value
     self.secondsPerTick = self.secondsPerFrame * self.ticksPerFrame
     self.ticksPerSecond = 1 / self.secondsPerTick
     self:resetTime()
 end
 
-SignalFlowGraph:resetTime()
+function SignalFlowGraph:resetTime()
     self.currentFrame = 0
     self.currentTick = 0
     self.currentSecond = 0
 end
 
-SignalFlowGraph:addEdge(outnode, innode)
+function SignalFlowGraph:addEdge(outnode, innode)
     if self.nodes[outnode] == nil then
         self.nodes[outnode] = outnode
     end
@@ -347,7 +395,7 @@ SignalFlowGraph:addEdge(outnode, innode)
     end
 end
 
-SignalFlowGraph:clear()
+function SignalFlowGraph:clear()
     stop()
     resetTimes()
     self.nodes = {}
@@ -356,12 +404,13 @@ end
 
 -- This function completely defines the topology of the SignalFlowGraph.
 
-SignalFlowGraph:connect(outnode, outport, inport, innode)
+function SignalFlowGraph:connect(outnode, outport, inport, innode)
     -- To the user, a signal source has an out edge, 
     -- and a signal sink has an in edge;
     -- but to the SignalFlowGraph, a signal source has an in edge, 
     -- and a signal sink has an out edge.
     -- Hence, we reverse the direction of all user edges here.
+    inport:addSource(outport)
     self:addEdge(innode, inport)
     self:addEdge(inport, outport)
     self:addEdge(innode, inport)
@@ -369,10 +418,10 @@ SignalFlowGraph:connect(outnode, outport, inport, innode)
     self.needsCompilation = true
 end
 
-SignalFlowGraph:depthFirstVisit(node, tickset, ticklist)
+function SignalFlowGraph:depthFirstVisit(node, tickset, ticklist)
     node.color = NODE_GREY
     for successor, unused in ipairs(self.adjacencies[node]) do
-        if successor.color = NODE_WHITE then
+        if successor.color == NODE_WHITE then
             self:depthFirstVisit(successor, ticklist, tickset)
         end
     end
@@ -386,7 +435,7 @@ SignalFlowGraph:depthFirstVisit(node, tickset, ticklist)
     end
 end
 
-SignalFlowGraph:depthFirstSearch(node, tickset, ticklist)
+function SignalFlowGraph:depthFirstSearch(node, tickset, ticklist)
     for node, unused in ipairs(self.nodes) do
         node.color = COLOR_WHITE
     end
@@ -407,7 +456,7 @@ end
 -- is the root of the graph, and must be the only Node with out-edges but 
 -- no in-edges.
 
-SignalFlowGraph:compile()
+function SignalFlowGraph:compile()
     local tickset = {}
     self.ticklist = {}
     result = self:depthFirstSearch(self, tickset, self.ticklist)
@@ -419,7 +468,7 @@ SignalFlowGraph:compile()
     end
 end
 
-SignalFlowGraph:perform()
+function SignalFlowGraph:perform()
     if not self:compile() then
         return false
     end
@@ -428,13 +477,13 @@ SignalFlowGraph:perform()
     return true
 end
 
-SignalFlowGraph:render()
+function SignalFlowGraph:render()
     self:open()
     self:play()
     self:close()
 end
 
-SignalFlowGraph:play()
+function SignalFlowGraph:play()
     self.play = true
     while self.play do
         self:tickNodes()
@@ -449,21 +498,21 @@ SignalFlowGraph:play()
     end
 end
 
-SignalFlowGraph:stop()
+function SignalFlowGraph:stop()
     self.play = false
 end
 
-SignalFlowGraph:open()
+function SignalFlowGraph:open()
     for i = 1, #self.ticklist do
         self.ticklist[i]:open(self)
     end
 end
 
-SignalFlowGraph:tick()
+function SignalFlowGraph:tick()
     -- Does nothing.
 end
 
-SignalFlowGraph:tickNodes()
+function SignalFlowGraph:tickNodes()
     local tickStatus = NODE_GENERATOR_PASSIVE
     for i = 1, #self.ticklist do
         local node = self.ticklist[i]
@@ -478,9 +527,138 @@ SignalFlowGraph:tickNodes()
     self.status = tickStatus
 end
 
-SignalFlowGraph:close()
+function SignalFlowGraph:close()
     for i = 1, #self.ticklist do
         self.ticklist[i]:close(self)
     end
 end
+
+-- An Outlet is a Node that sends a signal.
+
+Outlet = Node:new()
+
+function Outlet:new(o)
+   if not o then
+        o = Node:new()
+        self.signal = nil
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+ControlOutlet = Outlet:new()
+
+function ControlOutlet:new()
+   if not o then
+        o = Outlet:new()
+        self.signal = ControlSignal:new()
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+AudioOutlet = Outlet:new()
+
+function AudioOutlet:new()
+   if not o then
+        o = Outlet:new()
+        self.signal = AudioSignal:new()
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+-- An Inlet is a Node that receives a signal.
+
+Inlet = Outlet:new()
+
+function Inlet:new(o)
+    if not o then
+        o = Outlet:new()
+        self.signal = nil
+        self.sources = {}
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+function Inlet:addSource(source)
+    for index, value in ipairs(self.sources) do
+        if value == source then 
+            return
+        end
+    end
+    self.sources[#self.sources + 1] = source
+end
+
+-- An inlet ticks merely by summing its source 
+-- signals into its own signal.
+
+function Inlet:tick(signalFlowGraph)
+    self.signal:clear()
+    for i = 1, #self.sources do
+        self.signal:sum(self.sources[i].signal)
+    end
+end
+
+-- A ControlInlet is an Inlet that receives a control signal.
+
+ControlInlet = Inlet:new()
+
+function ControlInlet:new(o)
+    if not o then
+        o = ControlOutlet:new()
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+-- An AudioInlet is an Inlet that receives an audio signal.
+
+AudioInlet = Inlet:new()
+
+function AudioInlet:new(o)
+    if not o then
+        o = AudioOutlet:new()
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+-- A ScoreSource is a Node that contains a Silencio Score
+-- that feeds pending control signals into a ControlOutlet
+-- every time step.
+
+ScoreSource = Node:new()
+
+function ScoreSource:new(o)
+    if not o then
+        o = Node:new()
+        self.score = Score:new()
+        self.controlOutlet = ControlOutlet:new()
+        self.currentIndex = nil
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+function ScoreSource:open(signalFlowGraph)
+    self.currentIndex = 1
+end
+
+function ScoreSource:tick(signalFlowGraph)
+    local currentEvent = self.score[self.currentIndex]
+    if currentEvent == nil then
+        return
+    end
+end
+
+
 
