@@ -810,3 +810,122 @@ function Score:display()
         print('ScoreView.display(score) not available: check for OpenGL and glfw.')
     end
 end
+
+--[[
+Generates scores by recursively applying a set of generating 
+functions to a single initial musical event. 
+This event can be considered to represent a cursor within a score.
+The generating functions may move this cursor around
+within the score, as if moving a pen, and may at any time write the 
+current state of the cursor into the score, or write other events 
+based, or not based, upon the cursor into the score.
+
+The generating functions may be lambdas. Generated notes must not
+be the same object as the cursor, but may be clones of the cusor,
+or entirely new objects.
+
+cursor          A Silencio.Event object that represents a position in a
+                musical score. This could be a note, a grain of sound, or 
+                a control event.
+
+depth           The current depth of recursion. This must begin > 1. 
+                For each recursion, the depth is decremented. Recursion
+                ends when the depth reaches 0.
+                
+Returns the next position of the cursor, and optionally, a table of 
+generated events.
+
+generator = function(cursor, depth)
+cursor, events = generator(cursor, depth)
+
+The algorithm is similar to the deterministic algorithm for computing the 
+attractor of a recurrent iterated function systems. Instead of using
+affine transformation matrixes as the RIFS algorithm does, the current 
+algorithm uses generating functions; but if each generating function
+applies a single affine transformation matrix to the cursor, the current
+algorithm will in fact compute a RIFS.
+
+generators      A list of generating functions with the above signature. 
+                Unlike RIFS, the functions need not be contractive.
+             
+transitions     An N x N transition matrix for the N generating functions. 
+                If entry [i][j] is 1, then if the current generator is the 
+                ith, then the jth generator will be applied to the current 
+                cursor after the ith; if the entry is 0, the jth generator 
+                will not be applied to the current cursor after the ith.
+                In addition, each generator in the matrix must be reached
+                at some point during recursion.
+                
+depth           The current depth of recursion. This must begin > 1. 
+                For each recursion, the depth is decremented. Recursion
+                ends when the depth reaches 0.
+
+index           Indicates the current generating function, i.e. the 
+                index-th row of the transition matrix.
+
+cursor          A Silencio.Event object that represents a position in a
+                musical score. This could be a note, a grain of sound, or 
+                a control event.
+
+score           A Silencio.Score object that collects generated events.
+]]    
+
+function Silencio.recurrent(generators, transitions, depth, index, cursor, score)
+    depth = depth - 1
+    print(string.format('recurrent(depth: %d  index: %d  cursor: %s)', depth, index, cursor:__tostring()))
+    if depth == 0 then
+        return
+    end
+    local transitionsForThisIndex = transitions[index]
+    for transitionIndex, liveNode in ipairs(transitionsForThisIndex) do
+        if liveNode == 1 then
+            local newCursor, events = generators[transitionIndex](cursor:clone(), depth)
+            for k,event in ipairs(events) do
+                score:append(event:clone())
+            end
+            Silencio.recurrent(generators, transitions, depth, transitionIndex, newCursor:clone(), score) 
+        end
+    end
+end
+
+--[[
+Lindenmayer implements a context-free Lindenmayer system that performs operations
+on notes, chords, and slices of scores. Operations can be partial closures.
+]]
+
+Lindenmayer = ScoreSource:new()
+
+function Lindenmayer:new()
+    if not o then
+        o = ScoreSource:new()
+        self.axiom = ''
+        self.rules = {}
+        self.step = {}
+        self.turtle = {}
+        self.iterations = 3
+        self.currentProduction = ''
+        self.priorProduction = ''
+    end
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+-- Beginning with the axiom,
+-- the current production is created by replacing each word
+-- in the prior production either with itself, or with its replacement
+-- from the dictionary of rules.
+
+function Lindenmayer:produce()
+    for iteration = 1, self.iterations do
+        if iteration == 1 then
+            self.priorProduction = axiom
+        else
+            self.priorProduction = self.currentProduction
+        end
+        self.currentProduction = ''
+    end
+end
+
+
+
