@@ -123,7 +123,7 @@ function ChordView:material()
     gl.glEnable(gl.GL_DEPTH_TEST)          
     gl.glDepthFunc(gl.GL_LEQUAL)           
     gl.glHint(gl.GL_PERSPECTIVE_CORRECTION_HINT, gl.GL_NICEST)
-    gl.glEnable(gl.GL_COLOR_MATERIAL)                                    Translate
+    gl.glEnable(gl.GL_COLOR_MATERIAL)                                    
     gl.glLightfv(gl.GL_LIGHT1, gl.GL_AMBIENT, LightAmbient)
     gl.glLightfv(gl.GL_LIGHT1, gl.GL_DIFFUSE, LightDiffuse)
     gl.glLightfv(gl.GL_LIGHT1, gl.GL_POSITION, LightPosition)

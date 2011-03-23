@@ -399,6 +399,50 @@ function Chord:resize(voices)
     end
 end
 
+function Chord:setDuration(value)
+    for i = 1, #self do
+        self.duration[i] = value
+    end
+end
+
+function Chord:getDuration(voice)
+    voice = voice or 1
+    return self.duration[voice]
+end
+
+function Chord:setChannel(value)
+    for i = 1, #self do
+        self.channel[i] = value
+    end
+end
+
+function Chord:getChannel(voice)
+    voice = voice or 1
+    return self.channel[voice]
+end
+
+function Chord:setVelocity(value)
+    for i = 1, #self do
+        self.velocity[i] = value
+    end
+end
+
+function Chord:getVelocity(voice)
+    voice = voice or 1
+    return self.velocity[voice]
+end
+
+function Chord:setPan(value)
+    for i = 1, #self do
+        self.pan[i] = value
+    end
+end
+
+function Chord:getPan(voice)
+    voice = voice or 1
+    return self.pan[voice]
+end
+
 -- Redefines the metamethod to implement value semantics
 -- for ==, for the pitches in this only.
 
@@ -1095,27 +1139,6 @@ function Chord:eOPI()
     end
     chord = chord:eI()
     return chord
---[[
-    local chord = self:clone()
-    local s = chord:sum()
-    local distancePerVoice = s / #chord
-    local orthogonalProjection = chord:clone()
-    for voice = 1, #self do
-        orthogonalProjection[voice] = distancePerVoice
-    end
-    local voicings = chord:voicings()
-    local orthogonalVoicing = voicings[1]
-    local minimumDistance = euclidean(orthogonalProjection, orthogonalVoicing)
-    for i = 2, #voicings do
-        voicing = voicings[i]
-        local voicingDistance = euclidean(orthogonalProjection, voicing)
-        if voicingDistance < minimumDistance then
-            minimumDistance = voicingDistance
-            orthogonalVoicing = voicing
-        end
-    end
-    return orthogonalVoicing
-    ]]
 end
  
 function Chord:eOPTI()
