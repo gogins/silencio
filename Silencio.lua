@@ -65,7 +65,7 @@ print('Current directory: "' .. cwd .. '".\n')
 print('Invoking script: "' .. arg[0] .. '".\n')
 end
 
-function clone(object)
+function Silencio.clone(object)
     local lookup_table = {}
     local function _copy(object)
         if type(object) ~= "table" then
@@ -83,34 +83,34 @@ function clone(object)
     return _copy(object)
 end
 
-local function split(str, pat)
-   local t = {}  -- NOTE: use {n = 0} in Lua-5.0
-   local fpat = "(.-)" .. pat
-   local last_end = 1
-   local s, e, cap = str:find(fpat, 1)
-   while s do
-      if s ~= 1 or cap ~= "" then
-	 table.insert(t,cap)
-      end
-      last_end = e+1
-      s, e, cap = str:find(fpat, last_end)
-   end
-   if last_end <= #str then
-      cap = str:sub(last_end)
-      table.insert(t, cap)
-   end
-   return t
+function Silencio.split(str, pat)
+    local t = {}  -- NOTE: use {n = 0} in Lua-5.0
+    local fpat = "(.-)" .. pat
+    local last_end = 1
+    local s, e, cap = str:find(fpat, 1)
+    while s do
+        if s ~= 1 or cap ~= "" then
+            table.insert(t,cap)
+        end
+        last_end = e+1
+        s, e, cap = str:find(fpat, last_end)
+    end
+    if last_end <= #str then
+        cap = str:sub(last_end)
+        table.insert(t, cap)
+    end
+    return t
 end
 
 function os.capture(cmd, raw)
-  local f = assert(io.popen(cmd, 'r'))
-  local s = assert(f:read('*a'))
-  f:close()
-  if raw then return s end
-  s = string.gsub(s, '^%s+', '')
-  s = string.gsub(s, '%s+$', '')
-  s = string.gsub(s, '[\n\r]+', ' ')
-  return s
+    local f = assert(io.popen(cmd, 'r'))
+    local s = assert(f:read('*a'))
+    f:close()
+    if raw then return s end
+    s = string.gsub(s, '^%s+', '')
+    s = string.gsub(s, '%s+$', '')
+    s = string.gsub(s, '[\n\r]+', ' ')
+    return s
 end
 
 do
@@ -201,7 +201,7 @@ function Event:midiScoreEventString()
 end
 
 function Event:clone()
-    return clone(self)
+    return Silencio.clone(self)
 end
 
 function Event:getOffTime()
@@ -658,7 +658,7 @@ end
 function Score:processArg(args) 
     print('In script: "' .. args[0] .. '"\n')
     if platform == 'Android' then
-        local argz = split(args[0], '/')
+        local argz = Silencio.split(args[0], '/')
         local title = argz[#argz]
         self:setTitle(title)
     else
@@ -725,7 +725,7 @@ function Score:processArg(args)
 end
 
 function Score:clone()
-    return clone(self)
+    return Silencio.clone(self)
 end
 
 local function eventComparator(a, b)
@@ -888,44 +888,4 @@ function Silencio.recurrent(generators, transitions, depth, index, cursor, score
     end
 end
 
---[[
-Lindenmayer implements a context-free Lindenmayer system that performs operations
-on notes, chords, and slices of scores. Operations can be partial closures.
-]]
-
-Lindenmayer = ScoreSource:new()
-
-function Lindenmayer:new()
-    if not o then
-        o = ScoreSource:new()
-        self.axiom = ''
-        self.rules = {}
-        self.step = {}
-        self.turtle = {}
-        self.iterations = 3
-        self.currentProduction = ''
-        self.priorProduction = ''
-    end
-    setmetatable(o, self)
-    self.__index = self
-    return o
-end
-
--- Beginning with the axiom,
--- the current production is created by replacing each word
--- in the prior production either with itself, or with its replacement
--- from the dictionary of rules.
-
-function Lindenmayer:produce()
-    for iteration = 1, self.iterations do
-        if iteration == 1 then
-            self.priorProduction = axiom
-        else
-            self.priorProduction = self.currentProduction
-        end
-        self.currentProduction = ''
-    end
-end
-
-
-
+return Silencio
