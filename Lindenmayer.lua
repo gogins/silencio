@@ -1,4 +1,5 @@
 local Silencio = require("Silencio")
+local ChordSpace = require("ChordSpace")
 local Som = require("Som")
 
 --[[
@@ -18,39 +19,39 @@ end
 
 Lindenmayer = ScoreSource:new()
 
-function Lindenmayer:new()
+function Lindenmayer:new(o)
     if not o then
         o = ScoreSource:new()
-        self.axiom = ''
-        self.rules = {}
-        self.turtle = Turtle:new()
-        self.priorTurtle = self.turtle
-        self.stack = {}
-        self.iterations = 3
-        self.merge = true
-        self.tie = true
-        self.avoidParallelFifths = false
-        self.rescaleTimes = false
-        self.currentProduction = ''
-        self.priorProduction = ''
-        self.actions = {}
-        self.actions['['] = self.actionPush
-        self.actions[']'] = self.actionPop
-        self.actions['P'] = self.actionParallel
-        self.actions['L'] = self.actionLettonwechsel
-        self.actions['R'] = self.actionRelative
-        self.actions['D'] = self.actionDominant
-        self.actions['W'] = self.actionWrite
-        self.actions['L'] = self.actionWriteVoiceleading
-        self.actions['T'] = self.actionTranspose
-        self.actions['I'] = self.actionInvert
-        self.actions['K'] = self.actionContexualInversion
-        self.actions['Q'] = self.actionContextualTransposition
-        self.actions['='] = self.actionAssign
-        self.actions['*'] = self.actionMultiply
-        self.actions['/'] = self.actionDivide
-        self.actions['+'] = self.actionAdd
-        self.actions['-'] = self.actionSubtract
+        o.axiom = ''
+        o.rules = {}
+        o.turtle = Turtle:new()
+        o.priorTurtle = self.turtle
+        o.stack = {}
+        o.iterations = 3
+        o.merge = true
+        o.tieOverlaps = true
+        o.avoidParallelFifths = false
+        o.rescaleTimes = false
+        o.currentProduction = ''
+        o.priorProduction = ''
+        o.actions = {}
+        o.actions['['] = self.actionPush
+        o.actions[']'] = self.actionPop
+        o.actions['P'] = self.actionParallel
+        o.actions['L'] = self.actionLettonwechsel
+        o.actions['R'] = self.actionRelative
+        o.actions['D'] = self.actionDominant
+        o.actions['W'] = self.actionWrite
+        o.actions['L'] = self.actionWriteVoiceleading
+        o.actions['T'] = self.actionTranspose
+        o.actions['I'] = self.actionInvert
+        o.actions['K'] = self.actionContexualInversion
+        o.actions['Q'] = self.actionContextualTransposition
+        o.actions['='] = self.actionAssign
+        o.actions['*'] = self.actionMultiply
+        o.actions['/'] = self.actionDivide
+        o.actions['+'] = self.actionAdd
+        o.actions['-'] = self.actionSubtract
     end
     setmetatable(o, self)
     self.__index = self
@@ -154,14 +155,59 @@ function Lindenmayer:actionDominant(target, opcode, equivalence, operand, index)
 end
 
 function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
-    if target == 'M' then
+    local chord = self.turtle.chord:copy()    
+    chord = chord:v(self.turtle.voicing)
+    if target == 'C' then
+        chord = self:E(chord, opcode, 'RP')
+        chord:insert(self.score, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
     end
     if target == 'I' then
+        chord = self:E(chord, opcode, 'RP')
+        local note = chord:note(index, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
+        self.score[#self.score + 1] = note
     end
+    if target == 'A' then
+        chord = chord:eOP()
+        local v = 1
+        local a
+        if self.turtle.arpeggiation < 0 then
+            v = #self.turtle.chord
+            a = self.turtle.arpeggiation
+            while true do
+                if a == 0 then
+                    break
+                end
+                a = a + 1
+                v = v - 1
+                if v < 1 then
+                    chord = chord:v(-1)
+                    v = #self.turtle.chord
+                end
+            end
+        end
+        if self.turtle.arpeggiation > 0 then
+            v = 1
+            a = 1
+            while true do
+                if a == self.turtle.arpeggiation then
+                    break
+                end
+                a = a - 1
+                v = v + 1
+                if v > #self.turtle.chord then
+                    chord = chord:v(1)
+                    v = 1
+                end
+            end
+        end 
+        local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
+        self.score[#self.score + 1] = note
+    end
+    self.priorChord = chord
 end
 
 function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operand, index)
-    if target == 'M' then
+    if target == 'C' then
     end
     if target == 'I' then
     end
@@ -418,15 +464,18 @@ end
 -- from the dictionary of rules.
 
 function Lindenmayer:produce()
+    print('Lindenmayer:produce...')
+    print('axiom:', self.axiom)
     for iteration = 1, self.iterations do
+        print(string.format('Iteration: %4d', iteration))
         if iteration == 1 then
-            self.priorProduction = axiom
+            self.priorProduction = self.axiom
         else
             self.priorProduction = self.currentProduction
         end
         self.currentProduction = {}
         local words = Silencio.split(self.priorProduction, ' ')
-        for index, word in ipairs(words) do
+        for index, word in pairs(words) do
             local replacement = self.rules[word]
             if replacement == nil then
                 table.insert(self.currentProduction, word)
@@ -435,6 +484,7 @@ function Lindenmayer:produce()
             end
         end
         self.currentProduction = table.concat(self.currentProduction, ' ')
+        print(self.currentProduction)
     end
 end
 
@@ -446,8 +496,9 @@ equivalence classes may be combined but only the order given):
 
 target  :operation :equivalence :operand :index
 S       :[]
-MC      :PLRDKWL   :~ORPTI
+MC      :PLRDK     :~ORPTI
 MC      :TIQ       :~ORPTI      :x
+CA      :WL        :~ORPTI:     :      
 I       :WL        :~ORPTI:     :        :i
 DCPVATG :=*/+-     :            :x
 DCPI    :=*/+-     :            :x       :i
@@ -504,26 +555,26 @@ E   Equivalence class:
 ]]
 
 function Lindenmayer:interpret()
+    print('Lindenmayer:interpret...')
     local commands = Silencio.split(self.currentProduction, ' ')
     for index, command in ipairs(commands) do
         target, opcode, equivalence, index, operand = self:parseCommand(command)
         local action = self.actions[opcode]
         if action ~= nil then
+            print(action, target, opcode, equivalence, index, operand)
             action(self, target, opcode, equivalence, index, operand)
         end
     end
 end
 
-function Lindenmayer:write()
-end
-
 function Lindenmayer:generate()
-    print('Lindenmayer: producing...')
+    print('Lindenmayer:generate...')
     self:produce()
-    print('Lindenmayer: interpreting...')
     self:interpret()
-    print('Lindenmayer: writing...')    
-    self:write()
+    if self.tieOverlaps == true then
+        print('Lindenmayer: tieing notes...')    
+        self.score:tieOverlaps()
+    end
 end
 
 testing = true
@@ -537,5 +588,14 @@ if testing then
     print(a[2])
     lindenmayer = Lindenmayer:new()
     print(lindenmayer)
+    for k,v in pairs(lindenmayer.actions) do
+        print(k, v)
+    end
+    print('iterations:', lindenmayer.iterations)
+    print('produce:', lindenmayer.produce)
+    lindenmayer.axiom = 'a'
+    lindenmayer.rules['a'] = 'a C:K:RP C:W:OR a C:Q:RP::2 C:W:RPT a a'
+    lindenmayer:generate()
+    lindenmayer.score:print()    
 end
 
