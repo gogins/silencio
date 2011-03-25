@@ -314,6 +314,24 @@ OCTAVE = 12
 MIDDLE_C = 60
 C4 = MIDDLE_C
 
+pitchClassesForNames["C" ] =  0
+pitchClassesForNames["C#"] =  1
+pitchClassesForNames["Db"] =  1
+pitchClassesForNames["D" ] =  2
+pitchClassesForNames["D#"] =  3
+pitchClassesForNames["Eb"] =  3
+pitchClassesForNames["E" ] =  4
+pitchClassesForNames["F" ] =  5
+pitchClassesForNames["F#"] =  6
+pitchClassesForNames["Gb"] =  6
+pitchClassesForNames["G" ] =  7
+pitchClassesForNames["G#"] =  8
+pitchClassesForNames["Ab"] =  8
+pitchClassesForNames["A" ] =  9
+pitchClassesForNames["A#"] = 10
+pitchClassesForNames["Bb"] = 10
+pitchClassesForNames["B" ] = 11
+
 function er(pitch, range)
     return pitch % range
 end
@@ -1550,7 +1568,7 @@ end
 
 function insert(score, chord, time_, duration, channel, velocity, pan)
     for voice = 1, #score do
-        table.insert(score, chord:note(voice, time_, curation, channel, velocity, pan))
+        table.insert(score, chord:note(voice, time_, duration, channel, velocity, pan))
     end
 end
 
