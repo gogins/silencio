@@ -196,7 +196,7 @@ affine transformations in chord space, and Maxx Cho, "The Voice-Leading
 Automorphism and Riemannian Operators," 2009, which may show that tonality 
 arises from a voice-leading automorphism in the Riemannian group.
 
-TODO: Implement various scales found on 20th and 21st century harmony
+TODO: Implement various scales found in 20th and 21st century harmony
 along with 'splitting' and 'merging' operations.
                 
 MUSICAL MEANING AND USE
@@ -220,7 +220,7 @@ points in r or rp).
             
 The closest voice-leadings are between the closest chords in the space.
 The 'best' voice-leadings are closest first by 'smoothness,'
-and then  by 'parsimony.' See Dmitri Tymoczko, 
+and then by 'parsimony.' See Dmitri Tymoczko, 
 _The Geometry of Musical Chords_, 2005 (Princeton University).
 
 This concept of voice-leading applies in all equivalence classes, not 
@@ -313,24 +313,6 @@ OCTAVE = 12
 
 MIDDLE_C = 60
 C4 = MIDDLE_C
-
-pitchClassesForNames["C" ] =  0
-pitchClassesForNames["C#"] =  1
-pitchClassesForNames["Db"] =  1
-pitchClassesForNames["D" ] =  2
-pitchClassesForNames["D#"] =  3
-pitchClassesForNames["Eb"] =  3
-pitchClassesForNames["E" ] =  4
-pitchClassesForNames["F" ] =  5
-pitchClassesForNames["F#"] =  6
-pitchClassesForNames["Gb"] =  6
-pitchClassesForNames["G" ] =  7
-pitchClassesForNames["G#"] =  8
-pitchClassesForNames["Ab"] =  8
-pitchClassesForNames["A" ] =  9
-pitchClassesForNames["A#"] = 10
-pitchClassesForNames["Bb"] = 10
-pitchClassesForNames["B" ] = 11
 
 function er(pitch, range)
     return pitch % range
@@ -1233,6 +1215,7 @@ end
   
 function Chord:K(range)
     range = range or OCTAVE
+    local chord = self:clone()
     if #chord < 2 then
         return chord
     end
@@ -1566,9 +1549,11 @@ end
 -- The internal duration, instrument, and loudness are used if present,
 -- if not the specified values are used.
 
-function insert(score, chord, time_, duration, channel, velocity, pan)
-    for voice = 1, #score do
-        table.insert(score, chord:note(voice, time_, duration, channel, velocity, pan))
+function ChordSpace.insert(score, chord, time_, duration, channel, velocity, pan)
+    print(score, chord, time_, duration, channel, velocity, pan)
+    for voice = 1, #chord do
+        local event = chord:note(voice, time_, duration, channel, velocity, pan)
+        table.insert(score, event)
     end
 end
 
@@ -1578,7 +1563,7 @@ end
 -- moves the pitch of the note to belong to the chord, using the 
 -- conformToChord function. 
 
-function apply(score, chord, start, end_, octaveEquivalence)
+function ChordSpace.apply(score, chord, start, end_, octaveEquivalence)
     octaveEquivalence = octaveEquivalence or true
     local slice = score:slice(start, end_)
     for index, event in ipairs(slice) do
@@ -1600,6 +1585,116 @@ function gather(score, start, end_)
         end
     end
     return chord
+end
+
+pitchClassesForNames = {}
+
+pitchClassesForNames["C" ] =  0
+pitchClassesForNames["C#"] =  1
+pitchClassesForNames["Db"] =  1
+pitchClassesForNames["D" ] =  2
+pitchClassesForNames["D#"] =  3
+pitchClassesForNames["Eb"] =  3
+pitchClassesForNames["E" ] =  4
+pitchClassesForNames["F" ] =  5
+pitchClassesForNames["F#"] =  6
+pitchClassesForNames["Gb"] =  6
+pitchClassesForNames["G" ] =  7
+pitchClassesForNames["G#"] =  8
+pitchClassesForNames["Ab"] =  8
+pitchClassesForNames["A" ] =  9
+pitchClassesForNames["A#"] = 10
+pitchClassesForNames["Bb"] = 10
+pitchClassesForNames["B" ] = 11
+
+ChordSpace.chordsForNames = {}
+
+local function fill(rootName, rootPitch, typeName, typePitches)             
+    local chordName = rootName .. typeName
+    local chord = Chord:new()
+    local splitPitches = Silencio.split(typePitches)
+    chord:resize(#splitPitches)
+    for voice, pitchName in ipairs(splitPitches) do
+        local pitch = pitchClassesForNames[pitchName]
+        chord[voice] = rootPitch + pitch
+    end
+    ChordSpace.chordsForNames[chordName] = chord
+end
+
+for rootName, rootPitch in pairs(pitchClassesForNames) do
+    fill(rootName, rootPitch, " minor second",     "C  C#                             ")
+    fill(rootName, rootPitch, " major second",     "C     D                           ")
+    fill(rootName, rootPitch, " minor third",      "C        Eb                       ")
+    fill(rootName, rootPitch, " major third",      "C           E                     ")
+    fill(rootName, rootPitch, " perfect fourth",   "C              F                  ")
+    fill(rootName, rootPitch, " tritone",          "C                 F#              ")
+    fill(rootName, rootPitch, " perfect fifth",    "C                    G            ")
+    fill(rootName, rootPitch, " augmented fifth",  "C                       G#        ")
+    fill(rootName, rootPitch, " sixth",            "C                          A      ")
+    fill(rootName, rootPitch, " minor seventh  ",  "C                             Bb  ")
+    fill(rootName, rootPitch, " major seventh",    "C                                B")
+    -- Scales.
+    fill(rootName, rootPitch, " major",            "C     D     E  F     G     A     B")
+    fill(rootName, rootPitch, " minor",            "C     D  Eb    F     G  Ab    Bb  ")
+    fill(rootName, rootPitch, " natural minor",    "C     D  Eb    F     G  Ab    Bb  ")
+    fill(rootName, rootPitch, " harmonic minor",   "C     D  Eb    F     G  Ab       B")
+    fill(rootName, rootPitch, " chromatic",        "C  C# D  D# E  F  F# G  G# A  A# B")
+    fill(rootName, rootPitch, " whole tone",       "C     D     E     F#    G#    A#  ")
+    fill(rootName, rootPitch, " diminished",       "C     D  D#    F  F#    G# A     B")
+    fill(rootName, rootPitch, " pentatonic",       "C     D     E        G     A      ")
+    fill(rootName, rootPitch, " pentatonic major", "C     D     E        G     A      ")
+    fill(rootName, rootPitch, " pentatonic minor", "C        Eb    F     G        Bb  ")
+    fill(rootName, rootPitch, " augmented",        "C        Eb E        G  Ab    Bb  ")
+    fill(rootName, rootPitch, " Lydian dominant",  "C     D     E     Gb G     A  Bb  ")
+    fill(rootName, rootPitch, " 3 semitone",       "C        D#       F#       A      ")
+    fill(rootName, rootPitch, " 4 semitone",       "C           E           G#        ")
+    fill(rootName, rootPitch, " blues",            "C     D  Eb    F  Gb G        Bb  ")
+    fill(rootName, rootPitch, " bebop",            "C     D     E  F     G     A  Bb B")
+    -- Major chords.
+    fill(rootName, rootPitch, "M",                 "C           E        G            ")
+    fill(rootName, rootPitch, "6",                 "C           E        G     A      ")
+    fill(rootName, rootPitch, "69",                "C     D     E        G     A      ")
+    fill(rootName, rootPitch, "69b5",              "C     D     E     Gb       A      ")
+    fill(rootName, rootPitch, "M7",                "C           E        G           B")
+    fill(rootName, rootPitch, "M9",                "C     D     E        G           B")
+    fill(rootName, rootPitch, "M11",               "C     D     E  F     G           B")
+    fill(rootName, rootPitch, "M#11",              "C     D     E  F#    G           B")
+    fill(rootName, rootPitch, "M13",               "C     D     E  F     G     A     B")
+    -- Minor chords.
+    fill(rootName, rootPitch, "m",                 "C        Eb          G            ")
+    fill(rootName, rootPitch, "m6",                "C        Eb          G     A      ")
+    fill(rootName, rootPitch, "m69",               "C     D  Eb          G     A      ")
+    fill(rootName, rootPitch, "m7",                "C        Eb          G        Bb  ")
+    fill(rootName, rootPitch, "m#7",               "C        Eb          G           B")
+    fill(rootName, rootPitch, "m7b5",              "C        Eb       Gb          Bb  ")
+    fill(rootName, rootPitch, "m9",                "C     D  Eb          G        Bb  ")
+    fill(rootName, rootPitch, "m9#7",              "C     D  Eb          G           B")
+    fill(rootName, rootPitch, "m11",               "C     D  Eb    F     G        Bb  ")
+    fill(rootName, rootPitch, "m13",               "C     D  Eb    F     G     A  Bb  ")
+    -- Augmented chords.
+    fill(rootName, rootPitch, "+",                 "C            E         G#         ")
+    fill(rootName, rootPitch, "7#5",               "C            E         G#     Bb  ")
+    fill(rootName, rootPitch, "7b9#5",             "C  Db        E         G#     Bb  ")
+    fill(rootName, rootPitch, "9#5",               "C     D      E         G#     Bb  ")
+    -- Diminished chords.
+    fill(rootName, rootPitch, "o",                 "C        Eb       Gb              ")
+    fill(rootName, rootPitch, "o7",                "C        Eb       Gb       A      ")
+    -- Suspended chords.
+    fill(rootName, rootPitch, "6sus",              "C              F     G     A      ")
+    fill(rootName, rootPitch, "69sus",             "C     D        F     G     A      ")
+    fill(rootName, rootPitch, "7sus",              "C              F     G        Bb  ")
+    fill(rootName, rootPitch, "9sus",              "C     D        F     G        Bb  ")
+    fill(rootName, rootPitch, "M7sus",             "C              F     G           B")
+    fill(rootName, rootPitch, "M9sus",             "C     D        F     G           B")
+    -- Dominant chords.
+    fill(rootName, rootPitch, "7",                 "C            E       G        Bb  ")
+    fill(rootName, rootPitch, "7b5",               "C            E    Gb          Bb  ")
+    fill(rootName, rootPitch, "7b9",               "C  Db        E       G        Bb  ")
+    fill(rootName, rootPitch, "7b9b5",             "C  Db        E    Gb          Bb  ")
+    fill(rootName, rootPitch, "9",                 "C     D      E       G        Bb  ")
+    fill(rootName, rootPitch, "9#11",              "C     D      E F#    G        Bb  ")
+    fill(rootName, rootPitch, "13",                "C     D      E F     G     A  Bb  ")
+    fill(rootName, rootPitch, "13#11",             "C     D      E F#    G     A  Bb  ")
 end
 
 return ChordSpace

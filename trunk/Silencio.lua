@@ -84,6 +84,7 @@ function Silencio.clone(object)
 end
 
 function Silencio.split(str, pat)
+    pat = pat or '%s+'
     local t = {}  -- NOTE: use {n = 0} in Lua-5.0
     local fpat = "(.-)" .. pat
     local last_end = 1
