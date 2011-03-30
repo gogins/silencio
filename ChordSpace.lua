@@ -1697,4 +1697,5 @@ for rootName, rootPitch in pairs(pitchClassesForNames) do
     fill(rootName, rootPitch, "13#11",             "C     D      E F#    G     A  Bb  ")
 end
 
+table.sort(ChordSpace.chordsForNames)
 return ChordSpace
