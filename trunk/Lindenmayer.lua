@@ -18,7 +18,15 @@ function Turtle:new(o)
 end
 
 function Turtle:__tostring()
-    local text = string.format('C: %s  M: %s  voicing: %f  arpeggiation: %f  onset: %f  channel: %f  loudness: %f  pan: %f', tostring(self.chord), tostring(self.modality), self.voicing, self.arpeggiation, self.onset, self.channel, self.loudness, self.pan)
+    local text = string.format('C: %s  M: %s  voicing: %f  arpeggiation: %f  onset: %f  channel: %f  loudness: %f  pan: %f', 
+    tostring(self.chord), 
+    tostring(self.modality), 
+    self.voicing, 
+    self.arpeggiation, 
+    self.onset, 
+    self.chord:getChannel() or -1,
+    self.chord:getVelocity() or -1,
+    self.chord:getPan() or -1)
     return text
 end
 
@@ -165,6 +173,7 @@ function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
     chord = chord:v(self.turtle.voicing)
     if target == 'C' then
         chord = self:equivalenceClass(chord, 'RP')
+        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
         ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
     end
     if target == 'I' then
@@ -297,22 +306,19 @@ function Lindenmayer:actionAssign(target, opcode, equivalence, operand, index)
             self.turtle.intervalSize = operand
         end
         if target == 't' then
-            self.turtle.chord.onset = operand
+            self.turtle.onset = operand
         end
         if target == 'd' then
-            self.turtle.chord.setDuration(operand)
+            self.turtle.chord:setDuration(operand)
         end
         if target == 'c' then
-            self.turtle.chord.setChannel(operand)
-        end
-        if target == 'k' then
-            self.turtle.chord.setDuration(operand)
+            self.turtle.chord:setChannel(operand)
         end
         if target == 'v' then
-            self.turtle.chord.setVelocity(operand)
+            self.turtle.chord:setVelocity(operand)
         end
         if target == 'p' then
-            self.turtle.chord.setPan(operand)
+            self.turtle.chord:setPan(operand)
         end
     end
 end
@@ -351,16 +357,16 @@ function Lindenmayer:actionMultiply(target, opcode, equivalence, operand, index)
             self.turtle.intervalSize = self.turtle.intervalSize * operand
         end
         if target == 'd' then
-            self.turtle.chord.setDuration(self.turtle.chord.getDuration() * operand)
+            self.turtle.chord:setDuration(self.turtle.chord:getDuration() * operand)
         end
         if target == 'c' then
-            self.turtle.chord.setChannel(self.turtle.chord.getChannel() * operand)
+            self.turtle.chord:setChannel(self.turtle.chord:getChannel() * operand)
         end
         if target == 'v' then
-            self.turtle.chord.setVelocity(self.turtle.chord.getVelocity() * operand)
+            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() * operand)
         end
         if target == 'p' then
-            self.turtle.chord.setPan(self.turtle.chord.getPan() * operand)
+            self.turtle.chord:setPan(self.turtle.chord:getPan() * operand)
         end
     end
 end
@@ -396,16 +402,16 @@ function Lindenmayer:actionDivide(target, opcode, equivalence, operand, index)
             self.turtle.intervalSize = self.turtle.intervalSize / operand
         end
         if target == 'd' then
-            self.turtle.chord.setDuration(self.turtle.chord.getDuration() / operand)
+            self.turtle.chord:setDuration(self.turtle.chord:getDuration() / operand)
         end
         if target == 'c' then
-            self.turtle.chord.setChannel(self.turtle.chord.getChannel() / operand)
+            self.turtle.chord:setChannel(self.turtle.chord:getChannel() / operand)
         end
         if target == 'v' then
-            self.turtle.chord.setVelocity(self.turtle.chord.getVelocity() / operand)
+            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() / operand)
         end
         if target == 'p' then
-            self.turtle.chord.setPan(self.turtle.chord.getPan() / operand)
+            self.turtle.chord:setPan(self.turtle.chord:getPan() / operand)
         end
     end
 end
@@ -441,16 +447,16 @@ function Lindenmayer:actionAdd(target, opcode, equivalence, operand, index)
             self.turtle.intervalSize = self.turtle.intervalSize + operand
         end
         if target == 'd' then
-            self.turtle.chord.setDuration(self.turtle.chord.getDuration() + operand)
+            self.turtle.chord:setDuration(self.turtle.chord:getDuration() + operand)
         end
         if target == 'c' then
-            self.turtle.chord.setChannel(self.turtle.chord.getChannel() + operand)
+            self.turtle.chord:setChannel(self.turtle.chord:getChannel() + operand)
         end
         if target == 'v' then
-            self.turtle.chord.setVelocity(self.turtle.chord.getVelocity() + operand)
+            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() + operand)
         end
         if target == 'p' then
-            self.turtle.chord.setPan(self.turtle.chord.getPan() + operand)
+            self.turtle.chord:setPan(self.turtle.chord:getPan() + operand)
         end
     end
 end
@@ -486,16 +492,16 @@ function Lindenmayer:actionSubtract(target, opcode, equivalence, operand, index)
             self.turtle.intervalSize = self.turtle.intervalSize - operand
         end
         if target == 'd' then
-            self.turtle.chord.setDuration(self.turtle.chord.getDuration() - operand)
+            self.turtle.chord:setDuration(self.turtle.chord:getDuration() - operand)
         end
         if target == 'c' then
-            self.turtle.chord.setChannel(self.turtle.chord.getChannel() - operand)
+            self.turtle.chord:setChannel(self.turtle.chord:getChannel() - operand)
         end
         if target == 'v' then
-            self.turtle.chord.setVelocity(self.turtle.chord.getVelocity() - operand)
+            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() - operand)
         end
         if target == 'p' then
-            self.turtle.chord.setPan(self.turtle.chord.getPan() - operand)
+            self.turtle.chord:setPan(self.turtle.chord:getPan() - operand)
         end
     end
 end
@@ -608,8 +614,8 @@ function Lindenmayer:interpret()
         if action ~= nil then
             print(target, opcode, equivalence, operand, index)
             print(self.turtle)
-            action(self, target, opcode, equivalence, index, operand)
-            --print(self.turtle)
+            action(self, target, opcode, equivalence, operand, index)
+            print(self.turtle)
             print()
         end
     end
@@ -630,7 +636,7 @@ end
 testing = true
 if testing then
     for name, chord in pairs(ChordSpace.chordsForNames) do
-        print(name, chord)
+        print(string.format('"%s"', name), chord)
     end
     local a = Silencio.split('I:WL:~ORPTI::i', ':')
     local a = Silencio.split('VATDCPI:=*/+-::i:x', ':')
@@ -638,7 +644,6 @@ if testing then
     for k, v in pairs(a) do
         print(k, v)
     end
-    print(a[2])
     lindenmayer = Lindenmayer:new()
     print(lindenmayer)
     for k,v in pairs(lindenmayer.actions) do
@@ -646,7 +651,7 @@ if testing then
     end
     print('iterations:', lindenmayer.iterations)
     print('produce:', lindenmayer.produce)
-    lindenmayer.axiom = 'C:=::CM7 M:=::Cm7 v:=::80 a'
+    lindenmayer.axiom = 'C:=::CM7 M:=::Cm7 d:=::1 v:=::80 a'
     lindenmayer.rules['a'] = 'a C:K:RP C:W:OP a C:Q:RP:3 C:W:RPT a a'
     lindenmayer:generate()
     lindenmayer.score:print()    
