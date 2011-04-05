@@ -2,11 +2,76 @@ local Silencio = require("Silencio")
 local ChordSpace = require("ChordSpace")
 local Som = require("Som")
 
---[[
+Lindenmayer = ScoreSource:new()
+
+function Lindenmayer.help()
+print [[
+L I N D E N M A Y E R
+
+Copyright (C) 2010 by Michael Gogins
+This software is licensed under the terms 
+of the GNU Lesser General Public License.
+
 The Lindenmayer class implements a context-free Lindenmayer system that 
 performs operations on chords, voicings of chords, arpeggiations of chords,
-and individual voices of chords.
+and individual voices of chords. 
+
+The turtle commands have the following effective combinations of parts
+(a colon without a part is permitted if the part is not used,
+but the colons are always required except for trailing colons;
+equivalence classes may be combined but only the order given):
+
+STMCVAGdckvp
+
+Target   :Operation :Equivalence :Operand :Index
+S        :[]
+MC       :PLRDK     :~ORPTI
+MC       :=TIQ      :~ORPTI      :x
+CA       :WL        :~ORPTI:     :      
+I        :WL        :~ORPTI:     :        :i
+dckvp    :=*/+-     :            :x       :i
+VAGtdcvp :=*/+-     :            :x
+
+Targets:
+    S   Entire turtle state.
+    M   Modality.
+    C   Chord.
+    V   Voicing of chord.
+    A   Arpeggiation of chord.
+    G   Interval size (1 = 12TET).
+    t   Time.
+    d   Duration.
+    c   Channel.
+    k   Pitch of individual voice (MIDI key).
+    v   Loudness (MIDI velocity).
+    p   Pan.
+Operations:
+    [   Push state onto stack.
+    ]   Pop state from stack.
+    P   Parallel Riemannian operation on chord (only guaranteed for major/minor triads).
+    L   Lettonwechsel or leading-tone exchange Riemannian operation (only guaranteed for major/minor triads).
+    R   Relative Riemannian operation (only guaranteed for major/minor triads).
+    D   Dominant Riemannian operation.
+    W   Write target C or I to score.
+    L   Write target C or I that is the closest voice-leading from the prior state of the target.
+    T   Transpose by operand semitones.
+    I   Invert around operand semitones.
+    K   Invert in context of modality.
+    Q   Transpose in context of modality.
+    =   Assign operand.
+    *   Multiply by operand.
+    /   Divide by operand.
+    +   Add operand.
+    -   Subtract operand.
+Equivalence classes:
+    ~   No equivalence class (same as blank).
+    O   Order.
+    R   Range.
+    P   Octave (pitch-class).
+    T   Transposition.
+    I   Inversion.
 ]]
+end
 
 Turtle = {}
 
@@ -29,8 +94,6 @@ function Turtle:__tostring()
     self.chord:getPan() or -1)
     return text
 end
-
-Lindenmayer = ScoreSource:new()
 
 function Lindenmayer:new(o)
     if not o then
@@ -170,11 +233,12 @@ end
 
 function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
     local chord = self.turtle.chord:clone()    
+    print('Pre: ', chord, self.turtle.voicing)
     chord = chord:v(self.turtle.voicing)
     if target == 'C' then
         chord = self:equivalenceClass(chord, 'RP')
         self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
-        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
+        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
     end
     if target == 'I' then
         chord = self:equivalenceClass(chord, 'RP')
@@ -182,42 +246,15 @@ function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
         self.score[#self.score + 1] = note
     end
     if target == 'A' then
-        chord = chord:eOP()
-        local v = 1
-        local a
-        if self.turtle.arpeggiation < 0 then
-            v = #self.turtle.chord
-            a = self.turtle.arpeggiation
-            while true do
-                if a == 0 then
-                    break
-                end
-                a = a + 1
-                v = v - 1
-                if v < 1 then
-                    chord = chord:v(-1)
-                    v = #self.turtle.chord
-                end
-            end
-        end
-        if self.turtle.arpeggiation > 0 then
-            v = 1
-            a = 1
-            while true do
-                if a == self.turtle.arpeggiation then
-                    break
-                end
-                a = a - 1
-                v = v + 1
-                if v > #self.turtle.chord then
-                    chord = chord:v(1)
-                    v = 1
-                end
-            end
-        end 
+        local p, v
+        p, v, chord = chord:a(self.turtle.arpeggiation)
+        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration(v)
+        chord = self:equivalenceClass(chord, 'RP')
         local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
         self.score[#self.score + 1] = note
     end
+    print('Post:', chord)
+    print()
     self.priorChord = chord
 end
 
@@ -271,7 +308,7 @@ end
 -- dckvp    :=*/+-     :            :x       :i
 -- VAGtdcvp :=*/+-     :            :x
 
-function Lindenmayer:actionAssign(target, opcode, equivalence, operand, index)
+function Lindenmayer:actionAssign(target, opcode, equivalence, operand, index, stringOperand)
     if index ~= nil then
         if target == 'd' then
             self.turtle.chord.duration[index] = operand
@@ -291,10 +328,10 @@ function Lindenmayer:actionAssign(target, opcode, equivalence, operand, index)
     else        
         if target == 'C' then
             print(operand)
-            self.turtle.chord = ChordSpace.chordsForNames[operand]
+            self.turtle.chord = ChordSpace.chordsForNames[stringOperand]
         end
         if target == 'M' then
-            self.turtle.modality = ChordSpace.chordsForNames[operand]
+            self.turtle.modality = ChordSpace.chordsForNames[stringOperand]
         end
         if target == 'V' then
             self.turtle.voicing = operand
@@ -438,7 +475,7 @@ function Lindenmayer:actionAdd(target, opcode, equivalence, operand, index)
             self.turtle.voicing = self.turtle.voicing + operand
         end
         if target == 'A' then
-            self.turtle.arpeggiation = self.turtle.arpeggiation / operand
+            self.turtle.arpeggiation = self.turtle.arpeggiation + operand
         end
         if target == 'T' then
             self.turtle.onset = self.turtle.onset + operand
@@ -536,87 +573,27 @@ function Lindenmayer:produce()
     end
 end
 
---[[
-The turtle commands have the following effective combinations of parts
-(a colon without a part is permitted if the part is not used,
-but the colons are always required except for trailing colons;
-equivalence classes may be combined but only the order given):
-
-STMCVAGdckvp
-
-target   :operation :equivalence :operand :index
-S        :[]
-MC       :PLRDK     :~ORPTI
-MC       :=TIQ      :~ORPTI      :x
-CA       :WL        :~ORPTI:     :      
-I        :WL        :~ORPTI:     :        :i
-dckvp    :=*/+-     :            :x       :i
-VAGtdcvp :=*/+-     :            :x
-]]
-
 function Lindenmayer:parseCommand(command)
     local parts = Silencio.split(command, ':')
     local target = parts[1]
     local opcode = parts[2]
     local equivalence = parts[3]
-    local operand = parts[4]
-    local index = parts[5]
-    return target, opcode, equivalence, operand, index
+    local operand = tonumber(parts[4])
+    local stringOperand = parts[4]
+    local index = tonumber(parts[5])
+    return target, opcode, equivalence, operand, index, stringOperand
 end
 
---[[
-T   Targets:
-    S   Entire turtle state.
-    M   Modality.
-    C   Chord.
-    V   Voicing of chord.
-    A   Arpeggiation of chord.
-    G   Interval size (1 = 12TET).
-    t   Time.
-    d   Duration.
-    c   Channel.
-    k   Pitch of individual voice (MIDI key).
-    v   Loudness (MIDI velocity).
-    p   Pan.
-O   Operations:
-    [   Push state onto stack.
-    ]   Pop state from stack.
-    P   Parallel Riemannian operation on chord (only guaranteed for major/minor triads).
-    L   Lettonwechsel or leading-tone exchange Riemannian operation (only guaranteed for major/minor triads).
-    R   Relative Riemannian operation (only guaranteed for major/minor triads).
-    D   Dominant Riemannian operation.
-    W   Write target C or I to score.
-    L   Write target C or I that is the closest voice-leading from the prior state of the target.
-    T   Transpose by operand semitones.
-    I   Invert around operand semitones.
-    K   Invert in context of modality.
-    Q   Transpose in context of modality.
-    =   Assign operand.
-    *   Multiply by operand.
-    /   Divide by operand.
-    +   Add operand.
-    -   Subtract operand.
-E   Equivalence class:
-    ~   No equivalence class (same as blank).
-    O   Order.
-    R   Range.
-    P   Octave (pitch-class).
-    T   Transposition.
-    I   Inversion.
-]]
 
 function Lindenmayer:interpret()
     print('Lindenmayer:interpret...')
     local commands = Silencio.split(self.currentProduction, ' ')
     for index, command in ipairs(commands) do
-        target, opcode, equivalence, operand, index = self:parseCommand(command)
+        target, opcode, equivalence, operand, index, stringOperand = self:parseCommand(command)
         local action = self.actions[opcode]
         if action ~= nil then
-            print(target, opcode, equivalence, operand, index)
-            print(self.turtle)
-            action(self, target, opcode, equivalence, operand, index)
-            print(self.turtle)
-            print()
+            print(target, opcode, equivalence, operand, index, stringOperand)
+            action(self, target, opcode, equivalence, operand, index, stringOperand)
         end
     end
 end
@@ -625,35 +602,8 @@ function Lindenmayer:generate()
     print('Lindenmayer:generate...')
     self:produce()
     self:interpret()
-    self.score:sort()
-    self.score:print()
     if self.tieOverlaps == true then
         print('Lindenmayer: tieing notes...')    
-        self.score:tieOverlaps()
+        self.score:tieOverlaps(true)
     end
 end
-
-testing = true
-if testing then
-    for name, chord in pairs(ChordSpace.chordsForNames) do
-        print(string.format('"%s"', name), chord)
-    end
-    local a = Silencio.split('I:WL:~ORPTI::i', ':')
-    local a = Silencio.split('VATDCPI:=*/+-::i:x', ':')
-    local a = Silencio.split('V:+:OPT::3.5', ':')
-    for k, v in pairs(a) do
-        print(k, v)
-    end
-    lindenmayer = Lindenmayer:new()
-    print(lindenmayer)
-    for k,v in pairs(lindenmayer.actions) do
-        print(k, v)
-    end
-    print('iterations:', lindenmayer.iterations)
-    print('produce:', lindenmayer.produce)
-    lindenmayer.axiom = 'C:=::CM7 M:=::Cm7 d:=::1 v:=::80 a'
-    lindenmayer.rules['a'] = 'a C:K:RP C:W:OP a C:Q:RP:3 C:W:RPT a a'
-    lindenmayer:generate()
-    lindenmayer.score:print()    
-end
-

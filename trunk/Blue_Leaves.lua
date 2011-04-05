@@ -263,5 +263,5 @@ pkill -9 csound
 arg[1] = '--dir'
 arg[2] = '/home/mkg/Dropbox/music/'
 arg[3] = '--display'
--- arg[4] = '--pianoteq-wav'
+arg[4] = '--pianoteq'
 score:processArg(arg)
