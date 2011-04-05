@@ -540,17 +540,17 @@ function Score:findScale(dimension)
             maximum = value
         end
     end
-    range = maximum - minimum
-    return {minimum, range}
+    local range = maximum - minimum
+    return minimum, range
 end
 
 function Score:findScales()
     local minima = Event:new()
     local ranges = Event:new()
     for i = 1, HOMOGENEITY do
-        local scale = self:findScale(i)
-        minima[i] = scale[1]
-        ranges[i] = scale[2] 
+        local minimum, range = self:findScale(i)
+        minima[i] = minimum
+        ranges[i] = range 
     end
     return {minima, ranges}
 end
@@ -562,13 +562,12 @@ function Score:print()
 end
 
 function Score:setScale(dimension, minimum, range)
-    local scale = self:findScale(dimension)
-    currentRange = scale[2]
+    local currentMinimum, currentRange = self:findScale(dimension)
     if currentRange == 0 then
-        currentRange = 1.0
+        currentRange = 1
     end
     for i, event in ipairs(self) do
-        event[dimension] = event[dimension] - scale[1]
+        event[dimension] = event[dimension] - currentMinimum
         event[dimension] = event[dimension] * range / currentRange
         event[dimension] = event[dimension] + minimum
     end
@@ -747,9 +746,7 @@ function Score:sort()
 end
 
 function Score:setDuration(newDuration)
-    local scale = self:findScale(TIME)
-    local minimum = scale[1]
-    local duration = scale[2]
+    local minimum, duration = self:findScale(TIME)
     local factor = newDuration / duration
     for i, event in ipairs(self) do
         event[TIME] = event[TIME] - minimum
@@ -763,19 +760,26 @@ end
 -- and loudness and duration greater than 0 that overlap in time,
 -- extends the earlier note and discards the later note.
 
-function Score:tieOverlaps()
+function Score:tieOverlaps(tieExact)
+    tieExact = tieExact or false
     self:sort()
     for laterI = #self, 1, -1 do
-        laterEvent = self[laterI]
+        local laterEvent = self[laterI]
         if laterEvent[STATUS] == 144 then
-            if laterEvent[DURATION] <= 0.0 or laterEvent[VELOCITY] <= 0.0 then
+            if laterEvent[DURATION] <= 0 or laterEvent[VELOCITY] <= 0 then
                 table.remove(self, laterI)
             else
                 for earlierI = laterI - 1, 1, -1 do
-                    earlierEvent = self[earlierI]
-                    if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL] 
+                    local earlierEvent = self[earlierI]
+                    local later = false
+                    if tieExact then
+                        later = (earlierEvent:getOffTime() >= laterEvent[TIME])
+                    else
+                        later = (earlierEvent:getOffTime() > laterEvent[TIME])
+                    end
+                    if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL]  
                         and math.floor(earlierEvent[KEY ] + 0.5) == math.floor(laterEvent[KEY] + 0.5)
-                        and earlierEvent:getOffTime() > laterEvent[TIME] then
+                        and later then
                         earlierEvent:setOffTime(laterEvent:getOffTime())
                         table.remove(self, laterI)
                         break
@@ -805,7 +809,6 @@ end
 
 function Score:display()
     if ScoreView then
-        print('ScoreView:', ScoreView)
         ScoreView.display(self)
     else
         print('ScoreView.display(score) not available: check for OpenGL and glfw.')

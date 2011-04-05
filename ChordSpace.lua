@@ -3,6 +3,8 @@ ChordSpace = {}
 function ChordSpace.help()
 print [[
 '''
+C H O R D S P A C E
+
 Copyright 2010 by Michael Gogins.
 This software is licensed under the terms 
 of the GNU Lesser General Public License.
@@ -447,7 +449,7 @@ end
 -- for ==, for the pitches in this only.
 
 function Chord:__eq(other)
-    voices = math.min(#self, #other)
+    local voices = math.min(#self, #other)
     for voice = 1, voices do
         if self[voice] ~= other[voice] then
             return false
@@ -463,11 +465,10 @@ end
 -- for <, for the pitches in this only.
 
 function Chord:__lt(other)
-    voices = math.min(#self, #other)
+    local voices = math.min(#self, #other)
     for voice = 1, voices do
         if self[voice] < other[voice] then
-
-        return true
+            return true
         end
         if self[voice] > other[voice] then
             return false
@@ -828,15 +829,30 @@ end
 function Chord:v(direction)
     direction = direction or 1
     local chord = self:clone()
-    if direction > 0 then
+    while direction > 0 do
         chord = chord:cycle(-1)
         chord[#chord] = chord[#chord] + OCTAVE   
+        direction = direction - 1
     end
-    if direction < 0 then
+    while direction < 0 do
         chord = chord:cycle(1)
         chord[1] = chord[1] - OCTAVE
+        direction = direction + 1
     end
     return chord
+end
+
+-- Returns the ith arpeggiation, current voice, and corresponding revoicing 
+-- of the chord. Positive arpeggiations start with the lowest voice of the 
+-- chord and revoice up; negative arpeggiations start with the highest voice
+-- of the chord and revoice down.
+
+function Chord:a(arpeggiation)
+    local chord = self:v(arpeggiation)
+    if arpeggiation < 0 then
+        return chord[#chord], #chord, chord
+    end
+    return chord[1], 1, chord
 end
 
 function Chord:distanceToOrthogonalAxis()
@@ -1072,10 +1088,10 @@ function Chord:eR(range)
     -- back into it, which will revoice the chord.
     while true do
         local layer = chord:sum()
-        if 0 <= layer and layer <= range then
+        if (0 <= layer) and (layer <= range) then
             break
         end
-        maximumPitch, maximumVoice = chord:max()
+        local maximumPitch, maximumVoice = chord:max()
         -- Because no voice is above the range,
         -- any voices that need to be revoiced will now be negative.
         chord[maximumVoice] = maximumPitch - range
@@ -1150,7 +1166,7 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:move(voice, interval)
-    chord = self:clone()
+    local chord = self:clone()
     chord[voice] = T(chord[voice], interval)
     return chord
 end
@@ -1278,7 +1294,7 @@ end
 
 function Chord:V(range)
     range = range or OCTAVE
-    iterator = chord:clone()
+    local iterator = chord:clone()
     -- Enumerate the next voicing by counting voicings in RP.
     -- iterator[1] is the most significant voice, 
     -- iterator[self.N] is the least significant voice.
@@ -1516,8 +1532,8 @@ function conformToChord(event, chord, octaveEquivalence)
             local octave = pitch - pitchClass
             local chordPitchClass = chord[1] % OCTAVE
             local distance = math.abs(chordPitchClass - pitchClass)
-            closestPitchClass = chordPitchClass
-            minimumDistance = distance
+            local closestPitchClass = chordPitchClass
+            local minimumDistance = distance
             for voice = 2, #chord do
                 chordPitchClass = chord[voice] % OCTAVE
                 distance = math.abs(chordPitchClass - pitchClass)

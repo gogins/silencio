@@ -446,15 +446,15 @@ function ScoreViewer:drawNote(note)
     gl.glPushMatrix()
     gl.glTranslatef(note[TIME], note[KEY], note[CHANNEL])
     gl.glBegin(gl.GL_QUADS)
-    local hue = (note[CHANNEL] - self.scales[1][CHANNEL]) / self.scales[2][CHANNEL]
+    local hue = (note[CHANNEL] - self.scales[1][CHANNEL]) / self.scales[2][CHANNEL] 
     hue = 60 + hue * 300
     local saturation = 1
-    local value = (note[VELOCITY] - self.scales[1][VELOCITY]) / self.scales[2][VELOCITY]
+    local value = (note[VELOCITY] - self.scales[1][VELOCITY]) / self.scales[2][VELOCITY] 
     value = 0.5 + (value * 0.5)
     local alpha = 0.5
     local r, g, b = hsv_to_rgb(hue, value, value, alpha)
     --print('hsv:', hue, saturation, value    )
-    gl.glColor3f(r, g, b)
+    gl.glColor3f(r or .5, g or .5, b or .5)
     local d = note[DURATION]
     local w = 1
     local t = 0.25
@@ -509,10 +509,6 @@ function ScoreView.display(score_)
     print('ENDED ScoreView.display().')
 end
 
-print 'ScoreView:'
-for k, v in pairs(ScoreView) do
-    print(k, v)
-end
 return ScoreView
 
 
