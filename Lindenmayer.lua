@@ -19,7 +19,7 @@ and individual voices of chords.
 The turtle commands have the following effective combinations of parts
 (a colon without a part is permitted if the part is not used,
 but the colons are always required except for trailing colons;
-equivalence classes may be combined but only the order given):
+equivalence classes may be combined, but only in the order given):
 
 STMCVAGdckvp
 
@@ -53,7 +53,7 @@ Operations:
     R   Relative Riemannian operation (only guaranteed for major/minor triads).
     D   Dominant Riemannian operation.
     W   Write target C or I to score.
-    L   Write target C or I that is the closest voice-leading from the prior state of the target.
+    V   Write target C or I that is the closest voice-leading from the prior state of the target.
     T   Transpose by operand semitones.
     I   Invert around operand semitones.
     K   Invert in context of modality.
@@ -77,6 +77,7 @@ Turtle = {}
 
 function Turtle:new(o)
     o = o or {modality = Chord:new(), chord = Chord:new(), voicing = 0, arpeggiation = 0, onset = 1, channel = 1, pan = 1, octaves = 3, intervalSize = 1}
+    o.range = o.octaves * OCTAVE
     setmetatable(o, self)
     self.__index = self
     return o
@@ -119,7 +120,7 @@ function Lindenmayer:new(o)
         o.actions['R'] = self.actionRelative
         o.actions['D'] = self.actionDominant
         o.actions['W'] = self.actionWrite
-        o.actions['L'] = self.actionWriteVoiceleading
+        o.actions['V'] = self.actionWriteVoiceleading
         o.actions['T'] = self.actionTranspose
         o.actions['I'] = self.actionInvert
         o.actions['K'] = self.actionContexualInversion
@@ -259,10 +260,33 @@ function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
 end
 
 function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operand, index)
+    local chord = self.turtle.chord:clone()    
+    print('Pre: ', chord, self.turtle.voicing)
+    if self.priorChord == nil then
+        self:actionWrite(target, opcode, equivalence, operand, index)
+    end
+    chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.turtle.range, true)
     if target == 'C' then
+        chord = self:equivalenceClass(chord, 'RP')
+        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
+        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
     end
     if target == 'I' then
+        chord = self:equivalenceClass(chord, 'RP')
+        local note = chord:note(index, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
+        self.score[#self.score + 1] = note
     end
+    if target == 'A' then
+        local p, v
+        p, v, chord = chord:a(self.turtle.arpeggiation)
+        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration(v)
+        chord = self:equivalenceClass(chord, 'RP')
+        local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
+        self.score[#self.score + 1] = note
+    end
+    print('Post:', chord)
+    print()
+    self.priorChord = chord
 end
 
 function Lindenmayer:actionTranspose(target, opcode, equivalence, operand, index)

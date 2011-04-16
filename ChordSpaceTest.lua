@@ -32,6 +32,11 @@ voicings = Chord:new{0, 4, 7}:voicings()
 for i, v in ipairs(voicings) do
     print('v', v, 'eOP', v:eOP())
 end
+
+voicings = Chord:new{0, 4, 7}:Voicings(37)
+for i, v in ipairs(voicings) do
+    print('v', v, 'eOP', v:eOP())
+end
 os.exit()
 
 test('a = Chord:new()')
