@@ -1,6 +1,6 @@
 #summary Installing and Running Silencio
 
-On your Andrid phone, install the Android Scripting Environment from http://code.google.com/p/android-scripting/ and also install Lua for Android.
+On your Android phone, install the Android Scripting Environment from http://code.google.com/p/android-scripting/ and also install Lua for Android.
 
 Check out the Silencio Subversion repository onto your PC, or just download the few files currently in the repository.
 
@@ -10,6 +10,6 @@ Unmount the phone. Now, on the phone, open the Android Scripting Environment and
 
 To render with Csound, mount the phone on a computer on which Csound has been installed and is in the executable path. Open a console window and change to the silencio directory. Run "lua SilencioTest.lua".
 
-At the current time, the built-in Csound orchestra in SilencioTest.lua uses Jack and will only run on Linux. Also, at the current time, this orchestra does not shut down cleanly, you have to kill it. But it does render the generated score.
+At the current time, the built-in Csound orchestra in SilencioTest.lua uses Jack and will only run on Linux. But it does render the generated score.
 
 You can easily edit the orchestra, however, to omit Jack and use different instruments that will run on Windows or OS X.
