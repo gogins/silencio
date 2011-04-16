@@ -772,7 +772,7 @@ function Chord:count(pitch, range)
     range = range or OCTAVE
     n = 0
     for voice, value in ipairs(self) do
-        if eR(value, range) == pitch then
+        if er(value, range) == pitch then
             n = n + 1
         end
     end
@@ -1294,7 +1294,8 @@ end
 
 function Chord:V(range)
     range = range or OCTAVE
-    local iterator = chord:clone()
+    local iterator = self:clone()
+    local zero = self:eOP()
     -- Enumerate the next voicing by counting voicings in RP.
     -- iterator[1] is the most significant voice, 
     -- iterator[self.N] is the least significant voice.
@@ -1320,19 +1321,22 @@ end
 function Chord:Voicings(range)
     range = range or OCTAVE
     local voicings = {}
+    local iterator = self:clone()
     local zero = self:eOP()
-    -- Ensure that iteration starts below the lowest layer.
-    for voice = 1, #self do
-        zero[voice] = zero[voice] - (range + OCTAVE)
-    end
-    local iterator = zero:clone()
-    while true do
-        local iterator = iterator:V(range)
-        if iterator == nil then
-            break
-        else
-            if iterator:iseRP(range) then
-                table.insert(voicings, iterator)
+    -- Enumerate the next voicing by counting voicings in RP.
+    -- iterator[1] is the most significant voice, 
+    -- iterator[self.N] is the least significant voice.
+    while iterator[1] < range do
+        iterator[#self] = iterator[#self] + OCTAVE
+        local unorderedIterator = iterator:eP()
+        if unorderedIterator:iseRP(range) then
+            voicings[#voicings + 1] = unorderedIterator
+        end
+        -- "Carry" octaves.
+        for voice = #self, 2, -1 do
+            if iterator[voice] >= range then
+                iterator[voice] = zero[voice]
+                iterator[voice - 1] = iterator[voice - 1] + OCTAVE
             end
         end
     end
@@ -1343,7 +1347,7 @@ end
 -- i.e. what you have to add to a to get b, as a 
 -- chord of directed intervals.
 
-function voiceleading(a, b)
+function ChordSpace.voiceleading(a, b)
     local voiceleading = a:clone()
     for voice = 1, #voiceleading do
         voiceleading[voice] = b[voice] - a[voice]
@@ -1354,8 +1358,8 @@ end
 -- Returns whether the voiceleading 
 -- between chords a and b contains a parallel fifth.
 
-function parallelFifth(a, b)
-    local v = voiceleading(a, b)
+function ChordSpace.parallelFifth(a, b)
+    local v = ChordSpace.voiceleading(a, b)
     if v:count(7) > 1 then
         return true
     else
@@ -1366,7 +1370,7 @@ end
 -- Returns the smoothness of the voiceleading between 
 -- chords a and b by L1 norm.
 
-function voiceleadingSmoothness(a, b)
+function ChordSpace.voiceleadingSmoothness(a, b)
     local L1 = 0
     for voice = 1, #a do
         L1 = L1 + math.abs(b[voice] - a[voice])
@@ -1377,18 +1381,18 @@ end
 -- Returns which of the voiceleadings (source to d1, source to d2)
 -- is the smoother (shortest moves), optionally avoiding parallel fifths.
 
-function voiceleadingSmoother(source, d1, d2, avoidParallels, range)
+function ChordSpace.voiceleadingSmoother(source, d1, d2, avoidParallels, range)
     range = range or OCTAVE
     if avoidParallels then
-        if parallelFifth(source, d1) then
+        if ChordSpace.parallelFifth(source, d1) then
             return d2
         end
-        if parallelFifth(source, d2) then
+        if ChordSpace.parallelFifth(source, d2) then
             return d1
         end
     end
-    local s1 = voiceleadingSmoothness(source, d1)
-    local s2 = voiceleadingSmoothness(source, d2)
+    local s1 = ChordSpace.voiceleadingSmoothness(source, d1)
+    local s2 = ChordSpace.voiceleadingSmoothness(source, d2)
     if s1 <= s2 then
         return d1
     else
@@ -1399,18 +1403,18 @@ end
 -- Returns which of the voiceleadings (source to d1, source to d2)
 -- is the simpler (fewest moves), optionally avoiding parallel fifths.
 
-function voiceleadingSimpler(source, d1, d2, avoidParallels)
+function ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
     avoidParallels = avoidParallels or false
     if avoidParallels then
-        if parallelFifth(source, d1) then
+        if ChordSpace.parallelFifth(source, d1) then
             return d2
         end
-        if parallelFifth(source, d2) then
+        if ChordSpace.parallelFifth(source, d2) then
             return d1
         end
     end
-    local v1 = voiceleading(source, d1):eP()
-    local v2 = voiceleading(source, d2):eP()
+    local v1 = ChordSpace.voiceleading(source, d1):eP()
+    local v2 = ChordSpace.voiceleading(source, d2):eP()
     for voice = #v1, 1, -1 do
         if v1[voice] < v2[voice] then
             return d1
@@ -1425,36 +1429,52 @@ end
 -- Returns which of the voiceleadings (source to d1, source to d2)
 -- is the closer (first smoother, then simpler), optionally avoiding parallel fifths.
 
-function voiceleadingCloser(source, d1, d2, avoidParallels)
+function ChordSpace.voiceleadingCloser(source, d1, d2, avoidParallels)
     avoidParallels = avoidParallels or false
     if avoidParallels then
-        if parallelFifth(source, d1) then
+        if ChordSpace.parallelFifth(source, d1) then
             return d2
         end
-        if parallelFifth(source, d2) then
+        if ChordSpace.parallelFifth(source, d2) then
             return d1
         end
     end
-    local s1 = voiceleadingSmoothness(source, d1)
-    local s2 = voiceleadingSmoothness(source, d2)
+    local s1 = ChordSpace.voiceleadingSmoothness(source, d1)
+    local s2 = ChordSpace.voiceleadingSmoothness(source, d2)
     if s1 < s2 then
         return d1
     end
     if s1 > s2 then
         return d2
     end
-    return voiceleadingSimpler(source, d1, d2, avoidParallels)
+    return ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
 end
 
 -- Returns which of the destinations has the closest voice-leading
 -- from the source, optionally avoiding parallel fifths.
 
-function voiceleadingClosest(source, destinations, avoidParallels)
+function ChordSpace.voiceleadingClosest(source, destinations, avoidParallels)
     avoidParallels = avoidParallels or false
     local d = destinations[1]
     for i = 2, #destinations do
-        d = voiceleadingCloser(source, d, destinations[i], avoidParallels)
+        d = ChordSpace.voiceleadingCloser(source, d, destinations[i], avoidParallels)
     end
+    return d
+end
+
+-- Returns the voicing of the destination which has the closest voice-leading
+-- from the source within the range, optionally avoiding parallel fifths.
+-- TODO: Do not collect all voicings, but test them individually in a loop 
+-- as in the body of Voicings.
+
+function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
+    print('BEGAN ChordSpace.voiceleadingClosestRange...', source, destination)
+    range = range or 36
+    avoidParallels = avoidParallels or false
+    local destinations = destination:Voicings(range)
+    local closest = ChordSpace.voiceleadingClosest(source, destinations, range, avoidParallels)
+    print('ENDED ChordSpace.voiceleadingClosestRange.')
+    return closest
 end
 
 -- Returns a label for a chord.
@@ -1624,6 +1644,7 @@ pitchClassesForNames["Bb"] = 10
 pitchClassesForNames["B" ] = 11
 
 ChordSpace.chordsForNames = {}
+ChordSpace.namesForChords = {}
 
 local function fill(rootName, rootPitch, typeName, typePitches)             
     local chordName = rootName .. typeName
@@ -1635,6 +1656,7 @@ local function fill(rootName, rootPitch, typeName, typePitches)
         chord[voice] = rootPitch + pitch
     end
     ChordSpace.chordsForNames[chordName] = chord
+    ChordSpace.namesForChords[chord:eop():label()] = chordName
 end
 
 for rootName, rootPitch in pairs(pitchClassesForNames) do
@@ -1714,4 +1736,5 @@ for rootName, rootPitch in pairs(pitchClassesForNames) do
 end
 
 table.sort(ChordSpace.chordsForNames)
+table.sort(ChordSpace.namesForChords)
 return ChordSpace
