@@ -234,7 +234,7 @@ end
 
 function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
     local chord = self.turtle.chord:clone()    
-    print('Pre: ', chord, self.turtle.voicing)
+    print('C Pre: ', chord, self.turtle.voicing)
     chord = chord:v(self.turtle.voicing)
     if target == 'C' then
         chord = self:equivalenceClass(chord, 'RP')
@@ -254,17 +254,17 @@ function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
         local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
         self.score[#self.score + 1] = note
     end
-    print('Post:', chord)
+    print('C Post:', chord)
     print()
     self.priorChord = chord
 end
 
 function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operand, index)
-    local chord = self.turtle.chord:clone()    
-    print('Pre: ', chord, self.turtle.voicing)
     if self.priorChord == nil then
-        self:actionWrite(target, opcode, equivalence, operand, index)
+        return self:actionWrite(target, opcode, equivalence, operand, index)
     end
+    local chord = self.turtle.chord:clone()    
+    print('V Pre: ', chord, self.turtle.voicing)
     chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.turtle.range, true)
     if target == 'C' then
         chord = self:equivalenceClass(chord, 'RP')
@@ -284,7 +284,7 @@ function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operan
         local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
         self.score[#self.score + 1] = note
     end
-    print('Post:', chord)
+    print('V Post:', chord)
     print()
     self.priorChord = chord
 end
@@ -351,7 +351,6 @@ function Lindenmayer:actionAssign(target, opcode, equivalence, operand, index, s
         end
     else        
         if target == 'C' then
-            print(operand)
             self.turtle.chord = ChordSpace.chordsForNames[stringOperand]
         end
         if target == 'M' then
@@ -593,7 +592,7 @@ function Lindenmayer:produce()
             end
         end
         self.currentProduction = table.concat(self.currentProduction, ' ')
-        print(self.currentProduction)
+        -- print(self.currentProduction)
     end
 end
 
@@ -616,7 +615,7 @@ function Lindenmayer:interpret()
         target, opcode, equivalence, operand, index, stringOperand = self:parseCommand(command)
         local action = self.actions[opcode]
         if action ~= nil then
-            print(target, opcode, equivalence, operand, index, stringOperand)
+            -- print(target, opcode, equivalence, operand, index, stringOperand)
             action(self, target, opcode, equivalence, operand, index, stringOperand)
         end
     end
