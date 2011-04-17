@@ -1468,12 +1468,10 @@ end
 -- as in the body of Voicings.
 
 function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
-    print('BEGAN ChordSpace.voiceleadingClosestRange...', source, destination)
     range = range or 36
     avoidParallels = avoidParallels or false
     local destinations = destination:Voicings(range)
     local closest = ChordSpace.voiceleadingClosest(source, destinations, range, avoidParallels)
-    print('ENDED ChordSpace.voiceleadingClosestRange.')
     return closest
 end
 
@@ -1586,7 +1584,7 @@ end
 -- if not the specified values are used.
 
 function ChordSpace.insert(score, chord, time_, duration, channel, velocity, pan)
-    print(score, chord, time_, duration, channel, velocity, pan)
+    -- print(score, chord, time_, duration, channel, velocity, pan)
     for voice = 1, #chord do
         local event = chord:note(voice, time_, duration, channel, velocity, pan)
         table.insert(score, event)
