@@ -1454,7 +1454,6 @@ end
 -- from the source, optionally avoiding parallel fifths.
 
 function ChordSpace.voiceleadingClosest(source, destinations, avoidParallels)
-    avoidParallels = avoidParallels or false
     local d = destinations[1]
     for i = 2, #destinations do
         d = ChordSpace.voiceleadingCloser(source, d, destinations[i], avoidParallels)
@@ -1468,8 +1467,6 @@ end
 -- as in the body of Voicings.
 
 function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
-    range = range or 36
-    avoidParallels = avoidParallels or false
     local destinations = destination:Voicings(range)
     local closest = ChordSpace.voiceleadingClosest(source, destinations, range, avoidParallels)
     return closest

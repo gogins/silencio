@@ -265,7 +265,7 @@ function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operan
     end
     local chord = self.turtle.chord:clone()    
     print('V Pre: ', chord, self.turtle.voicing)
-    chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.turtle.range, true)
+    chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.octaves * OCTAVE, true)
     if target == 'C' then
         chord = self:equivalenceClass(chord, 'RP')
         self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
