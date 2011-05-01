@@ -16,6 +16,9 @@ The Lindenmayer class implements a context-free Lindenmayer system that
 performs operations on chords, voicings of chords, arpeggiations of chords,
 and individual voices of chords. 
 
+TODO: If not already possible, a legato command, to increase or decrease
+the overlap of voicings of successive chords.
+
 The turtle commands have the following effective combinations of parts
 (a colon without a part is permitted if the part is not used,
 but the colons are always required except for trailing colons;
