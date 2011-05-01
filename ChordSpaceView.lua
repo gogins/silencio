@@ -384,7 +384,7 @@ function ChordView:isE(chord)
 end
 
 function ChordView:E(chord)
-    -- tprint('E: chord:', chord)
+    -- print('E: chord:', chord)
     if self.equivalence == 'R' then
         return chord:eR(self.octaves * OCTAVE)
     end
@@ -777,7 +777,7 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 1
-chordView.equivalence = 'OP'
+chordView.equivalence = 'OPI'
 chordView:createChords()
 chordView:findSize()
 chordView:display()

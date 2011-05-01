@@ -37,6 +37,79 @@ voicings = Chord:new{0, 4, 7}:Voicings(37)
 for i, v in ipairs(voicings) do
     print('v', v, 'eOP', v:eOP())
 end
+
+print('All of op')
+local chords = ChordSpace.allOfEquivalenceClass(4, 'op')
+for k, v in pairs(chords) do
+    print(k, 'op', v)
+end
+
+print('All of opt')
+local chords = ChordSpace.allOfEquivalenceClass(4, 'opt')
+for k, v in pairs(chords) do
+    print(k, 'opt', v)
+end
+
+print('All of opi')
+local chords = ChordSpace.allOfEquivalenceClass(4, 'opi')
+for k, v in pairs(chords) do
+    print(k, 'opi', v)
+end
+
+print('All of opti')
+local chords = ChordSpace.allOfEquivalenceClass(4, 'opti')
+for k, v in pairs(chords) do
+    print(k, 'opti', v, ' inverted is:', v:I():eop())
+end
+
+local a = Chord:new{3, 3, 6}
+local b = Chord:new{3, 3, 6}
+print(a:__hash())
+print(b:__hash())
+print(a == b)
+
+test('r = 12 % 12')
+result('r', r)
+test('r = -12 % 12')
+result('r', r)
+test('r = 1 % 12')
+result('r', r)
+test('r = -1 % 12')
+result('r', r)
+
+local c011 = Chord:new{0, 1, 1}
+print ('c011', c011, c011:eopti(), c011:eopti():iseopti(), c011:I():eop(), c011:I():eop():iseopti())
+
+print ('Does opti U I(opti) = opt?')
+local opti = ChordSpace.allOfEquivalenceClass(4, 'opti')
+local chordset = {}
+for i, chord in pairs(opti) do
+    local iopti = chord:I():eop()
+    --print(i, 'opti', chord, 'iopti', iopti)
+    chordset[iopti:__hash()] = iopti
+    chordset[chord:__hash()] = chord
+end
+local sortedchordset = {}
+for index, chord in pairs(chordset) do
+    table.insert(sortedchordset, chord)
+end
+table.sort(sortedchordset)
+local shouldbeopt = {}
+for index, chord in ipairs(sortedchordset) do
+    table.insert(shouldbeopt, index - 1, chord)
+end
+local opt = ChordSpace.allOfEquivalenceClass(4, 'opt')
+for i = 0, math.max(#opt, #shouldbeopt) do
+    print (i, 'opti U I(opti)', shouldbeopt[i], 'opt', opt[i])
+end
+
+print('ChordSpaceGroup')
+chordSpaceGroup = ChordSpaceGroup:new()
+chordSpaceGroup:initialize(4, 60)
+chordSpaceGroup:list()
+local P, I, T, V = chordSpaceGroup:fromChord(ChordSpace.chordsForNames['GM7'])
+print (P, I, T, V)
+
 os.exit()
 
 test('a = Chord:new()')
