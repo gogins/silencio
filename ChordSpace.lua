@@ -508,15 +508,15 @@ end
 -- and also its voice index.
 
 function Chord:min()
-    local lowest = self[1]
+    local lowestPitch = self[1]
     local lowestVoice = 1
     for voice = 2, #self do
-        if self[voice] < lowest then
-            lowest = self[voice]
+        if self[voice] < lowestPitch then
+            lowestPitch = self[voice]
             lowestVoice = voice
         end
     end
-    return lowest, lowestVoice
+    return lowestPitch, lowestVoice
 end
 
 -- Returns the minimum interval in the chord.
@@ -540,15 +540,15 @@ end
 -- and also its voice index.
 
 function Chord:max()
-    local highest = self[1]
+    local highestPitch = self[1]
     local highestVoice = 1
     for voice = 2, #self do
-        if self[voice] > highest then
-            highest = self[voice]
+        if self[voice] > highestPitch then
+            highestPitch = self[voice]
             highestVoice = voice
         end
     end
-    return highest, highestVoice
+    return highestPitch, highestVoice
 end
 
 -- Returns the range of the pitches in the chord.
@@ -588,10 +588,10 @@ function Chord:er(r)
 end
 
 function Chord:iser(r)
-    if not self:range() < r then
+    if not (self:min() >= 0) then
         return false
     end
-    if not self:min() >= 0 then
+    if not (self:max() < r) then
         return false
     end
     return true
@@ -612,8 +612,8 @@ function Chord:ep()
 end
 
 function Chord:isep()
-    for i = 1, #self - 1 do
-        if not (self[i] <= self[i + 1]) then
+    for voice = 1, #self - 1 do
+        if not (self[voice] <= self[voice + 1]) then
             return false
         end
     end
@@ -632,9 +632,8 @@ end
 function Chord:iset()
     if self:min() == 0 then
         return true
-    else
-        return false
     end
+    return false
 end
 
 function Chord:eot()
@@ -642,35 +641,36 @@ function Chord:eot()
 end
 
 function Chord:iseot()
-    local eot = self:eot()
-    if self == eot then
-        return true
-    else
+    if not self:iseo() then
         return false
     end
+    if not self:iset() then
+        return false
+    end
+    return true
 end
 
--- Probably wrong.
-
 function Chord:ei()
-    local chord = self:clone()
-    if chord:isei() then
-        return chord
-    else
-        return chord:I()
+    if self:isei() then
+        return self:clone()
     end
+    return self:I()
+end
+
+function Chord:epi()
+    return self:ei():ep()
 end
 
 function Chord:isei()
-    local eop = self:clone():eop()
-    local eopi = self:I():eop()
-    for i = 2, #eop do
-        local ndiff = eop[i] - eop[i-1]
-        local idiff = eopi[i] - eopi[i-1]
-        if ndiff < idiff then
+    local ep = self:ep()
+    local epi = self:I():ep()
+    for voice = 2, #ep do
+        local epdelta = ep[voice] - ep[voice - 1]
+        local epidelta = epi[voice] - epi[voice - 1]
+        if epdelta < epidelta then
             return true
         end
-        if ndiff > idiff then
+        if epdelta > epidelta then
             return false
         end
     end
@@ -682,69 +682,89 @@ function Chord:eop()
 end
 
 function Chord:iseop()
-    local chord = self:eop()
-    if self == chord then
-        return true
-    else
+    if not self:iseo() then
         return false
     end
+    if not self:isep() then
+        return false
+    end
+    return true
 end
 
 function Chord:eoi()
-    return self:ei():eo()
+    local oi = self:I():eo()
+    if oi:iseoi() then
+        return oi
+    else
+        return self:clone()
+    end
 end
 
 function Chord:iseoi()
-    local chord = self:eoi()
-    if self == chord then
-        return true
-    else
+    if not self:iseo() then
         return false
     end
+    local ep = self:eop()
+    local epi = self:I():eo():ep()
+    for voice = 2, #ep do
+        local epdelta = ep[voice] - ep[voice - 1]
+        local epidelta = epi[voice] - epi[voice - 1]
+        if epdelta < epidelta then
+            return true
+        end
+        if epdelta > epidelta then
+            return false
+        end
+    end
+    return true
 end
 
 function Chord:eopi()
-    return self:eoi():eop()
+    return self:eoi():ep()
 end
 
 function Chord:iseopi()
-    local chord = self:eopi()
-    if self == chord then
-        return true
-    else
+    if self:iseoi() == false then
         return false
     end
+    if self:isep() == false then
+        return false
+    end
+    return true
 end
 
 function Chord:eopt()
-    return self:et():eop()
+    return self:et():eo():ep()
 end
 
 function Chord:iseopt()
-    local chord = self:eopt()
-    if self == chord then
-        return true
-    else
+    if not self:iset() then
         return false
     end
+    if not self:iseo() then
+        return false
+    end
+    if not self:isep() then
+        return false
+    end
+    return true
 end
 
 function Chord:eopti()
-    local a = self:eopt()
-    if a:iseopi() == true then
-        return a
-    else
-        return a:eoi()
-    end
+    return self:eoi():et():eop()
 end
 
 function Chord:iseopti()
-    local chord = self:eopti()
-    if self == chord then
-        return true
-    else
+    if not self:iseoi() then
         return false
     end
+    if not self:iset() then
+        return false
+    end
+    if not self:isep() then
+        return false
+    end
+    return true
 end
 
 function Chord:origin()
@@ -1178,10 +1198,10 @@ end
 
 function Chord:eOPI()
     local chord = self:eOP()
-    if chord:iseOPI() then
+    if chord:iseI() then
         return chord
     end
-    chord = chord:eI()
+    chord = chord:eI():eOP()
     return chord
 end
  
@@ -1354,6 +1374,7 @@ function Chord:Voicings(range)
     -- Enumerate the next voicing by counting voicings in RP.
     -- iterator[1] is the most significant voice, 
     -- iterator[self.N] is the least significant voice.
+    voicings[1] = zero:clone()
     while iterator[1] < range do
         iterator[#self] = iterator[#self] + OCTAVE
         local unorderedIterator = iterator:eP()
@@ -1655,6 +1676,7 @@ end
 
 function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     g = g or 1    
+    local isO = false
     local equivalenceMapper = nil
     if equivalence == 'op' then
         equivalenceMapper = Chord.iseop
@@ -1674,12 +1696,41 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     if equivalence == 'opti' then
         equivalenceMapper = Chord.iseopti
     end
+    if equivalence == 'OP' then
+        equivalenceMapper = Chord.iseOP
+        isO = true
+    end
+    if equivalence == 'OT' then
+        equivalenceMapper = Chord.iseOT
+        isO = true
+    end
+    if equivalence == 'OI' then
+        equivalenceMapper = Chord.iseOI
+        isO = true
+    end
+    if equivalence == 'OPT' then
+        equivalenceMapper = Chord.iseOPT
+        isO = true
+    end
+    if equivalence == 'OPI' then
+        equivalenceMapper = Chord.iseOPI
+        isO = true
+    end
+    if equivalence == 'OPTI' then
+        equivalenceMapper = Chord.iseOPTI
+        isO = true
+    end
     -- Enumerate all chords in O.
     local chordset = {}
     local odometer = Chord:new()
     odometer:resize(voices)
     while odometer[1] < OCTAVE do
-        local fundamentalChord = odometer:eop()
+        local fundamentalChord = nil
+        if isO then
+            fundamentalChord = odometer:eOP()
+        else
+            fundamentalChord = odometer:eop()
+        end
         chordset[fundamentalChord:__hash()] = fundamentalChord
         odometer[voices] = odometer[voices] + g
         -- "Carry" octaves.
@@ -1729,6 +1780,32 @@ function ChordSpaceGroup:new(o)
     return o
 end
 
+-- Returns all permutations of octaves for the indicated
+-- number of voices within the indicated range.
+
+function ChordSpace.octavewisePermutations(voices, range)
+    range = range or OCTAVE
+    local voicings = {}
+    local zero = Chord:new()
+    zero:resize(voices)
+    local iterator = zero:clone()
+    -- Enumerate the permutations.
+    -- iterator[1] is the most significant voice, and
+    -- iterator[N] is the least significant voice.
+    while iterator[1] <= range do
+        voicings[#voicings + 1] = iterator:clone()
+        iterator[voices] = iterator[voices] + OCTAVE
+         -- "Carry" octaves.
+        for voice = voices, 2, -1 do
+            if iterator[voice] > range then
+                iterator[voice] = zero[voice]
+                iterator[voice - 1] = iterator[voice - 1] + OCTAVE
+            end
+        end
+    end
+    return voicings
+end
+
 function ChordSpaceGroup:initialize(voices, range, g)
     self.voices = voices or 3
     self.range = range or 60
@@ -1736,15 +1813,13 @@ function ChordSpaceGroup:initialize(voices, range, g)
     if #self.optisForIndexes == 0 then
         self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'opti', self.g)
         for key, value in pairs(self.optisForIndexes) do
-            self.indexesForOptis[value] = key
+            self.indexesForOptis[value:__hash()] = key
         end
     end
     if #self.voicingsForIndexes == 0 then
-        local chord = Chord:new()
-        chord:resize(self.voices)
-        self.voicingsForIndexes = chord:Voicings(self.range)
+        self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
         for key, value in pairs(self.voicingsForIndexes) do
-            self.indexesForVoicings[value] = key
+            self.indexesForVoicings[value:__hash()] = key
         end
     end
 end
@@ -1757,17 +1832,24 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     I = I % 2
     T = T % OCTAVE
     V = V % #self.voicingsForIndexes
+    print('P', P, 'I', I, 'T', T, 'V', V)
     local opti = self.optisForIndexes[P]
-    local opt = opti:clone()
+    print('opti', opti)
+    local optiT = opti:T(T)
+    print('optiT', optiT)
+    local op = nil
     if I == 1 then
-        opt = opti:I():eop()
+        op = optiT:I():eop()
+    else
+        op = optiT:eop()
     end
-    local op = opt:T(T)
+    print('op', op)
     local voicing = self.voicingsForIndexes[V]
-    for voice in #op do
+    print('voicing', voicing)
+    for voice = 1, #voicing do
         voicing[voice] = voicing[voice] + op[voice]
     end
-    return voicing:eRP(self.range), opti, opt, voicing
+    return voicing:eRP(self.range), opti, op, voicing
 end
 
 -- Returns the indices of prime form, inversion, transposition, 
@@ -1775,28 +1857,50 @@ end
 
 function ChordSpaceGroup:fromChord(chord)
     local rp = chord:er(self.range):ep()
-    local opt = rp:eopt()
-    local opti = opt:clone()
-    local I = 0
-    if not opt:iseopti() then
-        opti = opti:I():eop()
-        I = 1
+    print('rp', rp)
+    local o = chord:eo()
+    print('o', o)
+    local op = chord:eop()
+    print('op', op)
+    local opt = op:eopt()
+    print('opt', opt)
+    local T = 0
+    for T_ = 0, OCTAVE, self.g do
+        local optT = opt:T(T_):eop()
+        print('op', op, 'T_', T_, 'optT', optT)
+        if op == optT then
+            T = T_
+            break
+        end
     end
-    local P = self.indexesForOptis[opti]
+    print('T', T)
+    local opti = opt:eopti()
+    print('opti', opti)
+    local I = 1
+    if chord:iseopti() then
+        I = 0
+    end
+    print('I', I)
+    local P = self.indexesForOptis[opti:__hash()]
+    print('P', P)
     local voicing = rp:clone()
     for voice = 1, #voicing do
-        voicing[voice] = voicing[voice] - opt[voice]
+        voicing[voice] = chord[voice] - o[voice]
     end
-    local V = self.indexesForVoicings[voicing]
+    print('voicing', voicing)
+    local V = self.indexesForVoicings[voicing:__hash()]
     return P, I, T, V
 end
 
 function ChordSpaceGroup:list()
     for index, opti in pairs(self.optisForIndexes) do
-        print(index, opti, self.indexesForOptis[opti])
+        print('index', index, 'opti', opti, self.indexesForOptis[opti])
+    end
+    for opti, index in pairs(self.indexesForOptis) do
+        print('opti', opti, 'index', index, self.optisForIndexes[index])
     end
     for index, voicing in pairs(self.voicingsForIndexes) do
-        print(index, voicing, self.indexesForVoicings[voicing])
+        print('voicing', index, voicing, self.indexesForVoicings[voicing])
     end
 end
 
