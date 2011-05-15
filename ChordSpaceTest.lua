@@ -170,15 +170,15 @@ print('ChordSpaceGroup')
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 chordSpaceGroup:list()
-local GM7 = ChordSpace.chordsForNames['GM7']
-print('GM7', GM7)
-local _0378 = Chord:new{0, 3, 7, 8}
-local index = chordSpaceGroup.indexesForOptis[_0378:__hash()]
-print('index', index, '_0378', _0378)
+local GM7 = ChordSpace.chordsForNames['GM7']:eop()
+GM7[2] = GM7[2] + 12
+GM7[4] = GM7[4] + 24
+print('GM7')
+print(GM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(GM7)
-print('P', P, 'I', I, 'T', T, 'V', V)
+print('fromChord: P', P, 'I', I, 'T', T, 'V', V)
 local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('shouldBeGM7', shouldBeGM7)
+print('toChord: shouldBeGM7', shouldBeGM7)
 
 
 os.exit()

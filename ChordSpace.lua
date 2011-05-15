@@ -677,6 +677,20 @@ function Chord:isei()
     return true
 end
 
+function Chord:erp(range)
+    return self:er(range):ep()
+end
+
+function Chord:iserp(range)
+    if not self:iser(range) then
+        return false
+    end
+    if not self:isep() then
+        return false
+    end
+    return true
+end
+
 function Chord:eop()
     return self:eo():ep()
 end
@@ -751,7 +765,8 @@ function Chord:iseopt()
 end
 
 function Chord:eopti()
-    return self:eoi():et():eop()
+    -- return self:eoi():et():eop()
+    return self:eopt():eoi():eop()
 end
 
 function Chord:iseopti()
@@ -1824,70 +1839,51 @@ function ChordSpaceGroup:initialize(voices, range, g)
     end
 end
 
--- Returns the chord in RP for the indices of prime form, inversion, 
--- transposition, and voicing.
+-- Returns the chord for the indices of prime form, inversion, 
+-- transposition, and voicing. The chord is not in rp; rather, the
+-- chord is considered to be in op, but then each voice may have
+-- zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
     P = P % #self.optisForIndexes
     I = I % 2
     T = T % OCTAVE
     V = V % #self.voicingsForIndexes
-    print('P', P, 'I', I, 'T', T, 'V', V)
     local opti = self.optisForIndexes[P]
-    print('opti', opti)
-    local optiT = opti:T(T)
-    print('optiT', optiT)
-    local op = nil
+    local opt = nil
     if I == 1 then
-        op = optiT:I():eop()
+        opt = opti:I():eop()
     else
-        op = optiT:eop()
+        opt = opti:eop()
     end
-    print('op', op)
+    local op = opt:T(T):eop()
     local voicing = self.voicingsForIndexes[V]
-    print('voicing', voicing)
     for voice = 1, #voicing do
         voicing[voice] = voicing[voice] + op[voice]
     end
-    return voicing:eRP(self.range), opti, op, voicing
+    return voicing:er(self.range), opti, op, voicing
 end
 
 -- Returns the indices of prime form, inversion, transposition, 
--- and voicing for a chord in RP.
+-- and voicing for a chord. The chord is not in rp; rather, the
+-- chord is considered to be in op, but then each voice may have
+-- zero or more octaves added to it.
 
 function ChordSpaceGroup:fromChord(chord)
-    local rp = chord:er(self.range):ep()
-    print('rp', rp)
-    local o = chord:eo()
-    print('o', o)
-    local op = chord:eop()
-    print('op', op)
-    local opt = op:eopt()
-    print('opt', opt)
-    local T = 0
-    for T_ = 0, OCTAVE, self.g do
-        local optT = opt:T(T_):eop()
-        print('op', op, 'T_', T_, 'optT', optT)
-        if op == optT then
-            T = T_
-            break
-        end
-    end
-    print('T', T)
-    local opti = opt:eopti()
-    print('opti', opti)
+    local opti = chord:eopti()
+    local P = self.indexesForOptis[opti:__hash()]
     local I = 1
     if chord:iseopti() then
         I = 0
     end
-    print('I', I)
-    local P = self.indexesForOptis[opti:__hash()]
-    print('P', P)
-    local voicing = rp:clone()
-    for voice = 1, #voicing do
-        voicing[voice] = chord[voice] - o[voice]
+    local p = chord:ep()
+    local T = p[1]
+    local r = chord:er(self.range)
+    local voicing = r:clone()
+    local o = r:eo()
+    for voice = 1, #r do
+        voicing[voice] = r[voice] - o[voice]
     end
-    print('voicing', voicing)
     local V = self.indexesForVoicings[voicing:__hash()]
     return P, I, T, V
 end
