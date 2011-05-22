@@ -21,109 +21,12 @@ function result(...)
     end
 end
 
-print('All of op')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'op')
-for index, chord in pairs(chords) do
-    print('index', index, 'chord',  chord)
-    print('index', index, 'I()',    chord:I())
-    print('index', index, 'I(eop)', chord:I():eo():ep())
-    print('index', index, 'eop',    chord:eop(),    'iseop',    chord:iseop())
-    print('index', index, 'eopt',   chord:eopt(),   'iseopt',   chord:iseopt())
-    print('index', index, 'eopi',   chord:eopi(),   'iseopi',   chord:iseopi())
-    print('index', index, 'eopti',  chord:eopti(),  'iseopti',  chord:iseopti())
-    print()
+function fail(message)
+    print('*** TEST FAILED ***')
+    print(message)
+    os.exit()
 end
 
-print('All of opi')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'opi')
-for k, v in pairs(chords) do
-    print(k, 'opi', v)
-end
-
-print('All of opt')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'opt')
-for k, v in pairs(chords) do
-    print(k, 'opt', v)
-end
-
-print('All of opti')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'opti')
-for k, v in pairs(chords) do
-    print(k, 'opti', v, 'opti:I():eop()', v:I():eop())
-end
-
-local a = Chord:new{3, 3, 6}
-local b = Chord:new{3, 3, 6}
-print(a:__hash())
-print(b:__hash())
-print(a == b)
-
-test('r = 12 % 12')
-result('r', r)
-test('r = -12 % 12')
-result('r', r)
-test('r = 1 % 12')
-result('r', r)
-test('r = -1 % 12')
-result('r', r)
-
-local c011 = Chord:new{0, 1, 1}
-print ('c011', c011, c011:eopti(), c011:eopti():iseopti(), c011:I():eop(), c011:I():eop():iseopti())
-
-print ('Does opti U opti:I():eop() == opt?')
-local optis = ChordSpace.allOfEquivalenceClass(4, 'opti')
-local chordset = {}
-for i, opti in pairs(optis) do
-    chordset[opti:__hash()] = opti
-    local iopti = opti:I():eop()
-    chordset[iopti:__hash()] = iopti
-    print(i, 'opti', opti, 'opti:I():eop()', iopti)
-end
-local sortedchordset = {}
-for index, chord in pairs(chordset) do
-    table.insert(sortedchordset, chord)
-end
-table.sort(sortedchordset)
-local shouldbeopt = {}
-for index, chord in pairs(sortedchordset) do
-    table.insert(shouldbeopt, index - 1, chord)
-end
-local opt = ChordSpace.allOfEquivalenceClass(4, 'opt')
-for i = 0, math.max(#opt, #shouldbeopt) do
-    print (i, 'opti U opti:I():eop()', shouldbeopt[i], 'opt', opt[i])
-end
-
-print('All of OP')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'OP')
-for index, chord in pairs(chords) do
-    print('index', index, 'chord',  chord)
-    print('index', index, 'I()',    chord:I())
-    print('index', index, 'I(eOP)', chord:I():eO():eP())
-    print('index', index, 'eOP',    chord:eOP(),    'iseOP',    chord:iseOP())
-    print('index', index, 'eOPT',   chord:eOPT(),   'iseOPT',   chord:iseOPT())
-    print('index', index, 'eOPI',   chord:eOPI(),   'iseOPI',   chord:iseOPI())
-    print('index', index, 'eOPTI',  chord:eOPTI(),  'iseOPTI',  chord:iseOPTI())
-    print()
-end
-
-print('All of OPI')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'OPI')
-for k, v in pairs(chords) do
-    print(k, 'OPI', v)
-end
-
-print('All of OPT')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'OPT')
-for k, v in pairs(chords) do
-    print(k, 'OPT', v)
-end
-
-print('All of OPTI')
-local chords = ChordSpace.allOfEquivalenceClass(4, 'OPTI')
-for k, v in pairs(chords) do
-    print(k, 'OPTI', v, 'OPTI:I():eOP()', v:I():eOP())
-end
---[[ Keep tgis...
 local a = Chord:new{3, 3, 6}
 local b = Chord:new{3, 3, 6}
 print(a:__hash())
@@ -141,6 +44,142 @@ result('r', r)
 
 local c011 = Chord:new{0, 1, 1}
 print ('c011', c011, c011:eOPTI(), c011:eOPTI():iseOPTI(), c011:I():eOP(), c011:I():eOP():iseOPTI())
+
+voiceCount = 3
+print('All of OP')
+local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OP')
+for index, chord in pairs(chords) do
+    print(string.format('OP: %5d', index))
+    print(chord:label())
+    if chord:iseOP() == false then
+        fail()
+    end
+    print()
+end
+
+print('All of OPI')
+local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPI')
+for index, chord in pairs(chords) do
+    print(string.format('OPI: %5d', index))
+    print(chord:label())
+    if chord:iseOPI() == false then
+        fail()
+    end
+    if chord:eOPI() ~= chord then
+        fail()
+    end
+    print()
+end
+
+print('All of OPT')
+local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
+for index, chord in pairs(chords) do
+    print(string.format('OPT: %5d', index))
+    print(chord:label())
+    if chord:iseOPT() == false then
+        fail()
+    end
+    if chord:eOPT() ~= chord then
+        fail()
+    end
+    print()
+end
+
+print('All of OPTI')
+local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPTI')
+for index, chord in pairs(chords) do
+    print(string.format('OPTI: %5d', index))
+    print(chord:label())
+    if chord:iseOPTI() == false then
+        fail()
+    end
+    if chord:eOPTI() ~= chord then
+        fail()
+    end
+    print()
+end
+
+local a = Chord:new{3, 3, 6}
+local b = Chord:new{3, 3, 6}
+print(a:__hash())
+print(b:__hash())
+print(a == b)
+
+test('r = 12 % 12')
+result('r', r)
+test('r = -12 % 12')
+result('r', r)
+test('r = 1 % 12')
+result('r', r)
+test('r = -1 % 12')
+result('r', r)
+
+--os.exit()
+
+local c0001 = Chord:new{0, 0, 0, 1}
+print('c0001', c0001:label())
+local ic0001 = c0001:I():eOP()
+print('ic0001', ic0001:label())
+
+local c3333 = Chord:new{3,3,3,3}                                                     local c3333 = Chord:new{3,3,3,3}
+
+print('c3333', c3333:label())
+local ic3333 = c3333:I():eOP()
+print('ic3333', ic3333:label())
+
+local Caug = ChordSpace.chordsForNames['C+']
+local areClose = 0
+for t = 0, 11 do
+    local chord = Caug:T(t):eOP()
+    print('C+ t', t, chord:label())
+    print(chord:isClose())
+    if chord:isClose() then
+        areClose = areClose + 1
+    end
+end
+print('areClose:', areClose)
+print()
+
+local CM = ChordSpace.chordsForNames['CM']
+local areClose = 0
+for t = 0, 11 do
+    local chord = CM:T(t):eOP()
+    print('CM t', t, chord:label())
+    print(chord:isClose())
+    if chord:isClose() then
+        areClose = areClose + 1
+    end
+end
+print('areClose:', areClose)
+print()
+
+local CM7 = ChordSpace.chordsForNames['CM7']
+local areClose = 0
+for t = 0, 11 do
+    local chord = CM7:T(t):eOP()
+    print('CM7 t', t, chord:label())
+    print(chord:isClose())
+    if chord:isClose() then
+        areClose = areClose + 1
+    end
+end
+print('areClose:', areClose)
+print()
+
+local CM9 = ChordSpace.chordsForNames['CM9']
+local areClose = 0
+for t = 0, 11 do
+    local chord = CM9:T(t):eOP()
+    print('CM9 t', t, chord:label())
+    print(chord:isClose())
+    if chord:isClose() then
+        areClose = areClose + 1
+    end
+end
+print('areClose:', areClose)
+print()
+
+--os.exit()
 
 print ('Does OPTI U OPTI:I():eOP() == OPT?')
 local OPTIs = ChordSpace.allOfEquivalenceClass(4, 'OPTI')
@@ -161,25 +200,49 @@ for index, chord in pairs(sortedchordset) do
     table.insert(shouldbeOPT, index - 1, chord)
 end
 local OPT = ChordSpace.allOfEquivalenceClass(4, 'OPT')
-for i = 0, math.max(#opt, #shouldbeOPT) do
+for i = 0, math.max(#OPT, #shouldbeOPT) do
     print (i, 'OPTI U OPTI:I():eOP()', shouldbeOPT[i], 'OPT', OPT[i])
 end
-]]
 
+local chord = Chord:new{-3,1,4,8}
+print(chord:label())
+local chord = Chord:new{-2,1,5,6}
+print(chord:label())
+
+-- os.exit()
+
+print(chord:label())
 print('ChordSpaceGroup')
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 chordSpaceGroup:list()
-local GM7 = ChordSpace.chordsForNames['GM7']:eop()
+local GM7 = ChordSpace.chordsForNames['GM7']
 GM7[2] = GM7[2] + 12
 GM7[4] = GM7[4] + 24
 print('GM7')
 print(GM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(GM7)
-print('fromChord: P', P, 'I', I, 'T', T, 'V', V)
+print('fromChord:            P', P, 'I', I, 'T', T, 'V', V)
 local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('toChord: shouldBeGM7', shouldBeGM7)
-
+print('toChord: shouldBeGM7:', shouldBeGM7)
+local P, I, T, V = chordSpaceGroup:fromChord(shouldBeGM7)
+print('fromChord again:      P', P, 'I', I, 'T', T, 'V', V)
+print()
+local IofGM7 = ChordSpace.chordsForNames['GM7']:I():eOP()
+print('IofGM7')
+print(IofGM7:label())
+IofGM7[2] = IofGM7[2] + 12
+IofGM7[4] = IofGM7[4] + 24
+print('IofGM7')
+print(IofGM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
+print('fromChord:            P', P, 'I', I, 'T', T, 'V', V)
+local shouldBeIofGM7 = chordSpaceGroup:toChord(P, I, T, V)
+print('toChord: shouldBeIofGM7:')
+print(shouldBeIofGM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGM7)
+print('fromChord again:      P', P, 'I', I, 'T', T, 'V', V)
+print()
 
 os.exit()
 
