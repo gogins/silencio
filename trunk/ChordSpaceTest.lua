@@ -43,7 +43,9 @@ test('r = -1 % 12')
 result('r', r)
 
 local c011 = Chord:new{0, 1, 1}
-print ('c011', c011, c011:eOPTI(), c011:eOPTI():iseOPTI(), c011:I():eOP(), c011:I():eOP():iseOPTI())
+c011:eOPT()
+
+--print ('c011', c011, c011:eOPTI(), c011:eOPTI():iseOPTI(), c011:I():eOP(), c011:I():eOP():iseOPTI())
 
 voiceCount = 3
 print('All of OP')
@@ -121,8 +123,15 @@ print('c0001', c0001:label())
 local ic0001 = c0001:I():eOP()
 print('ic0001', ic0001:label())
 
-local c3333 = Chord:new{3,3,3,3}                                                     local c3333 = Chord:new{3,3,3,3}
-
+local c3333 = Chord:new{3,3,3,3}     
+local voicings = c3333:voicings()
+for i, voicing in ipairs(voicings) do
+    print('voicing', i, voicing)
+    print('eOP', i, voicing:eOP())
+    print('eop', i, voicing:eop())
+    print('eOPI', i, voicing:eOPI())
+    print('eOPT', i, voicing:eOPT())
+end
 print('c3333', c3333:label())
 local ic3333 = c3333:I():eOP()
 print('ic3333', ic3333:label())
@@ -132,8 +141,8 @@ local areClose = 0
 for t = 0, 11 do
     local chord = Caug:T(t):eOP()
     print('C+ t', t, chord:label())
-    print(chord:isClose())
-    if chord:isClose() then
+    print(chord:iseV())
+    if chord:iseV() then
         areClose = areClose + 1
     end
 end
@@ -145,8 +154,8 @@ local areClose = 0
 for t = 0, 11 do
     local chord = CM:T(t):eOP()
     print('CM t', t, chord:label())
-    print(chord:isClose())
-    if chord:isClose() then
+    print(chord:iseV())
+    if chord:iseV() then
         areClose = areClose + 1
     end
 end
@@ -158,8 +167,8 @@ local areClose = 0
 for t = 0, 11 do
     local chord = CM7:T(t):eOP()
     print('CM7 t', t, chord:label())
-    print(chord:isClose())
-    if chord:isClose() then
+    print(chord:iseV())
+    if chord:iseV() then
         areClose = areClose + 1
     end
 end
@@ -171,8 +180,8 @@ local areClose = 0
 for t = 0, 11 do
     local chord = CM9:T(t):eOP()
     print('CM9 t', t, chord:label())
-    print(chord:isClose())
-    if chord:isClose() then
+    print(chord:iseV())
+    if chord:iseV() then
         areClose = areClose + 1
     end
 end
