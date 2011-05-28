@@ -20,7 +20,7 @@ for use in score generating programs:
 --  Causing chord progressions to move strictly within an orbifold induced 
     by some equivalence class.
     
---  Implementing chord progressions based on the L, P, R, D, K, and Q     0000
+--  Implementing chord progressions based on the L, P, R, D, K, and Q 
     operations of neo-Riemannian theory (thus implementing some aspects
     of "harmony").
     
@@ -476,8 +476,8 @@ end
 -- and also its voice index.
 
 function Chord:min()
-    local lowestPitch = self[1]
     local lowestVoice = 1
+    local lowestPitch = self[lowestVoice]
     for voice = 2, #self do
         if self[voice] < lowestPitch then
             lowestPitch = self[voice]
@@ -508,8 +508,8 @@ end
 -- and also its voice index.
 
 function Chord:max()
-    local highestPitch = self[1]
     local highestVoice = 1
+    local highestPitch = self[highestVoice]
     for voice = 2, #self do
         if self[voice] > highestPitch then
             highestPitch = self[voice]
@@ -559,7 +559,7 @@ end
 -- or revoicings of the chord.
 
 function Chord:voicings()
-    local chord = self:eP()
+    local chord = self:ep()
     local voicings = {}
     voicings[1] = chord
     for i = 2, #self do
@@ -588,7 +588,7 @@ end
 
 function Chord:count(pitch, range)
     range = range or OCTAVE
-    n = 0
+    local n = 0
     for voice, value in ipairs(self) do
         if er(value, range) == pitch then
             n = n + 1
@@ -707,20 +707,17 @@ function Chord:I(x)
 end
 
 function Chord:iseR(range)
-    -- The chord must have a range less than or equal to that 
-    -- of the fundamental domain.
-    if self:range() > range then
+    if not (self:max() <= (self:min() + range)) then
         return false
     end
-    -- Then the chord must be on a layer of the fundamental domain.
-    -- These layers are perpendicular to the orthogonal axis and 
-    -- begin at the origin.
     local layer = self:sum()
-    --if ((0 <= layer) and (layer <= range)) then
-    if ((0 <= layer) and (layer <= range)) then
-        return true
+    if not (0 <= layer) then
+        return false
     end
-    return false
+    if not (layer < range) then
+        return false
+    end
+    return true
 end
 
 function Chord:iseO()
@@ -728,55 +725,47 @@ function Chord:iseO()
 end
 
 function Chord:iseP()
-    for voice = 1, #self - 1 do
-        if not (self[voice] <= self[voice + 1]) then
+    for voice = 2, #self do
+        if self[voice - 1] > self[voice] then
             return false
         end
     end
     return true
 end
 
-function Chord:iseT()
-    if self == self:eT() then
-        return true
-    else
+function Chord:iseT(g)
+    g = g or 1
+    local ep = self:eP()
+    if not (ep == ep:eT(g)) then
         return false
     end
+    return true
 end
 
 function Chord:iseI()
-    ep = self:eOP()
-    epi = self:I():eOP()
-    --print('Chord:iseI: ep', ep)
-    --print('Chord:iseI: epi', epi)
-    for voice = 2, #ep do
-        local epDelta = ep[voice] - ep[voice - 1]
-        local epiDelta = epi[voice] - epi[voice - 1]
-        --print('epDelta', epDelta, 'epiDelta', epiDelta)
-        if epDelta > epiDelta then 
-            --print('Chord:iseI:', true)
-            return true 
+    local ep = self:eP()
+    local lowerVoice = 2
+    local upperVoice = #self
+    while lowerVoice <= #self do
+        local lowerDelta = ep[lowerVoice] - ep[lowerVoice - 1]
+        local upperDelta = ep[upperVoice] - ep[upperVoice - 1]
+        if lowerDelta < upperDelta then
+            return true
         end
-        if epDelta < epiDelta then 
-            --print('Chord:iseI:', false)
+        if lowerDelta > upperDelta then
             return false
         end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
     end
-    --print('Chord:iseI:', true)
     return true
 end
 
 function Chord:iseRP(range) 
-    for i = 1, #self - 1 do
-        if not (self[i] <= self[i + 1]) then
-            return false
-        end
-    end
-    if not (self[#self] <= (self[1] + range)) then
+    if not self:iseP(range) then
         return false
     end
-    local layer = self:sum()
-    if not (0 <= layer and layer <= range) then
+    if not self:iseR(range) then
         return false
     end
     return true
@@ -786,11 +775,13 @@ function Chord:iseOP()
     return self:iseRP(OCTAVE)
 end
 
-function Chord:iseRT(range)
+function Chord:iseRT(range, g)
+    range = range or OCTAVE
+    g = g or 1
     if not self:iseR(range) then
         return false
     end
-    if not self:iseT() then
+    if not self:iseT(g) then
         return false
     end
     return true
@@ -804,46 +795,56 @@ function Chord:iseRI(range)
     if not self:iseR(range) then
         return false
     end
-    if not self:iseI(range) then
+    if not self:iseI() then
         return false
     end
     return true
 end
 
 function Chord:iseOI()
-    return self:iseRI(OCTAVE)
+    return self:isRI(OCTAVE)
 end
 
-function Chord:isePT()
-    if (self:iseP() and self:iseT()) then
-        return true
-    else
+function Chord:isePT(g)
+    g = g or 1
+    if not self:iseP() then
         return false
     end
+    if not self:iseT(g) then
+        return false
+    end
+    return true
 end
 
 function Chord:isePI()
-    if (self:iseP() and self:iseI()) then
-        return true
-    else
+    if not self:iseP() then
         return false
     end
+    if not self:iseI() then
+        return false
+    end
+    return true
 end
 
-function Chord:iseTI()
-    if (self:iseT() and self:iseI()) then
-        return true
-    else
+function Chord:iseTI(g)
+    g = g or 1
+    if not self:isEI() then
         return false
     end
+    if not self:isET(g) then
+        return false
+    end
+    return true
 end
 
 function Chord:iseRPT(range, g)
+    range = range or OCTAVE
     g = g or 1
-    if self == self:eRPT(range, g) then
-        return true
+    local eRPT = self:eRPT(range, g)
+    if not (self == eRPT) then
+        return false
     end
-    return false
+    return true
 end
 
 function Chord:iseOPT(g)
@@ -852,11 +853,13 @@ function Chord:iseOPT(g)
 end
 
 function Chord:iseRPI(range)
-    if self:iseRP(range) and self:iseI() then
-        return true
-    else
+    if not self:iseRP(range) then
         return false
     end
+    if not self:iseI() then
+        return false
+    end
+    return true
 end
 
 function Chord:iseOPI()
@@ -864,11 +867,13 @@ function Chord:iseOPI()
 end
 
 function Chord:iseRPTI(range)
-    if self:iseRPT(range) and self:iseI() then
-        return true
-    else
+    if not self:iseRPT(range) then
         return false
     end
+    if not self:iseI() then
+        return false
+    end
+    return true
 end
 
 function Chord:iseOPTI()
@@ -878,44 +883,19 @@ end
 -- Returns whether the chord is in the fundamental domain
 -- of V (voicing) equivalence.
 
-function Chord:iseV()
-    local distanceToOrthogonalAxis = self:distanceToOrthogonalAxis()
-    local voicings = self:voicings()
-    for i, voicing in ipairs(voicings) do
-        if voicing:distanceToOrthogonalAxis() < distanceToOrthogonalAxis then
-            return false
-        end
-    end
-    return true
-end
-
 function Chord:eR(range)
     local chord = self:clone()
-    -- Return a copy of this if it is already in the fundamental domain.
-    if chord:iseR(range) then
-        return chord
-    end
     -- The clue here is that at least one voice must be >= 0,
     -- but no voice can be > range.
     -- Move all pitches inside the interval [0, range] 
     -- (which is not the same as the fundamental domain).
-    for i = 1, #chord do
-        local pitch = chord[i]
-        while pitch < 0 do
-            pitch = pitch + range
-        end
-        while pitch > range do
-            pitch = pitch - range
-        end
-        chord[i] = pitch
+    for voice, pitch in ipairs(chord) do
+        chord[voice] = pitch % range
     end
     -- Reflect voices that are outside of the fundamental domain
-    -- back into it, which will revoice the chord.
-    while true do
-        local layer = chord:sum()
-        if (0 <= layer) and (layer <= range) then
-            break
-        end
+    -- back into it, which will revoice the chord, i.e. 
+    -- the sum of pitches is in [0, range).
+    while chord:sum() >= range do
         local maximumPitch, maximumVoice = chord:max()
         -- Because no voice is above the range,
         -- any voices that need to be revoiced will now be negative.
@@ -933,6 +913,8 @@ function Chord:eP()
     table.sort(chord)
     return chord
 end
+
+Chord.ep = Chord.eP
 
 function Chord:eRP(range)
     return self:eR(range):eP()
@@ -975,22 +957,27 @@ function Chord:eo()
 end
 
 function Chord:eop()
-    return self:eo():eP()
+    return self:eo():ep()
 end
 
-function Chord:toZero()
+function Chord:et()
     local min = self:min()
     return self:T(-min)
 end
 
-function Chord:eopt()
-    return self:eOPT():eop():toZero()
+function Chord:ept()
+    return self:et():ep()
 end
 
-function Chord:isClose(range, g)
+function Chord:eopt()
+    return self:eOPT():eop():et()
+end
+
+-- Is this wrong for {-6, 0, 6}?
+
+function Chord:iseV(range, g)
     range = range or OCTAVE
     g = g or 1
-    --print('Chord:isClose: range', range, 'g', g)
     for voice = 1, #self - 1 do
         if not ((self[1] + range - self[#self]) <= (self[voice + 1] - self[voice])) then
             return false
@@ -999,16 +986,21 @@ function Chord:isClose(range, g)
     return true
 end
 
+-- This doesn't give the eopt of Tymoczko.
+-- We have 067 058 066 068 etc, we have 35 instead of 31.
+-- With range = OCTAVE * N, we have many columns, but only 1 is eV.
+
 function Chord:eRPT(range, g)
     range = range or OCTAVE
     g = g or 1
+    erp = self:eRP(range)
     --print('Chord:eRPT: range', range, 'g', g)
-    local voicings = self:voicings()
-    for i = 1, #voicings do
-        voicing = voicings[i]:eT(g)
-        --print('Chord:eRPT:', i, voicing)
-        if voicing:iseRP(range) and voicing:isClose(range, g) then
-            return voicing
+    local voicings = erp:voicings()
+    for i, voicing in ipairs(voicings) do
+        local et = voicing:eT(g)
+        --print('Chord:eRPT: et', i, et, et:iseV(range, g), et:sum())
+        if et:iseV(range, g) then
+            return et
         end
     end
 end
@@ -1020,15 +1012,15 @@ end
 
 function Chord:eI()
     if self:iseI() then
-        return self
+        return self:clone()
     else
         return self:I()
     end
 end
 
 function Chord:eOPI()
-    if self:iseI() then
-        return self:eOP()
+    if self:iseOPI() then
+        return self:clone()
     end
     return self:eI():eOP()
 end
@@ -1055,7 +1047,7 @@ end
 
 function Chord:nrL()
     local cv = self:closestVoicing()
-    local cvt = self:closestVoicing():eT()
+    local cvt = self:closestVoicing():e()
     if cvt[2] == 4 then
         cv[1] = cv[1] - 1
     else
@@ -1071,7 +1063,7 @@ end
 
 function Chord:nrP()
     local cv = self:closestVoicing()
-    local cvt = self:closestVoicing():eT()
+    local cvt = self:closestVoicing():et()
     if cvt[2] == 4 then
         cv[2] = cv[2] - 1
     else
@@ -1087,7 +1079,7 @@ end
 
 function Chord:nrR()
     local cv = self:closestVoicing()
-    local cvt = self:closestVoicing():eT()
+    local cvt = self:closestVoicing():et()
     if cvt[2] == 4 then
         cv[3] = cv[3] + 2
     else
@@ -1102,7 +1094,7 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:nrD()
-    return self:eOP():T(-7)
+    return self:eep():T(-7)
 end
 
 -- Returns the chord inverted by the sum of its first two voices.
@@ -1114,7 +1106,7 @@ function Chord:K(range)
     if #chord < 2 then
         return chord
     end
-    local ep = chord:eP()
+    local ep = chord:ep()
     local x = ep[1] + ep[2]
     return self:I(x)
 end
@@ -1123,11 +1115,11 @@ end
 -- Only works in equal temperament.
 
 function Chord:Tform(Y, g)
-    local eopx = self:eOP()
+    local eopx = self:eop()
     local i = 0
     while i < OCTAVE do
         local ty = Y:T(i)
-        local eopty = ty:eOP()
+        local eopty = ty:eop()
         if eopx == eopty then
             return true
         end
@@ -1140,11 +1132,11 @@ end
 -- Only works in equal temperament.
 
 function Chord:Iform(Y, g)
-    local eopx = self:eOP()
+    local eopx = self:eop()
     local i = 0
     while i < OCTAVE do
         local iy = Y:I(i)
-        local eopiy = iy:eOP()
+        local eopiy = iy:eop()
         if eopx == eopiy then
             return true
         end
@@ -1180,7 +1172,7 @@ function Chord:V(range)
     -- iterator[self.N] is the least significant voice.
     while iterator[1] < range do
         iterator[#self] = iterator[#self] + OCTAVE
-        local unorderedIterator = iterator:eP()
+        local unorderedIterator = iterator:ep()
         if unorderedIterator:iseRP(range) then
             return unorderedIterator
         end
@@ -1208,7 +1200,7 @@ function Chord:Voicings(range)
     voicings[1] = zero:clone()
     while iterator[1] < range do
         iterator[#self] = iterator[#self] + OCTAVE
-        local unorderedIterator = iterator:eP()
+        local unorderedIterator = iterator:ep()
         if unorderedIterator:iseRP(range) then
             voicings[#voicings + 1] = unorderedIterator
         end
@@ -1293,8 +1285,8 @@ function ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
             return d1
         end
     end
-    local v1 = ChordSpace.voiceleading(source, d1):eP()
-    local v2 = ChordSpace.voiceleading(source, d2):eP()
+    local v1 = ChordSpace.voiceleading(source, d1):ep()
+    local v2 = ChordSpace.voiceleading(source, d2):ep()
     for voice = #v1, 1, -1 do
         if v1[voice] < v2[voice] then
             return d1
@@ -1372,6 +1364,7 @@ function Chord:label()
     local eOPI = self:eOPI():__tostring()
     local iseOPI = self:iseOPI()
     local eOPT = self:eOPT():__tostring()
+    local ept = self:ept()
     local eopt = self:eopt()
     local iseOPT = self:iseOPT()
     local eOPTI = self:eOPTI():__tostring()
@@ -1379,15 +1372,17 @@ function Chord:label()
     return string.format([[%s: 
 pitches: %s
 eop:     %s
+ept:     %s
 eopt:    %s
 eOP:     %s  iseOP:   %s
 eOPI:    %s  iseOPI:  %s
 eOPT:    %s  iseOPT:  %s
 eOPTI:   %s  iseOPTI: %s
-sum:         %-5.2f]], 
+layer:       %-5.2f]], 
 chordName,
 C, 
 tostring(eop),
+tostring(ept),
 tostring(eopt),
 eOP, 
 tostring(iseOP), 
@@ -1571,7 +1566,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     -- equivalence class.
     local equivalentChords = {}
     for hash, equivalentChord in pairs(chordset) do
-        if equivalenceMapper(equivalentChord) == true then
+        if equivalenceMapper(equivalentChord) then
             -- print(hash, chord, equivalentChord, equivalentChord:__hash())
             table.insert(equivalentChords, equivalentChord)
         end
@@ -1581,7 +1576,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(equivalentChords) do
-        print('index', index, 'chord', chord)
+        print('index', index, 'chord', chord, 'layer', chord:sum())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end

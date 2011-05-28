@@ -293,9 +293,7 @@ function ChordView:drawChord(chord, name, picking)
     glu.gluQuadricNormals(quadric, glu.GLU_SMOOTH)
     local z = chord:eOPT()
     local alpha = 0.5
-    if chord:isClose() then
-        alpha = 1
-    end
+    local radius = 0
     if z      == self.augmentedTriad then
         gl.glColor4f(1, 1, 1, alpha)
     else if z == self.majorTriad1 then
@@ -309,7 +307,6 @@ function ChordView:drawChord(chord, name, picking)
         local red, green, blue = hsv_to_rgb(hue, saturation, value)
         gl.glColor4f(red, green, blue, alpha)
     end end end
-    local radius = 0
     if self:isE(chord) then
         radius = 1/16
         if self.pickedChord ~= nil then
@@ -320,6 +317,9 @@ function ChordView:drawChord(chord, name, picking)
         end
     else
         radius = 1/36
+    end
+    if chord:iseV() then
+        radius = radius * 2
     end
     glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
@@ -780,7 +780,7 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 1
-chordView.equivalence = 'OPT'
+chordView.equivalence = 'OP'
 chordView:createChords()
 chordView:findSize()
 chordView:display()
