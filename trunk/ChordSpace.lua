@@ -36,7 +36,7 @@ DEFINITIONS
 
 A voice is a distinct sound that is heard as having a pitch.
 
-Pitch is the perception that a sound has a distinct frequency.
+Pitch is the distinct perception of the frequency of a sound.
 It is a logarithmic perception; octaves, which sound 'equivalent' 
 in some sense, represent doublings or halvings of frequency.
 
@@ -182,7 +182,7 @@ the 'columns' of identically structured chords. Changes of chord type are
 motions across the layers of differently structured chords.
 P, L, and R send major triads to their nearest minor neighbors,
 and vice versa. I reflects a chord across the middle of the prism.
-T moves a chord up and down the orthogonal orientation of the prism.
+T moves a chord up and down the unison orientation of the prism.
 
 VOICE-LEADING
 
@@ -555,6 +555,11 @@ function Chord:origin()
     return chord
 end
 
+function Chord:distanceToOrigin()
+    local origin = self:origin()
+    return euclidean(self, origin)
+end
+
 -- Returns all the 'inversions' (in the musician's sense) 
 -- or revoicings of the chord.
 
@@ -673,16 +678,15 @@ function Chord:a(arpeggiation)
     return chord[1], 1, chord
 end
 
-function Chord:distanceToOrthogonalAxis()
+function Chord:distanceToUnisonAxis()
     local layer = self:sum()
     local distancePerVoice = layer / #self
-    local orthogonalChord = Chord:new()
+    local unisonChord = Chord:new()
     for voice = 1, #self do
-        orthogonalChord[voice] = distancePerVoice
+        unisonChord[voice] = distancePerVoice
     end
-    local distanceToOrthogonalAxis = euclidean(self, orthogonalChord)
-    -- print(distanceToOrthogonalAxis)
-    return distanceToOrthogonalAxis
+    local distanceToUnisonAxis = euclidean(self, unisonChord)
+    return distanceToUnisonAxis
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
@@ -970,40 +974,79 @@ function Chord:ept()
 end
 
 function Chord:eopt()
-    return self:eOPT():eop():et()
+    return self:et():eop()
 end
 
 -- Is this wrong for {-6, 0, 6}?
 
-function Chord:iseV(range, g)
+-- This doesn't give the opt of Tymoczko.
+-- We have 067 058 066 068 etc, we have 35 instead of 31.
+-- The goal is not the triangle farthest from the unison axis,
+-- but the dart closest to it, which wraps up into a cone.
+--[[
+function Chord:iseV(range)
     range = range or OCTAVE
-    g = g or 1
+    local isev = true
     for voice = 1, #self - 1 do
         if not ((self[1] + range - self[#self]) <= (self[voice + 1] - self[voice])) then
-            return false
+            isev = false
         end
     end
-    return true
+    return isev
+end
+]]
+
+--[[
+function Chord:iseV(range)
+    range = range or OCTAVE
+    local voicings = self:voicings()
+    for i = 1, #voicings do
+        voicings[i] = voicings[i]:et():ep()
+    end
+    table.sort(voicings)
+    local etp = self:et():ep()
+    if etp == voicings[#voicings] then
+        return true
+    end
+    return false
+end
+]]
+
+function Chord:iseV(range)
+    range = range or OCTAVE
+    local voicings = self:voicings()
+    local minimumVoicing = voicings[1]
+    local minimumDistance = minimumVoicing:distanceToUnisonAxis()
+    for i = 2, #voicings do
+        voicing = voicings[i]
+        distance = voicing:distanceToUnisonAxis()
+        if distance < minimumDistance then
+            minimumDistance = distance
+            minimumVoicing = voicing
+        end
+    end
+    if self:et():ep() == minimumVoicing:et():ep() then
+        return true
+    end
+    return false
 end
 
--- This doesn't give the eopt of Tymoczko.
--- We have 067 058 066 068 etc, we have 35 instead of 31.
--- With range = OCTAVE * N, we have many columns, but only 1 is eV.
+-- Returns the chord under range, permutation, and transpositional
+-- equivalence. This requires taking a cross section of the 
+-- orbifold perpendicular to the unison axis, and identifying
+-- chords under rotational equivalence by 2 pi / N. 
 
 function Chord:eRPT(range, g)
     range = range or OCTAVE
     g = g or 1
     erp = self:eRP(range)
-    --print('Chord:eRPT: range', range, 'g', g)
     local voicings = erp:voicings()
     for i, voicing in ipairs(voicings) do
-        local et = voicing:eT(g)
-        --print('Chord:eRPT: et', i, et, et:iseV(range, g), et:sum())
-        if et:iseV(range, g) then
-            return et
+        if voicing:iseV() then
+            return voicing:eT(g)
         end
     end
-end
+ end
 
 function Chord:eOPT(g)
     g = g or 1
@@ -1046,8 +1089,8 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:nrL()
-    local cv = self:closestVoicing()
-    local cvt = self:closestVoicing():e()
+    local cv = self:eV()
+    local cvt = self:eV():et()
     if cvt[2] == 4 then
         cv[1] = cv[1] - 1
     else
@@ -1062,8 +1105,8 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:nrP()
-    local cv = self:closestVoicing()
-    local cvt = self:closestVoicing():et()
+    local cv = self:eV()
+    local cvt = self:eV():et()
     if cvt[2] == 4 then
         cv[2] = cv[2] - 1
     else
@@ -1078,8 +1121,8 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:nrR()
-    local cv = self:closestVoicing()
-    local cvt = self:closestVoicing():et()
+    local cv = self:eV()
+    local cvt = self:eV():et()
     if cvt[2] == 4 then
         cv[3] = cv[3] + 2
     else
@@ -1576,7 +1619,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(equivalentChords) do
-        print('index', index, 'chord', chord, 'layer', chord:sum())
+        print('index', index, 'chord', chord, chord:eop(), 'layer', chord:sum())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end
