@@ -327,9 +327,9 @@ function ChordView:drawChord(chord, name, picking)
 end
 
 function ChordView:createChords()
-    self.augmentedTriad = Chord:new{-4, 0, 4}
-    self.majorTriad1 =    Chord:new{-4, 1, 5}
-    self.minorTriad1 =    Chord:new{-4, 0, 5}
+    self.augmentedTriad = Chord:new{0, 4, 8}:eOPT()
+    self.majorTriad1 =    Chord:new{0, 4, 7}:eOPT()
+    self.minorTriad1 =    Chord:new{0, 3, 7}:eOPT()
     for v1 = -self.octaves * OCTAVE, self.octaves * OCTAVE do
         for v2 = -self.octaves * OCTAVE, self.octaves * OCTAVE do
             for v3 = -self.octaves * OCTAVE, self.octaves * OCTAVE do

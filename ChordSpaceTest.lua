@@ -123,75 +123,90 @@ print('c0001', c0001:label())
 local ic0001 = c0001:I():eOP()
 print('ic0001', ic0001:label())
 
-local c3333 = Chord:new{3,3,3,3}     
-local voicings = c3333:voicings()
-for i, voicing in ipairs(voicings) do
-    print('voicing', i, voicing)
-    print('eOP', i, voicing:eOP())
-    print('eop', i, voicing:eop())
-    print('eOPI', i, voicing:eOPI())
-    print('eOPT', i, voicing:eOPT())
+function printVoicings(chord)
+    print(chord:label())
+    local voicings = chord:voicings()
+    for i, voicing in ipairs(voicings) do
+        print('voicing', i, voicing, 'iseV', voicing:iseV(), voicing:distanceToUnisonAxis())
+        print('eOP', i, voicing:eOP())
+        print('et', i, voicing:et())
+        print('eop', i, voicing:eop())
+        print('eopt', i, voicing:eopt())
+        print('eOPI', i, voicing:eOPI())
+        print('eOPT', i, voicing:eOPT(),'iseOPT', voicing:iseOPT())
+    end
 end
+
+local c3333 = Chord:new{3,3,3,3}     
+printVoicings(c3333)
+print()
+local chord = ChordSpace.chordsForNames['CM9']
+printVoicings(chord)
+print()
+
+--os.exit()
+
 print('c3333', c3333:label())
 local ic3333 = c3333:I():eOP()
 print('ic3333', ic3333:label())
 
 local Caug = ChordSpace.chordsForNames['C+']
-local areClose = 0
+local areeV = 0
 for t = 0, 11 do
     local chord = Caug:T(t):eOP()
     print('C+ t', t, chord:label())
     print(chord:iseV())
     if chord:iseV() then
-        areClose = areClose + 1
+        areeV = areeV + 1
     end
 end
-print('areClose:', areClose)
+print('areeV:', areeV)
 print()
 
 local CM = ChordSpace.chordsForNames['CM']
-local areClose = 0
+local areeV = 0
 for t = 0, 11 do
     local chord = CM:T(t):eOP()
     print('CM t', t, chord:label())
     print(chord:iseV())
     if chord:iseV() then
-        areClose = areClose + 1
+        areeV = areeV + 1
     end
 end
-print('areClose:', areClose)
+print('areeV:', areeV)
 print()
 
 local CM7 = ChordSpace.chordsForNames['CM7']
-local areClose = 0
+local areeV = 0
 for t = 0, 11 do
     local chord = CM7:T(t):eOP()
     print('CM7 t', t, chord:label())
     print(chord:iseV())
     if chord:iseV() then
-        areClose = areClose + 1
+        areeV = areeV + 1
     end
 end
-print('areClose:', areClose)
+print('areeV:', areeV)
 print()
 
 local CM9 = ChordSpace.chordsForNames['CM9']
-local areClose = 0
+local areeV = 0
 for t = 0, 11 do
     local chord = CM9:T(t):eOP()
     print('CM9 t', t, chord:label())
     print(chord:iseV())
     if chord:iseV() then
-        areClose = areClose + 1
+        areeV = areeV + 1
     end
 end
-print('areClose:', areClose)
+print('areeV:', areeV)
 print()
 
 --os.exit()
 
 print ('Does OPTI U OPTI:I():eOP() == OPT?')
-local OPTIs = ChordSpace.allOfEquivalenceClass(4, 'OPTI')
+local arity = 3
+local OPTIs = ChordSpace.allOfEquivalenceClass(arity, 'OPTI')
 local chordset = {}
 for i, OPTI in pairs(OPTIs) do
     chordset[OPTI:__hash()] = OPTI
@@ -208,10 +223,12 @@ local shouldbeOPT = {}
 for index, chord in pairs(sortedchordset) do
     table.insert(shouldbeOPT, index - 1, chord)
 end
-local OPT = ChordSpace.allOfEquivalenceClass(4, 'OPT')
+local OPT = ChordSpace.allOfEquivalenceClass(arity, 'OPT')
 for i = 0, math.max(#OPT, #shouldbeOPT) do
     print (i, 'OPTI U OPTI:I():eOP()', shouldbeOPT[i], 'OPT', OPT[i])
 end
+
+os.exit()
 
 local chord = Chord:new{-3,1,4,8}
 print(chord:label())
