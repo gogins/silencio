@@ -11,14 +11,14 @@ of the GNU Lesser General Public License.
 
 This package, part of Silencio, implements a geometric approach 
 to some common operations on chords in neo-Riemannian music theory 
-for use in score generating programs:
+for use in score generating software:
 
 --  Identifying whether a chord belongs to some equivalence class,
     or moving a chord inside the fundamental domain of some 
     equivalence class.
     
---  Causing chord progressions to move strictly within an orbifold induced 
-    by some equivalence class.
+--  Causing chord progressions to move strictly within an orbifold that 
+    generates some equivalence class.
     
 --  Implementing chord progressions based on the L, P, R, D, K, and Q 
     operations of neo-Riemannian theory (thus implementing some aspects
@@ -30,21 +30,22 @@ for use in score generating programs:
     of "counterpoint").
 
 The associated ChordSpaceView package can display these
-chord spaces and operations in an interactive 3-dimensional view.
+chord spaces and operations for trichords in an interactive 
+3-dimensional view.
 
 DEFINITIONS
 
 A voice is a distinct sound that is heard as having a pitch.
 
-Pitch is the distinct perception of the frequency of a sound.
+Pitch is the distinct perception of sound frequency.
 It is a logarithmic perception; octaves, which sound 'equivalent' 
 in some sense, represent doublings or halvings of frequency.
 
 Pitches and intervals are represented as real numbers. 
 Middle C is 60 and the octave is 12. Our usual system of 12-tone 
 equal temperament, as well as MIDI key numbers, are completely represented 
-by the whole numbers, but any and all other pitches can be represented 
-by fractions.
+by the whole numbers; any and all other pitches can be represented 
+simply by using fractions.
 
 A chord is simply a set of voices heard at the same time or, 
 what is the same thing, a point in a chord space having one dimension of 
@@ -96,8 +97,8 @@ I       Inversional equivalence. Represented as the inversion having the
         first interval between voices be smaller than or equal to the final 
         interval (recursing for chords of more than 3 voices). Care is needed 
         to distinguish the mathematician's sense 
-        of 'invert', which means 'pitch-space inversion' or 'reflect around a 
-        fixed point', from the musician's sense of 'invert', which varies 
+        of 'invert', which means 'pitch-space inversion' or 'reflect in a 
+        point', from the musician's sense of 'invert', which varies 
         according to context but in practice often means 'registral inversion' 
         or 'revoice by adding an octave to the lowest tone of a chord.' Here, 
         we use 'invert' and 'inversion' in the mathematician's sense, and we 
@@ -128,12 +129,12 @@ OPTI    The OPT layer modulo inversion, i.e. 1/2 of the OPT layer.
 OPERATIONS
 
 Each of the above equivalence classes is, of course, an operation that sends 
-chords outside an orbifold to chords inside the orbifold. And we define the 
-following additional operations:
+chords outside the fundamental domain to chords inside the fundamental domain. 
+And we define the following additional operations:
 
 T(p, x)         Translate p by x. 
 
-I(p [, x])      Reflect p around x, by default the octave.
+I(p [, x])      Reflect p in x, by default the octave.
 
 P               Send a major triad to the minor triad with the same root,      
                 or vice versa (Riemann's parallel transformation).
@@ -182,7 +183,7 @@ the 'columns' of identically structured chords. Changes of chord type are
 motions across the layers of differently structured chords.
 P, L, and R send major triads to their nearest minor neighbors,
 and vice versa. I reflects a chord across the middle of the prism.
-T moves a chord up and down the unison orientation of the prism.
+T moves a chord up and down parallel to the unison diagonal of the prism.
 
 VOICE-LEADING
 
@@ -294,15 +295,15 @@ end
 
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function T(pitch, x)
-    return pitch + x
+function T(pitch, transposition)
+    return pitch + transposition
 end 
 
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function I(pitch, x)
-    x = x or OCTAVE
-    return x - pitch
+function I(pitch, center)
+    center = center or 0
+    return center - pitch
 end    
 
 -- Returns the Euclidean distance between chords a and b,
@@ -678,37 +679,47 @@ function Chord:a(arpeggiation)
     return chord[1], 1, chord
 end
 
-function Chord:distanceToUnisonAxis()
+function Chord:distanceToUnisonDiagonal()
     local layer = self:sum()
     local distancePerVoice = layer / #self
     local unisonChord = Chord:new()
     for voice = 1, #self do
         unisonChord[voice] = distancePerVoice
     end
-    local distanceToUnisonAxis = euclidean(self, unisonChord)
-    return distanceToUnisonAxis
+    local distanceToUnisonDiagonal = euclidean(self, unisonChord)
+    return distanceToUnisonDiagonal
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function Chord:T(x)  
+function Chord:T(transposition)  
     local chord = self:clone()
     for voice, pitch in ipairs(chord) do
-        chord[voice] = T(pitch, x)
+        chord[voice] = T(pitch, transposition)
     end
     return chord
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function Chord:I(x)
-    x = x or OCTAVE
+function Chord:I(center)
+    center = center or 0
     local chord = self:clone()
     for voice, pitch in ipairs(chord) do
-        chord[voice] = I(pitch, x)
+        chord[voice] = I(pitch, center)
     end
     return chord
 end
+
+--[[
+function Chord:I()
+    local chord = self:clone()
+    for voice, pitch in ipairs(chord) do
+        chord[voice] = - pitch 
+    end
+    return chord
+end
+]]
 
 function Chord:iseR(range)
     if not (self:max() <= (self:min() + range)) then
@@ -746,14 +757,57 @@ function Chord:iseT(g)
     return true
 end
 
+-- Returns whether the chord is on or below the inversion flat.
+-- Fix to distinguish RI or OI from I.
+
 function Chord:iseI()
-    local ep = self:eP()
+    local chord = self:eOP()
+    local inverse = self:I(OCTAVE):eOP()
+    local flat = chord:clone()
+    for i = 1, #chord do
+        flat[i] = chord[i] + (chord[i] - inverse[i]) / 2
+    end
+    print(chord, flat, inverse)
+    if chord <= flat then
+        return true
+    end
+    return false
+end
+
+--[[
+function Chord:iseI()
+    print('BEGAN Chord:iseI...')
+    local ept = self
+    local iept = self:I()
+    local isei = true
+    for voice = 2, #ept do
+        local eptInterval = ept[voice] - ept[voice - 1]
+        local ieptInterval = iept[voice] - iept[voice - 1]
+        print(voice, ept, 'eptInterval', eptInterval, iept, 'ieptInterval', ieptInterval)
+        if eptInterval < ieptInterval then
+            break
+        end
+        if eptInterval > ieptInterval then
+            isei = false
+            break
+        end
+    end
+    print('isei', isei)
+    print('ENDED Chord:iseI.')
+    return isei
+end
+]]
+
+
+--[[
+function Chord:iseI()
+    local chord = self:ept()
     local lowerVoice = 2
     local upperVoice = #self
-    while lowerVoice <= #self do
-        local lowerDelta = ep[lowerVoice] - ep[lowerVoice - 1]
-        local upperDelta = ep[upperVoice] - ep[upperVoice - 1]
-        if lowerDelta < upperDelta then
+    while lowerVoice < upperVoice do
+        local lowerDelta = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperDelta = chord[upperVoice] - chord[upperVoice - 1]
+        if lowerDelta < upperDelta thene
             return true
         end
         if lowerDelta > upperDelta then
@@ -764,6 +818,17 @@ function Chord:iseI()
     end
     return true
 end
+]]
+
+--[[
+function Chord:iseI()
+    local chord = self--:eP()
+    if (chord[2] - chord[1]) <= (chord[#chord] - chord[#chord - 1]) then
+        return true
+    end
+    return false
+end
+]]
 
 function Chord:iseRP(range) 
     if not self:iseP(range) then
@@ -832,10 +897,10 @@ end
 
 function Chord:iseTI(g)
     g = g or 1
-    if not self:isEI() then
+    if not self:iseI() then
         return false
     end
-    if not self:isET(g) then
+    if not self:iseT(g) then
         return false
     end
     return true
@@ -870,8 +935,9 @@ function Chord:iseOPI()
     return self:iseRPI(OCTAVE)
 end
 
-function Chord:iseRPTI(range)
-    if not self:iseRPT(range) then
+function Chord:iseRPTI(range, g)
+    g = g or 1
+    if not self:iseRPT(range, g) then
         return false
     end
     if not self:iseI() then
@@ -880,8 +946,9 @@ function Chord:iseRPTI(range)
     return true
 end
 
-function Chord:iseOPTI()
-    return self:iseRPTI(OCTAVE)
+function Chord:iseOPTI(g)
+    g = g or 1
+    return self:iseRPTI(OCTAVE, g)
 end
 
 -- Returns whether the chord is in the fundamental domain
@@ -978,12 +1045,10 @@ function Chord:eopt()
 end
 
 -- Is this wrong for {-6, 0, 6}?
+-- Tymoczko has either kites or triangles as fundamental domains
+-- for voicings. This uses the triangle farthest from the 
+-- unisons diagonal.
 
--- This doesn't give the opt of Tymoczko.
--- We have 067 058 066 068 etc, we have 35 instead of 31.
--- The goal is not the triangle farthest from the unison axis,
--- but the dart closest to it, which wraps up into a cone.
---[[
 function Chord:iseV(range)
     range = range or OCTAVE
     local isev = true
@@ -994,7 +1059,7 @@ function Chord:iseV(range)
     end
     return isev
 end
-]]
+-- ]]
 
 --[[
 function Chord:iseV(range)
@@ -1012,14 +1077,15 @@ function Chord:iseV(range)
 end
 ]]
 
+--[[
 function Chord:iseV(range)
     range = range or OCTAVE
     local voicings = self:voicings()
     local minimumVoicing = voicings[1]
-    local minimumDistance = minimumVoicing:distanceToUnisonAxis()
+    local minimumDistance = minimumVoicing:distanceToUnisonDiagonal()
     for i = 2, #voicings do
         voicing = voicings[i]
-        distance = voicing:distanceToUnisonAxis()
+        distance = voicing:distanceToUnisonDiagonal()
         if distance < minimumDistance then
             minimumDistance = distance
             minimumVoicing = voicing
@@ -1030,6 +1096,7 @@ function Chord:iseV(range)
     end
     return false
 end
+]]
 
 -- Returns the chord under range, permutation, and transpositional
 -- equivalence. This requires taking a cross section of the 
@@ -1056,23 +1123,20 @@ end
 function Chord:eI()
     if self:iseI() then
         return self:clone()
-    else
-        return self:I()
     end
+    return self:I()
 end
 
 function Chord:eOPI()
     if self:iseOPI() then
         return self:clone()
     end
-    return self:eI():eOP()
+    return self:I():eOP()
 end
  
-function Chord:eOPTI(range, g)
-    range = range or OCTAVE
+function Chord:eOPTI(g)
     g = g or 1
-    --print('Chord:eOPTI: range', range, 'g', g)
-    return self:eOPI(g):eOPT()
+    return self:eOPT(g):eOPI()
 end
 
 -- Move 1 voice of the chord,
@@ -1387,7 +1451,7 @@ function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidPa
     return closest
 end
 
--- Returns a label for a chord.
+-- Returns a label with information for a chord.
 
 function Chord:label()
     local chordName = nil
@@ -1400,42 +1464,32 @@ function Chord:label()
     if chordName == nil then
         chordName = 'Chord'
     end
-    local C = self:__tostring()
-    local eop = self:eop()
-    local eOP = self:eOP():__tostring()
-    local iseOP = self:iseOP()
-    local eOPI = self:eOPI():__tostring()
-    local iseOPI = self:iseOPI()
-    local eOPT = self:eOPT():__tostring()
-    local ept = self:ept()
-    local eopt = self:eopt()
-    local iseOPT = self:iseOPT()
-    local eOPTI = self:eOPTI():__tostring()
-    local iseOPTI = self:iseOPTI()
     return string.format([[%s: 
 pitches: %s
 eop:     %s
 ept:     %s
 eopt:    %s
+I:ept:   %s
 eOP:     %s  iseOP:   %s
+I:eOP:   %s
 eOPI:    %s  iseOPI:  %s
 eOPT:    %s  iseOPT:  %s
 eOPTI:   %s  iseOPTI: %s
-layer:       %-5.2f]], 
+layer:       %-5.2f
+to origin:   %-5.2f]], 
 chordName,
-C, 
-tostring(eop),
-tostring(ept),
-tostring(eopt),
-eOP, 
-tostring(iseOP), 
-eOPI, 
-tostring(iseOPI), 
-eOPT, 
-tostring(iseOPT), 
-eOPTI, 
-tostring(iseOPTI), 
-self:sum())
+tostring(self),
+tostring(self:eop()),
+tostring(self:ept()),
+tostring(self:eopt()),
+tostring(self:I():ept()),
+tostring(self:eOP()), tostring(self:iseOP()),
+tostring(self:I():eOP()),
+tostring(self:eOPI()), tostring(self:iseOPI()),
+tostring(self:eOPT()), tostring(self:iseOPT()),
+tostring(self:eOPTI()), tostring(self:iseOPTI()),
+self:sum(),
+self:distanceToOrigin())
 end
 
 -- Creates a complete Silencio "note on" event for the 
@@ -1560,12 +1614,81 @@ function gather(score, start, end_)
     return chord
 end
 
+function ChordSpace.allChordsInRange(voices, range, g)
+    range = range or OCTAVE
+    g = g or 1
+    -- Enumerate all chords in O.
+    local chordset = {}
+    local odometer = Chord:new()
+    odometer:resize(voices)
+    while odometer[1] < range do
+        local fundamentalChord = nil
+        fundamentalChord = odometer:eRP(range)
+        chordset[fundamentalChord:__hash()] = fundamentalChord
+        odometer[voices] = odometer[voices] + g
+        -- "Carry" voices across range.
+        for voice = voices, 2, -1 do
+            if odometer[voice] >= range then
+                odometer[voice] = 0
+                odometer[voice - 1] = odometer[voice - 1] + g
+            end
+        end
+    end
+    return chordset
+end
+
 -- Returns all the chords with the specified number of voices that exist 
 -- within the fundamental domain of the specified octave-based equivalence 
 -- class that is generated by the interval g, which of course must evenly 
 -- divide the octave. The chords are returned in a zero-based table, 
 -- such that the indexes of the chords form an additive cyclic group 
--- representing the chords. Note: these chords are related to op not OP.
+-- representing the chords. 
+
+function ChordSpace.allOfEquivalenceClass1(voices, equivalence, g)
+    g = g or 1    
+    local equivalenceMapper = nil
+    if equivalence == 'OP' then
+        equivalenceMapper = Chord.eOP
+    end
+    if equivalence == 'OT' then
+        equivalenceMapper = Chord.eOT
+    end
+    if equivalence == 'OI' then
+        equivalenceMapper = Chord.eOI
+    end
+    if equivalence == 'OPT' then
+        equivalenceMapper = Chord.eOPT
+    end
+    if equivalence == 'OPI' then
+        equivalenceMapper = Chord.eOPI
+    end
+    if equivalence == 'OPTI' then
+        equivalenceMapper = Chord.eOPTI
+    end
+    -- Enumerate all chords in O.
+    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE)
+    -- Coerce all chords to the equivalence class.
+    local equivalentChords = {}
+    for hash, chord in pairs(chordset) do
+        local equivalentChord = equivalenceMapper(chord)
+        equivalentChords[equivalentChord:__hash()] = equivalentChord
+    end
+    -- Sort the chords and create a table with a zero-based index.
+    table.sort(equivalentChords)
+    local sortedChords = {}
+    for key, chord in pairs(equivalentChords) do
+        table.insert(sortedChords, chord)
+    end
+    table.sort(sortedChords)
+    local zeroBasedChords = {}
+    local index = 0
+    for key, chord in pairs(sortedChords) do
+        --print('index', index, 'chord', chord, chord:eop(), 'layer', chord:sum())
+        table.insert(zeroBasedChords, index, chord)
+        index = index + 1
+    end
+    return zeroBasedChords
+ end
 
 function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     g = g or 1    
@@ -1589,22 +1712,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = {}
-    local odometer = Chord:new()
-    odometer:resize(voices)
-    while odometer[1] < OCTAVE do
-        local fundamentalChord = nil
-        fundamentalChord = odometer:eOP()
-        chordset[fundamentalChord:__hash()] = fundamentalChord
-        odometer[voices] = odometer[voices] + g
-        -- "Carry" octaves.
-        for voice = voices, 2, -1 do
-            if odometer[voice] >= OCTAVE then
-                odometer[voice] = 0
-                odometer[voice - 1] = odometer[voice - 1] + g
-            end
-        end
-    end
+    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE)
     -- Select only those O chords that are within the complete
     -- equivalence class.
     local equivalentChords = {}
@@ -1619,12 +1727,12 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(equivalentChords) do
-        print('index', index, 'chord', chord, chord:eop(), 'layer', chord:sum())
+        --print('index', index, 'chord', chord, chord:eop(), 'layer', chord:sum())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end
     return zeroBasedChords
- end
+end
 
 -- Orthogonal additive groups for unordered chords of given arity under range 
 -- equivalence (RP): prime form or P, inversion or I, transposition or T, and 

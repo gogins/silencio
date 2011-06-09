@@ -127,7 +127,7 @@ function printVoicings(chord)
     print(chord:label())
     local voicings = chord:voicings()
     for i, voicing in ipairs(voicings) do
-        print('voicing', i, voicing, 'iseV', voicing:iseV(), voicing:distanceToUnisonAxis())
+        print('voicing', i, voicing, 'iseV', voicing:iseV(), voicing:distanceToUnisonDiagonal())
         print('eOP', i, voicing:eOP())
         print('et', i, voicing:et())
         print('eop', i, voicing:eop())
@@ -227,6 +227,58 @@ local OPT = ChordSpace.allOfEquivalenceClass(arity, 'OPT')
 for i = 0, math.max(#OPT, #shouldbeOPT) do
     print (i, 'OPTI U OPTI:I():eOP()', shouldbeOPT[i], 'OPT', OPT[i])
 end
+
+function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
+    dump = dump or false
+    if not dump then
+        print(string.format('Does ise equal e for %s?', equivalence))
+    end
+    local isees = ChordSpace.allOfEquivalenceClass(arity, equivalence)
+    local ees = ChordSpace.allOfEquivalenceClass1(arity, equivalence)
+    local passes = true
+    for i = 0, math.max(#isees, #ees) do
+        local isee = isees[i]
+        local ee = ees[i]
+        local pass = (isee == ee)
+        if not pass then
+            passes = false
+        end
+        if dump then
+            print(i, 'ise', isee, 'e', ee, pass)
+        end
+    end
+    print()
+    if passes then
+        print(string.format('    PASS FOR %d voice %s\n', arity, equivalence))
+    else
+        print(string.format('*** FAIL FOR %d voice %s\n', arity, equivalence))
+        if not dump then
+            testIsEquivalenceEqualsEquivalence(arity, equivalence, true)
+        end
+    end
+    return passes
+end
+
+for arity = 2, 3 do
+    testIsEquivalenceEqualsEquivalence(arity, 'OP')
+    testIsEquivalenceEqualsEquivalence(arity, 'OPI')
+    testIsEquivalenceEqualsEquivalence(arity, 'OPT')
+    testIsEquivalenceEqualsEquivalence(arity, 'OPTI')
+end
+
+print('CHORD')
+local chord = Chord:new{  -4, 7, 7}	
+print(chord, 'iseOPI', chord:iseOPI(), 'iseOP', chord:iseOP())
+print(chord:label())
+print('INVERTED')
+local inverted = chord:I()--:eOP()
+print(inverted, 'iseOPI', inverted:iseOPI(), 'iseOP', inverted:iseOP())
+print(inverted:label())
+print('REINVERTED')
+local reinverted = inverted:I():eOP()
+print(reinverted, 'iseOPI', reinverted:iseOPI(), 'iseOP', reinverted:iseOP())
+print(reinverted:label())
+
 
 os.exit()
 
