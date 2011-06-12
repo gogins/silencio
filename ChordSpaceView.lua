@@ -156,7 +156,7 @@ function ChordView:draw(picking)
     if not picking then
         self:drawGrid()
     end
-    for name, chord in ipairs(self.chords) do
+    for name, chord in pairs(self.chords) do
         self:drawChord(chord, name, picking)
     end
     if not picking then
@@ -179,7 +179,7 @@ function ChordView:drawGrid()
     local orthogonalAxisPoints = math.sin(math.pi / 4) * range
     gl.glVertex3f(orthogonalAxisPoints, orthogonalAxisPoints, orthogonalAxisPoints)
     gl.glColor4f(1, 1, 1, 0.5)
-    for i, c0 in ipairs(self.chords) do
+    for i, c0 in pairs(self.chords) do
         if self:isE(c0) then    
             c1 = c0:clone()
             c1[1] = c0[1] + 1
@@ -292,7 +292,7 @@ function ChordView:drawChord(chord, name, picking)
     local quadric = glu.gluNewQuadric()
     glu.gluQuadricNormals(quadric, glu.GLU_SMOOTH)
     local z = chord:eOPT()
-    local alpha = 0.5
+    local alpha = 1
     local radius = 0
     if z      == self.augmentedTriad then
         gl.glColor4f(1, 1, 1, alpha)
@@ -301,25 +301,34 @@ function ChordView:drawChord(chord, name, picking)
     else if z == self.minorTriad1 then
         gl.glColor4f(0, 0, 1, alpha)
     else
+        local eq = 2
         local hue = (z[1] + z[2] * 3.0 + z[3]) * 15
+        --if chord:iseOPTI() then
+        --    hue = 5
+        --else if chord:iseOPT() then
+        --    hue = 4
+        --else if chord:iseOPI() then
+        --    hue = 3
+        --end end end
+        
         local saturation = 1.0
         local value = 1.0
+        local value = 0.5 + chord:sum() / 24.0
         local red, green, blue = hsv_to_rgb(hue, saturation, value)
         gl.glColor4f(red, green, blue, alpha)
     end end end
+    local radius = 1/16
     if self:isE(chord) then
-        radius = 1/16
         if self.pickedChord ~= nil then
             if self.pickedChord:label() == chord:label() then
                 radius = 1/8
                 gl.glColor4f(1, 1, 1, 1)
             end
         end
-    else
-        radius = 1/36
     end
-    if chord:iseV() then
-        radius = radius * 2
+    if chord:isInOPIFlat() then
+    --if chord:iseV() then
+        radius = radius * 3
     end
     glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
@@ -330,20 +339,12 @@ function ChordView:createChords()
     self.augmentedTriad = Chord:new{0, 4, 8}:eOPT()
     self.majorTriad1 =    Chord:new{0, 4, 7}:eOPT()
     self.minorTriad1 =    Chord:new{0, 3, 7}:eOPT()
-    for v1 = -self.octaves * OCTAVE, self.octaves * OCTAVE do
-        for v2 = -self.octaves * OCTAVE, self.octaves * OCTAVE do
-            for v3 = -self.octaves * OCTAVE, self.octaves * OCTAVE do
-                chord = Chord:new{v1, v2, v3}
-                if self:isE(chord) then
-                    table.insert(self.chords, chord)
-                end
-             end
-        end
+    local dummy = nil
+    if self.constructChordsByOperation then
+        dummy, self.chords = ChordSpace.allOfEquivalenceClassByOperation(3, self.equivalence)
+    else
+        dummy, self.chords = ChordSpace.allOfEquivalenceClass(3, self.equivalence)
     end
-    table.sort(self.chords)
-    --for i, chord in ipairs(self.chords) do
-    --    print(chord:label())   
-    --end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 
@@ -503,7 +504,6 @@ function ChordView:processHits(hits)
     -- print(string.format('hits: %d  pickedName: %d  pickedDepth: %d', hits, pickedName, pickedDepth))
     -- print(self.pickedChord:__tostring())
     print(self.pickedChord:label())
-    print(ChordSpace.namesForChords[self.pickedChord:label()])
     print()
 end
 
@@ -629,9 +629,9 @@ function ChordView:display()
             -- I?
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
-                self.pickedChord = self:E(self.pickedChord:I())
+                --self.pickedChord = self:E(self.pickedChord:I():eOP())
+                self.pickedChord = self:E(self.pickedChord:I():eP())
                 print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_RELEASE then
@@ -780,7 +780,8 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 1
-chordView.equivalence = 'OPI'
+chordView.equivalence = 'OP'
+chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
 chordView:display()
