@@ -680,14 +680,19 @@ function Chord:a(arpeggiation)
 end
 
 function Chord:distanceToUnisonDiagonal()
+    local unisonChord = self:intersectionWithUnisonDiagonal()
+    local distanceToUnisonDiagonal = euclidean(self, unisonChord)
+    return distanceToUnisonDiagonal
+end
+
+function Chord:intersectionWithUnisonDiagonal()
     local layer = self:sum()
     local distancePerVoice = layer / #self
     local unisonChord = Chord:new()
     for voice = 1, #self do
         unisonChord[voice] = distancePerVoice
     end
-    local distanceToUnisonDiagonal = euclidean(self, unisonChord)
-    return distanceToUnisonDiagonal
+    return unisonChord
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
@@ -711,15 +716,22 @@ function Chord:I(center)
     return chord
 end
 
---[[
-function Chord:I()
-    local chord = self:clone()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = - pitch 
+function Chord:eI()
+    chord = self:clone()
+    if chord:iseI() then
+        return chord:clone()
     end
-    return chord
+    return chord:I()
 end
-]]
+
+-- TODO: Fix this.
+
+function Chord:eOPI()
+    if self:iseOPI() then
+        return self
+    end
+    return self:I():eOP()
+end
 
 function Chord:iseR(range)
     if not (self:max() <= (self:min() + range)) then
@@ -757,57 +769,25 @@ function Chord:iseT(g)
     return true
 end
 
--- Returns whether the chord is on or below the inversion flat.
--- Fix to distinguish RI or OI from I.
+-- Returns the chord in the center 
+-- of the line connecting the chords a and b.
 
-function Chord:iseI()
-    local chord = self:eOP()
-    local inverse = self:I(OCTAVE):eOP()
-    local flat = chord:clone()
-    for i = 1, #chord do
-        flat[i] = chord[i] + (chord[i] - inverse[i]) / 2
+function ChordSpace.midpoint(a, b)
+    local center = a:clone()
+    for i = 1, #a do
+        center[i] = a[i] + (b[i] - a[i]) / 2
     end
-    print(chord, flat, inverse)
-    if chord <= flat then
-        return true
-    end
-    return false
+    return center    
 end
 
---[[
-function Chord:iseI()
-    print('BEGAN Chord:iseI...')
-    local ept = self
-    local iept = self:I()
-    local isei = true
-    for voice = 2, #ept do
-        local eptInterval = ept[voice] - ept[voice - 1]
-        local ieptInterval = iept[voice] - iept[voice - 1]
-        print(voice, ept, 'eptInterval', eptInterval, iept, 'ieptInterval', ieptInterval)
-        if eptInterval < ieptInterval then
-            break
-        end
-        if eptInterval > ieptInterval then
-            isei = false
-            break
-        end
-    end
-    print('isei', isei)
-    print('ENDED Chord:iseI.')
-    return isei
-end
-]]
 
-
---[[
 function Chord:iseI()
-    local chord = self:ept()
-    local lowerVoice = 2
+    chord = self
     local upperVoice = #self
-    while lowerVoice < upperVoice do
+    for lowerVoice = 2, #self do
         local lowerDelta = chord[lowerVoice] - chord[lowerVoice - 1]
         local upperDelta = chord[upperVoice] - chord[upperVoice - 1]
-        if lowerDelta < upperDelta thene
+        if lowerDelta < upperDelta then
             return true
         end
         if lowerDelta > upperDelta then
@@ -818,15 +798,30 @@ function Chord:iseI()
     end
     return true
 end
-]]
 
 --[[
 function Chord:iseI()
-    local chord = self--:eP()
+    local chord = self
     if (chord[2] - chord[1]) <= (chord[#chord] - chord[#chord - 1]) then
         return true
     end
     return false
+end
+
+function Chord:iseI()
+    local chord = self:eOP()
+    local inverse = self:I():eP()
+    for voice = 2, #chord do
+        local chordInterval = chord[voice] - chord[voice - 1]
+        local inverseInterval = inverse[voice] - inverse[voice - 1]
+        if chordInterval < inverseInterval then
+            return true
+        end
+        if chordInterval > inverseInterval then
+            return false
+        end
+    end
+    return true
 end
 ]]
 
@@ -931,8 +926,72 @@ function Chord:iseRPI(range)
     return true
 end
 
-function Chord:iseOPI()
+function Chord:iseOPITymoczko()
+    for voice = 1, #self - 1 do
+        if not (self[voice] <= self[voice + 1]) then
+            return false
+        end
+    end
+    if not (self[#self] <= self[1] + OCTAVE) then
+        return false
+    end
+    local layer = self:sum()
+    if not (0 <= layer and layer <= OCTAVE) then
+        return false
+    end
+    if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+        return false
+    end
+    return true
+end
+
+function Chord:iseOPI2()
+    -- Solve for the inversion point that is in the inversion flat.
+    -- Then prefer the inversion below the inversion point.
+    local chord = self:clone()
+    local inversion = self:I():eOP()
+    
+    
+    return false
+end
+
+function Chord:iseRPI(range)
+    if not self:iseRP(range) then
+        return false
+    end
+    if not self:iseI() then
+        return false
+    end
+    return true
+end
+
+function Chord:iseOPIGogins()
     return self:iseRPI(OCTAVE)
+end
+
+Chord.iseOPI = Chord.iseOPITymoczko
+
+-- Returns whether an unordered chord is in the inversion flat of RP, i.e. 
+-- whether the chord is invariant under inversion within some range by some unison.
+-- g is the generator of transposition.
+
+function Chord:isInRPIFlat(range, g)
+    for unison = 0, range, g do
+        local inverse = self:I(unison):ep()
+        if self == inverse then
+            return true
+        end
+    end
+    return false
+end
+
+-- Returns whether an unordered chord is in the inversion flat of OP, i.e. 
+-- whether the chord is invariant under inversion within the octave by some unison.
+-- g is the generator of transposition.
+
+function Chord:isInOPIFlat(g)
+    g = g or 1
+    return self:isInRPIFlat(OCTAVE, g)
 end
 
 function Chord:iseRPTI(range, g)
@@ -1120,20 +1179,6 @@ function Chord:eOPT(g)
     return self:eRPT(OCTAVE, g)
 end
 
-function Chord:eI()
-    if self:iseI() then
-        return self:clone()
-    end
-    return self:I()
-end
-
-function Chord:eOPI()
-    if self:iseOPI() then
-        return self:clone()
-    end
-    return self:I():eOP()
-end
- 
 function Chord:eOPTI(g)
     g = g or 1
     return self:eOPT(g):eOPI()
@@ -1464,27 +1509,43 @@ function Chord:label()
     if chordName == nil then
         chordName = 'Chord'
     end
-    return string.format([[%s: 
-pitches: %s
-eop:     %s
-ept:     %s
-eopt:    %s
-I:ept:   %s
-eOP:     %s  iseOP:   %s
-I:eOP:   %s
-eOPI:    %s  iseOPI:  %s
-eOPT:    %s  iseOPT:  %s
-eOPTI:   %s  iseOPTI: %s
-layer:       %-5.2f
-to origin:   %-5.2f]], 
-chordName,
+    return string.format([[%s:
+pitches:      %s
+I:            %s
+ep:           %s
+eop:          %s
+ep(I):        %s
+eop(I):       %s
+et:           %s
+ept:          %s
+eopt:         %s
+eopt(I):      %s
+eP:           %s  iseP:    %s
+eOP:          %s  iseOP:   %s
+eOP(I):       %s
+eopt(eOP):    %s
+eopt(eOP(I)): %s
+eOPI:         %s  iseOPI:  %s
+eOPT:         %s  iseOPT:  %s
+eOPTI:        %s  iseOPTI: %s
+layer:            %-5.2f
+to origin:        %-5.2f]], 
+chordName, 
 tostring(self),
+tostring(self:I()),
+tostring(self:ep()),
 tostring(self:eop()),
+tostring(self:I():ep()),
+tostring(self:I():eop()),
+tostring(self:et()),
 tostring(self:ept()),
 tostring(self:eopt()),
-tostring(self:I():ept()),
+tostring(self:I():eopt()),
+tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
 tostring(self:I():eOP()),
+tostring(self:eOP():eopt()),
+tostring(self:I():eOP():eopt()),
 tostring(self:eOPI()), tostring(self:iseOPI()),
 tostring(self:eOPT()), tostring(self:iseOPT()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
@@ -1622,9 +1683,9 @@ function ChordSpace.allChordsInRange(voices, range, g)
     local odometer = Chord:new()
     odometer:resize(voices)
     while odometer[1] < range do
-        local fundamentalChord = nil
-        fundamentalChord = odometer:eRP(range)
-        chordset[fundamentalChord:__hash()] = fundamentalChord
+        local chord = odometer:eRP(range)
+        -- print('odometer:', odometer, 'chord:', chord)
+        chordset[chord:__hash()] = chord
         odometer[voices] = odometer[voices] + g
         -- "Carry" voices across range.
         for voice = voices, 2, -1 do
@@ -1644,7 +1705,7 @@ end
 -- such that the indexes of the chords form an additive cyclic group 
 -- representing the chords. 
 
-function ChordSpace.allOfEquivalenceClass1(voices, equivalence, g)
+function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
     g = g or 1    
     local equivalenceMapper = nil
     if equivalence == 'OP' then
@@ -1666,7 +1727,7 @@ function ChordSpace.allOfEquivalenceClass1(voices, equivalence, g)
         equivalenceMapper = Chord.eOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE)
+    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE + 1)
     -- Coerce all chords to the equivalence class.
     local equivalentChords = {}
     for hash, chord in pairs(chordset) do
@@ -1683,11 +1744,11 @@ function ChordSpace.allOfEquivalenceClass1(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(sortedChords) do
-        --print('index', index, 'chord', chord, chord:eop(), 'layer', chord:sum())
+        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:sum())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end
-    return zeroBasedChords
+    return zeroBasedChords, sortedChords
  end
 
 function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
@@ -1712,7 +1773,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE)
+    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE + 1)
     -- Select only those O chords that are within the complete
     -- equivalence class.
     local equivalentChords = {}
@@ -1727,11 +1788,11 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(equivalentChords) do
-        --print('index', index, 'chord', chord, chord:eop(), 'layer', chord:sum())
+        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:sum())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end
-    return zeroBasedChords
+    return zeroBasedChords, equivalentChords
 end
 
 -- Orthogonal additive groups for unordered chords of given arity under range 
@@ -1812,20 +1873,20 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     I = I % 2
     T = T % OCTAVE
     V = V % #self.voicingsForIndexes
-    print('P', P, 'I', I, 'T', T, 'V', V)
+    print('P:', P, 'I:', I, 'T:', T, 'V:', V)
     local opti = self.optisForIndexes[P]
-    print('opti', opti)
+    print('opti:', opti)
     local ei = nil
     if I == 0 then
         opt = opti:eOP()
     else
         opt = opti:I():eOP()
     end
-    print('opt', opt)
+    print('opt:', opt)
     local op = opt:T(T):eOP()
-    print('op', op)
+    print('op:', op)
     local voicing = self.voicingsForIndexes[V]
-    print('voicing', voicing)
+    print('voicing:', voicing)
     for voice = 1, #voicing do
         voicing[voice] = voicing[voice] + op[voice]
     end
@@ -1839,16 +1900,16 @@ end
 
 function ChordSpaceGroup:fromChord(chord)
     local opti = chord:eOPTI()
-    print('opti', opti, 'hash', opti:__hash())
+    print('opti:', opti, 'hash:', opti:__hash())
     local P = self.indexesForOptis[opti:__hash()]
-    print('P', P)
+    print('P:', P)
     local I = nil
     if chord:iseI() then
         I = 0
     else
         I = 1
     end
-    print('I', I)
+    print('I:', I)
     local T = 0
     local opt = chord:eOPT()
     local op = chord:eOP()
@@ -1858,7 +1919,7 @@ function ChordSpaceGroup:fromChord(chord)
             break
         end
     end
-    print('T', T)
+    print('T:', T)
     local r = chord:eR(self.range)
     local voicing = r:clone()
     local o = r:eO()
@@ -1866,19 +1927,19 @@ function ChordSpaceGroup:fromChord(chord)
         voicing[voice] = r[voice] - o[voice]
     end
     local V = self.indexesForVoicings[voicing:__hash()]
-    print('V', V)
+    print('V:', V)
     return P, I, T, V
 end
 
 function ChordSpaceGroup:list()
     for index, opti in pairs(self.optisForIndexes) do
-        print('index', index, 'opti', opti, self.indexesForOptis[opti:__hash()])
+        print('index:', index, 'opti:', opti, self.indexesForOptis[opti:__hash()])
     end
     for index = 0, #self.optisForIndexes - 1 do
-        print('opti', self.optisForIndexes[index], 'index', index)
+        print('opti:', self.optisForIndexes[index], 'index:', index)
     end
     for index, voicing in pairs(self.voicingsForIndexes) do
-        print('voicing', index, voicing, self.indexesForVoicings[voicing:__hash()])
+        print('voicing:', index, voicing, self.indexesForVoicings[voicing:__hash()])
     end
 end
 

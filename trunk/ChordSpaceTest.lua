@@ -230,30 +230,42 @@ end
 
 function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
     dump = dump or false
-    if not dump then
-        print(string.format('Does ise equal e for %s?', equivalence))
-    end
-    local isees = ChordSpace.allOfEquivalenceClass(arity, equivalence)
-    local ees = ChordSpace.allOfEquivalenceClass1(arity, equivalence)
+    local isees, iseesSet = ChordSpace.allOfEquivalenceClass(arity, equivalence)
+    local ees, eesSet = ChordSpace.allOfEquivalenceClassByOperation(arity, equivalence)
     local passes = true
-    for i = 0, math.max(#isees, #ees) do
-        local isee = isees[i]
-        local ee = ees[i]
-        local pass = (isee == ee)
-        if not pass then
+    local union = {}
+    local intersection = {}
+    for key, value in pairs(iseesSet) do
+        union[key] = value
+    end
+    for key, value in pairs(eesSet) do
+        union[key] = value
+    end
+    for key, value in pairs(union) do
+        if iseesSet[key] and eesSet[key] then
+            table.insert(intersection, tostring(value) .. ' matches')
+        end
+        if iseesSet[key] and not eesSet[key] then
+            table.insert(intersection, tostring(value) .. ' isees only')
             passes = false
         end
-        if dump then
-            print(i, 'ise', isee, 'e', ee, pass)
+        if not iseesSet[key] and eesSet[key] then
+            table.insert(intersection, tostring(value) .. ' ees only')
+            passes = false
         end
     end
     print()
+    --table.sort(intersection)
     if passes then
-        print(string.format('    PASS FOR %d voice %s\n', arity, equivalence))
+        print(string.format('    PASS isees == ees FOR %d voice %s\n', arity, equivalence))
     else
-        print(string.format('*** FAIL FOR %d voice %s\n', arity, equivalence))
-        if not dump then
+         if not dump then
             testIsEquivalenceEqualsEquivalence(arity, equivalence, true)
+        else
+            print(string.format('*** FAIL isees ~- ees FOR %d voice %s\n', arity, equivalence))
+            for key, value in pairs(intersection) do
+                print(key, value)
+            end
         end
     end
     return passes
@@ -271,7 +283,7 @@ local chord = Chord:new{  -4, 7, 7}
 print(chord, 'iseOPI', chord:iseOPI(), 'iseOP', chord:iseOP())
 print(chord:label())
 print('INVERTED')
-local inverted = chord:I()--:eOP()
+local inverted = chord:I():eOP()
 print(inverted, 'iseOPI', inverted:iseOPI(), 'iseOP', inverted:iseOP())
 print(inverted:label())
 print('REINVERTED')
