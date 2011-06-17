@@ -728,9 +728,9 @@ end
 
 function Chord:eOPI()
     if self:iseOPI() then
-        return self
+        return self:clone()
     end
-    return self:I():eOP()
+    return self:I(4):eOP()
 end
 
 function Chord:iseR(range)
@@ -777,20 +777,30 @@ function ChordSpace.midpoint(a, b)
     for i = 1, #a do
         center[i] = a[i] + (b[i] - a[i]) / 2
     end
-    return center    
+    return center
 end
 
 
-function Chord:iseI()
+-- I believe this is only partly correct.
+
+function Chord:iseITymoczko()
+    local chord = self
+    if (chord[2] - chord[1]) <= (chord[#chord] - chord[#chord - 1]) then
+        return true
+    end
+    return false
+end
+
+function Chord:iseIGogins1()
     chord = self
     local upperVoice = #self
     for lowerVoice = 2, #self do
-        local lowerDelta = chord[lowerVoice] - chord[lowerVoice - 1]
-        local upperDelta = chord[upperVoice] - chord[upperVoice - 1]
-        if lowerDelta < upperDelta then
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
+        if lowerInterval < upperInterval then
             return true
         end
-        if lowerDelta > upperDelta then
+        if lowerInterval > upperInterval then
             return false
         end
         lowerVoice = lowerVoice + 1
@@ -799,31 +809,30 @@ function Chord:iseI()
     return true
 end
 
---[[
-function Chord:iseI()
-    local chord = self
-    if (chord[2] - chord[1]) <= (chord[#chord] - chord[#chord - 1]) then
-        return true
-    end
-    return false
-end
-
-function Chord:iseI()
+function Chord:iseIGogins2()
     local chord = self:eOP()
-    local inverse = self:I():eP()
-    for voice = 2, #chord do
-        local chordInterval = chord[voice] - chord[voice - 1]
-        local inverseInterval = inverse[voice] - inverse[voice - 1]
+    local inverse = self:I():eOP()
+    local chordVoice = 2
+    local inverseVoice = #inverse 
+    while chordVoice < inverseVoice do
+        local chordInterval = chord[chordVoice] - chord[chordVoice - 1]
+        local inverseInterval = inverse[inverseVoice] - inverse[inverseVoice - 1]
         if chordInterval < inverseInterval then
             return true
         end
         if chordInterval > inverseInterval then
             return false
         end
+        chordVoice = chordVoice + 1
+        inverseVoice = inverseVoice - 1
     end
     return true
 end
-]]
+
+-- Self and inverse reflect in the inversion flat.
+-- We return which of the two is below the flat.
+
+Chord.iseI = Chord.iseIGogins2
 
 function Chord:iseRP(range) 
     if not self:iseP(range) then
@@ -950,9 +959,18 @@ function Chord:iseOPI2()
     -- Then prefer the inversion below the inversion point.
     local chord = self:clone()
     local inversion = self:I():eOP()
-    
-    
-    return false
+    local inversionFlat = chord:inversionFlat()
+    for voice = 1, #chord do
+        local selfDistance = chord[voice] - inversionFlat[voice]
+        local inverseDistance = chord[voice] - inversionFlat[voice]
+        if selfDistance < inverseDistance then
+            return true
+        end
+        if selfDistance > inverseDistance then
+            return false
+        end
+    end
+    return true
 end
 
 function Chord:iseRPI(range)
@@ -969,9 +987,9 @@ function Chord:iseOPIGogins()
     return self:iseRPI(OCTAVE)
 end
 
-Chord.iseOPI = Chord.iseOPITymoczko
+Chord.iseOPI = Chord.iseOPIGogins
 
--- Returns whether an unordered chord is in the inversion flat of RP, i.e. 
+-- Returns whether an unordered chord is in an inversion flat of RP, i.e. 
 -- whether the chord is invariant under inversion within some range by some unison.
 -- g is the generator of transposition.
 
@@ -979,10 +997,59 @@ function Chord:isInRPIFlat(range, g)
     for unison = 0, range, g do
         local inverse = self:I(unison):ep()
         if self == inverse then
+            local midpoint = ChordSpace.midpoint(self, inverse)
+            local flat = self:inversionFlat(range, g)
+            print(string.format('inversion flat: %s  center: %6.3f  midpoint: %s  flat: %s', tostring(self), unison, tostring(midpoint), tostring(flat)))
             return true
         end
     end
     return false
+end
+
+-- Not correct.
+
+function Chord:inversionFlat2(range, g)
+    range = range or OCTAVE
+    g = g or 1
+    local flat = chord:origin()
+    local inverse = chord:I():eRP(range)
+    for c = 0, range, g do
+        voice = 1
+        flat[voice] = self[voice]
+        voice = voice + 1
+        while voice < #self do
+            flat[voice] = c - self[voice]
+            voice = voice + 1
+            if voice < #self then
+                flat[voice] = self[voice]
+                voice = voice + 1
+            end
+        end
+        if #self % 2 == 1 then
+            flat[#flat] = c / 2
+        end
+        -- Invert by reflecting in the flat.
+        flat = flat:ep(range)
+        local flatInverse = chord:origin()
+        for voice = 1, #self do
+            flatInverse[voice] = flat[voice] - self[voice]
+        end
+        flatInverse = flatInverse:ep()
+        -- print('flat:', flat, 'inverse:', flatInverse)
+        if inverse == flatInverse then
+            return flat
+        end
+    end
+    return 'nil'
+end
+
+function Chord:inversionFlat()
+    local inverse = self:I():eOP()
+    local flat = self:clone()
+    for voice = 1, #self do
+        flat[voice] = inverse[voice] + self[voice]
+    end
+    return flat
 end
 
 -- Returns whether an unordered chord is in the inversion flat of OP, i.e. 
@@ -1046,9 +1113,22 @@ end
 
 Chord.ep = Chord.eP
 
-function Chord:eRP(range)
+-- These two are equivalent for trichords, and presumably all others as well.
+
+function Chord:eRPGogins(range)
     return self:eR(range):eP()
 end
+
+function Chord:eRPTymoczko(range)
+    local chord = self:er(range):ep()
+    while chord:sum() >= range do
+        chord[#chord] = chord[#chord] - range
+        chord = chord:eP()
+    end
+    return chord
+end
+
+Chord.eRP = Chord.eRPTymoczko
 
 function Chord:eOP()
     return self:eRP(OCTAVE)
@@ -1510,26 +1590,27 @@ function Chord:label()
         chordName = 'Chord'
     end
     return string.format([[%s:
-pitches:      %s
-I:            %s
-ep:           %s
-eop:          %s
-ep(I):        %s
-eop(I):       %s
-et:           %s
-ept:          %s
-eopt:         %s
-eopt(I):      %s
-eP:           %s  iseP:    %s
-eOP:          %s  iseOP:   %s
-eOP(I):       %s
-eopt(eOP):    %s
-eopt(eOP(I)): %s
-eOPI:         %s  iseOPI:  %s
-eOPT:         %s  iseOPT:  %s
-eOPTI:        %s  iseOPTI: %s
-layer:            %-5.2f
-to origin:        %-5.2f]], 
+pitches:        %s
+I:              %s
+ep:             %s
+eop:            %s
+ep(I):          %s
+eop(I):         %s
+et:             %s
+ept:            %s
+eopt:           %s
+eopt(I):        %s
+eP:             %s  iseP:    %s
+eOP:            %s  iseOP:   %s
+inversion flat: %s  is flat: %s
+eOP(I):         %s
+eopt(eOP):      %s
+eopt(eOP(I)):   %s
+eOPI:           %s  iseOPI:  %s
+eOPT:           %s  iseOPT:  %s
+eOPTI:          %s  iseOPTI: %s
+layer:              %-5.2f
+to origin:          %-5.2f]], 
 chordName, 
 tostring(self),
 tostring(self:I()),
@@ -1543,6 +1624,7 @@ tostring(self:eopt()),
 tostring(self:I():eopt()),
 tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
+tostring(self:inversionFlat()), tostring(self:isInOPIFlat()),
 tostring(self:I():eOP()),
 tostring(self:eOP():eopt()),
 tostring(self:I():eOP():eopt()),
