@@ -730,7 +730,7 @@ function Chord:eOPI()
     if self:iseOPI() then
         return self:clone()
     end
-    return self:I(4):eOP()
+    return self:I():eOP()
 end
 
 function Chord:iseR(range)
@@ -768,18 +768,6 @@ function Chord:iseT(g)
     end
     return true
 end
-
--- Returns the chord in the center 
--- of the line connecting the chords a and b.
-
-function ChordSpace.midpoint(a, b)
-    local center = a:clone()
-    for i = 1, #a do
-        center[i] = a[i] + (b[i] - a[i]) / 2
-    end
-    return center
-end
-
 
 -- I believe this is only partly correct.
 
@@ -829,10 +817,28 @@ function Chord:iseIGogins2()
     return true
 end
 
+function Chord:iseIGogins3()
+    local lowerVoice = 2
+    local upperVoice = #self
+    while lowerVoice < upperVoice do
+        local lowerInterval = self[lowerVoice] - self[lowerVoice - 1]
+        local upperInterval = self[upperVoice] - self[upperVoice - 1]
+        if lowerInterval < upperInterval then
+            return true
+        end
+        if lowerInterval > upperInterval then
+            return false
+        end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
+    end
+    return true
+end
+
 -- Self and inverse reflect in the inversion flat.
 -- We return which of the two is below the flat.
 
-Chord.iseI = Chord.iseIGogins2
+Chord.iseI = Chord.iseIGogins3
 
 function Chord:iseRP(range) 
     if not self:iseP(range) then
@@ -954,25 +960,6 @@ function Chord:iseOPITymoczko()
     return true
 end
 
-function Chord:iseOPI2()
-    -- Solve for the inversion point that is in the inversion flat.
-    -- Then prefer the inversion below the inversion point.
-    local chord = self:clone()
-    local inversion = self:I():eOP()
-    local inversionFlat = chord:inversionFlat()
-    for voice = 1, #chord do
-        local selfDistance = chord[voice] - inversionFlat[voice]
-        local inverseDistance = chord[voice] - inversionFlat[voice]
-        if selfDistance < inverseDistance then
-            return true
-        end
-        if selfDistance > inverseDistance then
-            return false
-        end
-    end
-    return true
-end
-
 function Chord:iseRPI(range)
     if not self:iseRP(range) then
         return false
@@ -989,68 +976,44 @@ end
 
 Chord.iseOPI = Chord.iseOPIGogins
 
--- Returns whether an unordered chord is in an inversion flat of RP, i.e. 
--- whether the chord is invariant under inversion within some range by some unison.
--- g is the generator of transposition.
+-- Returns the inversion flat for a chord.
+-- This is the chord that generates the 
+-- inversion of a chord within RP directly,
+-- without reflecting from singularities of RP.
 
-function Chord:isInRPIFlat(range, g)
-    for unison = 0, range, g do
-        local inverse = self:I(unison):ep()
-        if self == inverse then
-            local midpoint = ChordSpace.midpoint(self, inverse)
-            local flat = self:inversionFlat(range, g)
-            print(string.format('inversion flat: %s  center: %6.3f  midpoint: %s  flat: %s', tostring(self), unison, tostring(midpoint), tostring(flat)))
-            return true
-        end
-    end
-    return false
-end
-
--- Not correct.
-
-function Chord:inversionFlat2(range, g)
+function Chord:inversionFlat(range)
     range = range or OCTAVE
-    g = g or 1
-    local flat = chord:origin()
-    local inverse = chord:I():eRP(range)
-    for c = 0, range, g do
-        voice = 1
-        flat[voice] = self[voice]
-        voice = voice + 1
-        while voice < #self do
-            flat[voice] = c - self[voice]
-            voice = voice + 1
-            if voice < #self then
-                flat[voice] = self[voice]
-                voice = voice + 1
-            end
-        end
-        if #self % 2 == 1 then
-            flat[#flat] = c / 2
-        end
-        -- Invert by reflecting in the flat.
-        flat = flat:ep(range)
-        local flatInverse = chord:origin()
-        for voice = 1, #self do
-            flatInverse[voice] = flat[voice] - self[voice]
-        end
-        flatInverse = flatInverse:ep()
-        -- print('flat:', flat, 'inverse:', flatInverse)
-        if inverse == flatInverse then
-            return flat
-        end
-    end
-    return 'nil'
-end
-
-function Chord:inversionFlat()
-    local inverse = self:I():eOP()
+    local inverse = self:I():eRP(range)
     local flat = self:clone()
     for voice = 1, #self do
         flat[voice] = inverse[voice] + self[voice]
     end
     return flat
 end
+
+-- Returns whether an unordered chord is in an inversion flat of RP, i.e. 
+-- whether the chord is invariant under inversion within some range by some unison.
+-- g is the generator of transposition.
+
+function Chord:isInRPIFlat1(range, g)
+    for unison = 0, range, g do
+        local inverse = self:I(unison):ep()
+        if self == inverse then
+            return true
+        end
+    end
+    return false
+end
+
+function Chord:isInRPIFlat2(range, g)
+    local flat = self:inversionFlat(range)
+    if flat == self then
+        return true
+    end
+    return false
+end
+
+Chord.isInRPIFlat = Chord.isInRPIFlat1
 
 -- Returns whether an unordered chord is in the inversion flat of OP, i.e. 
 -- whether the chord is invariant under inversion within the octave by some unison.

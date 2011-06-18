@@ -781,7 +781,7 @@ end
 chordView = ChordView:new()
 chordView.octaves = 1
 chordView.equivalence = 'OPI'
-chordView.constructChordsByOperation = true
+chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
 chordView:display()
