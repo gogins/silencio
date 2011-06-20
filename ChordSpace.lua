@@ -74,41 +74,53 @@ _Science_ 320, 2008), and the more equivalence classes are combined,
 the more abstract is the resulting orbifold compared to the parent space.
  
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
-        We never assume cardinality equivalence here, because we are 
-        working in chord spaces of fixed dimensionality; e.g. we represent
-        the note middle C not as {60}, but as {60, 60, ..., 60}.
-        Retaining cardinality ensures that there is a proto-metric in
-        plain chord space that is inherited by all child chord spaces.
+        Not assuming cardinality equivalence ensures that there is a 
+        proto-metric in plain chord space that is inherited by all child 
+        chord spaces. Cardinality equivalence is never assumed here, because 
+        we are working in chord spaces of fixed dimensionality; e.g. we 
+        represent the note middle C not as {60}, but as {60, 60, ..., 60}.
         
 O       Octave equivalence. The fundamental domain is defined by the 
-        pitches in a chord spanning an octave or less and
-        summing to 0. The corresponding orbifold is a hyperprism one 
-        octave long whose base is identified with its top, modulo a twist 
-        by one cyclical permutation of voices.
+        pitches in a chord spanning the range of an octave or less.
 
-P       Permutational equivalence.
+P       Permutational equivalence. The fundamental domain is defined by 
+        a "wedge" of plain chord space in which all chords possess the 
+        same permutation of voices. Represented by the voices of a chord 
+        always being sorted by pitch.
 
-T       Transpositional equivalence, e.g. {1, 2} == {7, 8}.
-        Represented by the chord always having a sum of pitches equal to 0, 
-        or a positive sum as close as possible to 0 within equal temperament
-        (see below).
+T       Transpositional equivalence, e.g. {1, 2} == {7, 8}. The fundamental
+        domain is defined as a plane in chord space at right angles to the 
+        diagonal of unison chords. Represented by the chord always having a 
+        sum of pitches equal to 0, or a positive sum as close as possible 
+        to 0 within equal temperament (see below).
 
-I       Inversional equivalence. Represented as the inversion having the 
-        first interval between voices be smaller than or equal to the final 
-        interval (recursing for chords of more than 3 voices). Care is needed 
-        to distinguish the mathematician's sense 
-        of 'invert', which means 'pitch-space inversion' or 'reflect in a 
-        point', from the musician's sense of 'invert', which varies 
-        according to context but in practice often means 'registral inversion' 
-        or 'revoice by adding an octave to the lowest tone of a chord.' Here, 
-        we use 'invert' and 'inversion' in the mathematician's sense, and we 
-        use the terms 'revoice' and 'voicing' for the musician's 'invert' and 
-        'inversion'.
+I       Inversional equivalence. Care is needed to distinguish the 
+        mathematician's sense of 'invert', which means 'pitch-space inversion' 
+        or 'reflect in a point', from the musician's sense of 'invert', which 
+        varies according to context but in practice often means 
+        'registral inversion' or 'revoice by adding an octave to the lowest 
+        tone of a chord.' Here, we use 'invert' and 'inversion' in the 
+        mathematician's sense, and we use the terms 'revoice' and 'voicing' 
+        for the musician's 'invert' and 'inversion'. The inversion point for 
+        any inversion lies on the unison diagonal. The fundamental domain 
+        is defined as any half of chord space that is bounded by a plane 
+        containing the inversion point. Represented as the chord having 
+        the first interval between voices be smaller than or equal to the 
+        final interval (recursing for chords of more than 3 voices). 
+        
+PI      Inversional equivalence with permutational equivalence. The 
+        'inversion flat' of unordered chord space is a hyperplane consisting 
+        of all those chords that are invariant under inversion. The 
+        fundamental domain is defined by any half space bounded by a 
+        hyperplane containing the inversion flat. It is represented as that 
+        half of the space on or lower than the hyperplane defined by the 
+        inversion flat and the unison diagonal.
 
-OP      Tymoczko's orbifold for chords; i.e. chords with a 
-        fixed number of voices in a harmonic context.
-        It forms a hyperprism one octave long with as many sides as voices and 
-        the ends identified by octave equivalence and one cyclical permutation 
+OP      Octave equivalence with permutational equivalence. Tymoczko's 
+        orbifold for chords; i.e. chords with a fixed number of voices in a 
+        harmonic context. The fundamental domain defined as a 
+        hyperprism one octave long with as many sides as voices and the ends 
+        identified by octave equivalence and one cyclical permutation 
         of voices, modulo the unordering. In OP for trichords in 12TET, the 
         augmented triads run up the middle of the prism, the major and minor 
         triads are in 6 alternating columns around the augmented triads, the 
@@ -716,6 +728,14 @@ function Chord:I(center)
     return chord
 end
 
+function Chord:reflect(other)
+    local reflection = self:clone()
+    for voice, pitch in ipairs(self) do
+        reflection[voice] = other[voice] - self[voice]
+    end
+    return reflection
+end
+
 function Chord:eI()
     chord = self:clone()
     if chord:iseI() then
@@ -835,10 +855,19 @@ function Chord:iseIGogins3()
     return true
 end
 
--- Self and inverse reflect in the inversion flat.
--- We return which of the two is below the flat.
+function Chord:iseIGogins4()
+    local inverse = self:I():eOP()
+    local midpoint = self:inversionMidpoint()
+    if self <= midpoint then
+        return true
+    end
+    return false
+end
 
-Chord.iseI = Chord.iseIGogins3
+-- Self and inverse reflect in the inversion flat.
+-- We return which of the two is below the plane of symmetry.
+
+Chord.iseI = Chord.iseIGogins4
 
 function Chord:iseRP(range) 
     if not self:iseP(range) then
@@ -899,6 +928,12 @@ function Chord:isePI()
     if not self:iseP() then
         return false
     end
+    -- Identify a plane containing the inversion flat
+    -- and return whether or not the chord is below this plane.
+    local flat = chord:inversionFlat()
+    local origin = chord:origin()
+    local thirdPoint = origin:T(1)
+    
     if not self:iseI() then
         return false
     end
@@ -978,8 +1013,7 @@ Chord.iseOPI = Chord.iseOPIGogins
 
 -- Returns the inversion flat for a chord.
 -- This is the chord that generates the 
--- inversion of a chord within RP directly,
--- without reflecting from singularities of RP.
+-- inversion of a chord within P directly.
 
 function Chord:inversionFlat(range)
     range = range or OCTAVE
@@ -991,37 +1025,36 @@ function Chord:inversionFlat(range)
     return flat
 end
 
--- Returns whether an unordered chord is in an inversion flat of RP, i.e. 
--- whether the chord is invariant under inversion within some range by some unison.
--- g is the generator of transposition.
-
-function Chord:isInRPIFlat1(range, g)
-    for unison = 0, range, g do
-        local inverse = self:I(unison):ep()
-        if self == inverse then
-            return true
-        end
-    end
-    return false
-end
-
-function Chord:isInRPIFlat2(range, g)
-    local flat = self:inversionFlat(range)
-    if flat == self then
+function Chord:isInversionFlat(range)
+    range = range or OCTAVE
+    chord = self:eRP(range)
+    inverse = chord:I():ep(range)
+    if chord == inverse then
         return true
     end
     return false
 end
 
-Chord.isInRPIFlat = Chord.isInRPIFlat1
+-- Returns the chord that is midway between self and other.
+-- All chords an unordered.
 
--- Returns whether an unordered chord is in the inversion flat of OP, i.e. 
--- whether the chord is invariant under inversion within the octave by some unison.
--- g is the generator of transposition.
+function Chord:midpoint(other)
+    local midpoint = self:clone()
+    for voice, pitch in ipairs(self) do
+        midpoint[voice] = pitch + (other[voice] - pitch) / 2
+    end
+    return midpoint:ep()
+end
 
-function Chord:isInOPIFlat(g)
-    g = g or 1
-    return self:isInRPIFlat(OCTAVE, g)
+-- Returns the chord that is halfway
+-- in between a chord and its inversion.
+-- These chords define the plane of symmetry
+-- for inversion. All chords are unordered.
+
+function Chord:inversionMidpoint(range)
+    range = range or OCTAVE
+    local inverse = self:I():eRP(range)
+    return self:midpoint(inverse)
 end
 
 function Chord:iseRPTI(range, g)
@@ -1129,8 +1162,12 @@ function Chord:eo()
     return self:er(OCTAVE)
 end
 
+function Chord:erp(range)
+    return self:er(range):ep()
+end
+
 function Chord:eop()
-    return self:eo():ep()
+    return self:erp(OCTAVE)
 end
 
 function Chord:et()
@@ -1553,27 +1590,28 @@ function Chord:label()
         chordName = 'Chord'
     end
     return string.format([[%s:
-pitches:        %s
-I:              %s
-ep:             %s
-eop:            %s
-ep(I):          %s
-eop(I):         %s
-et:             %s
-ept:            %s
-eopt:           %s
-eopt(I):        %s
-eP:             %s  iseP:    %s
-eOP:            %s  iseOP:   %s
-inversion flat: %s  is flat: %s
-eOP(I):         %s
-eopt(eOP):      %s
-eopt(eOP(I)):   %s
-eOPI:           %s  iseOPI:  %s
-eOPT:           %s  iseOPT:  %s
-eOPTI:          %s  iseOPTI: %s
-layer:              %-5.2f
-to origin:          %-5.2f]], 
+pitches:            %s
+I:                  %s
+ep:                 %s
+eop:                %s
+ep(I):              %s
+eop(I):             %s
+et:                 %s
+ept:                %s
+eopt:               %s
+eopt(I):            %s
+eP:                 %s  iseP:    %s
+eOP:                %s  iseOP:   %s
+inversion flat:     %s  is flat: %s
+inversion midpoint: %s
+eOP(I):             %s
+eopt(eOP):          %s
+eopt(eOP(I)):       %s
+eOPI:               %s  iseOPI:  %s
+eOPT:               %s  iseOPT:  %s
+eOPTI:              %s  iseOPTI: %s
+layer:                  %-5.2f
+to origin:              %-5.2f]], 
 chordName, 
 tostring(self),
 tostring(self:I()),
@@ -1587,7 +1625,8 @@ tostring(self:eopt()),
 tostring(self:I():eopt()),
 tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
-tostring(self:inversionFlat()), tostring(self:isInOPIFlat()),
+tostring(self:inversionFlat()), tostring(self:isInversionFlat()),
+tostring(self:inversionMidpoint()),
 tostring(self:I():eOP()),
 tostring(self:eOP():eopt()),
 tostring(self:I():eOP():eopt()),

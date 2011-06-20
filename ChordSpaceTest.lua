@@ -6,46 +6,41 @@ print()
 print('package.path:', package.path)
 print('package.cpath:', package.cpath)
 
-function test(chunk, ...)
-    local result = assert(loadstring(chunk))()
-    print(chunk)
-    if result then 
-        print('asserted:', result)
+print_ = print
+
+verbose = true
+
+function print(message)
+    if verbose then
+        print_(message)
     end
 end
 
-function result(...)
-    local args = {...}
-    for i = 1, #args, 2 do
-        print(string.format('\t%s:', args[i]), args[i + 1])
-    end
+function pass(message)
+    print_()
+    print_('PASSED:', message)
+    print_()
 end
 
 function fail(message)
-    print('*** TEST FAILED ***')
-    print(message)
+    print_()
+    print_('FAILED:', message)
+    print_()
     os.exit()
+end
+function result(expression, message)
+    if expression then
+        pass(message)
+    else
+        fail(message)
+    end
 end
 
 local a = Chord:new{3, 3, 6}
 local b = Chord:new{3, 3, 6}
 print(a:__hash())
 print(b:__hash())
-print(a == b)
-
-test('r = 12 % 12')
-result('r', r)
-test('r = -12 % 12')
-result('r', r)
-test('r = 1 % 12')
-result('r', r)
-test('r = -1 % 12')
-result('r', r)
-
-local c011 = Chord:new{0, 1, 1}
-c011:eOPT()
-
---print ('c011', c011, c011:eOPTI(), c011:eOPTI():iseOPTI(), c011:I():eOP(), c011:I():eOP():iseOPTI())
+result(a == b, 'Chord hash codes for identical values must be identical.')
 
 voiceCount = 3
 print('All of OP')
@@ -54,10 +49,11 @@ for index, chord in pairs(chords) do
     print(string.format('OP: %5d', index))
     print(chord:label())
     if chord:iseOP() == false then
-        fail()
+        fail('Each chord in OP must return iseOP true.')
     end
     print()
 end
+pass('Each chord in OP must return iseOP true.')
 
 print('All of OPI')
 local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPI')
@@ -65,13 +61,15 @@ for index, chord in pairs(chords) do
     print(string.format('OPI: %5d', index))
     print(chord:label())
     if chord:iseOPI() == false then
-        fail()
+        fail('Each chord in OPI must return iseOPI true.')
     end
     if chord:eOPI() ~= chord then
-        fail()
+        fail('Each chord in OPI must be eOPI.')
     end
     print()
 end
+pass('Each chord in OPI must return iseOPI true.')
+pass('Each chord in OPI must be eOPI.')
 
 print('All of OPT')
 local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
@@ -79,13 +77,15 @@ for index, chord in pairs(chords) do
     print(string.format('OPT: %5d', index))
     print(chord:label())
     if chord:iseOPT() == false then
-        fail()
+        fail('Each chord in OPT must return iseOPT true.')
     end
     if chord:eOPT() ~= chord then
-        fail()
+        fail('Each chord in OPT must be eOPT.')
     end
     print()
 end
+pass('Each chord in OPT must return iseOPT true.')
+pass('Each chord in OPT must be eOPT.')
 
 print('All of OPTI')
 local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPTI')
@@ -93,35 +93,103 @@ for index, chord in pairs(chords) do
     print(string.format('OPTI: %5d', index))
     print(chord:label())
     if chord:iseOPTI() == false then
-        fail()
+        fail('Each chord in OPTI must return iseOPTI true.')
     end
     if chord:eOPTI() ~= chord then
-        fail()
+        fail('Each chord in OPTI must be eOPTI.')
     end
     print()
 end
+pass('Each chord in OPTI must return iseOPTI true.')
+pass('Each chord in OPTI must be eOPTI.')
 
-local a = Chord:new{3, 3, 6}
-local b = Chord:new{3, 3, 6}
-print(a:__hash())
-print(b:__hash())
-print(a == b)
+for arity = 2, 4 do
+    local ops = ChordSpace.allOfEquivalenceClass(arity, 'OP')
+    for key, chord in pairs(ops) do
+        local inversion = chord:I():eOP()
+        local reinversion = inversion:I():eOP()
+        local flat = chord:inversionFlat()
+        local reflection = chord:reflect(flat):eOP()
+        local rereflection = reflection:reflect(flat):eOP()
+        print(string.format('chord %5d:    %s', key, tostring(chord)))
+        print('inversion:   ', inversion)
+        print('reinversion: ', reinversion)
+        print('flat:        ', flat)
+        print('reflection:  ', reflection)
+        print('rereflection:', rereflection)
+        print('is flat:     ', chord:isInversionFlat())
+        print()
+        if not (inversion == reflection) then
+            fail('Reflection in the inversion flat must be the same as inversion in the origin.')
+        end
+        if not(reinversion == rereflection) then
+            fail('Re-inversion must be the same as re-reflection.')
+        end
+        if not(reinversion == chord) then
+            fail('Re-inversion and re-reflection must be the same as the original chord.')
+        end
+    end
+    pass('Reflection in the inversion flat must be the same as inversion in the origin.')
+    pass('Re-inversion must be the same as re-reflection.')
+    pass('Re-inversion and re-reflection must be the same as the original chord.')
+    print(string.format('All chords in inversion flat for %d voices:', arity))
+    for key, chord in pairs(ops) do
+        if chord:isInversionFlat() then
+            print(chord)
+        end
+    end
+end
 
-test('r = 12 % 12')
-result('r', r)
-test('r = -12 % 12')
-result('r', r)
-test('r = 1 % 12')
-result('r', r)
-test('r = -1 % 12')
-result('r', r)
+function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
+    dump = dump or false
+    local isees, iseesSet = ChordSpace.allOfEquivalenceClass(arity, equivalence)
+    local ees, eesSet = ChordSpace.allOfEquivalenceClassByOperation(arity, equivalence)
+    local passes = true
+    local union = {}
+    local intersection = {}
+    for key, value in pairs(iseesSet) do
+        union[key] = value
+    end
+    for key, value in pairs(eesSet) do
+        union[key] = value
+    end
+    for key, value in pairs(union) do
+        if iseesSet[key] and eesSet[key] then
+            table.insert(intersection, tostring(value) .. ' matches')
+        end
+        if iseesSet[key] and not eesSet[key] then
+            table.insert(intersection, tostring(value) .. ' isees only')
+            passes = false
+        end
+        if not iseesSet[key] and eesSet[key] then
+            table.insert(intersection, tostring(value) .. ' ees only')
+            passes = false
+        end
+    end
+    print()
+    --table.sort(intersection)
+    if passes then
+        pass(string.format('isees must == ees FOR %d voice %s\n', arity, equivalence))
+    else
+         if not dump then
+            testIsEquivalenceEqualsEquivalence(arity, equivalence, true)
+        else
+            for key, value in pairs(intersection) do
+                print_(key, value)
+            end
+            fail(string.format('isees must == ees FOR %d voice %s', arity, equivalence))
+        end
+    end
+    return passes
+end
 
---os.exit()
+for arity = 2, 3 do
+    testIsEquivalenceEqualsEquivalence(arity, 'OP')
+    testIsEquivalenceEqualsEquivalence(arity, 'OPI')
+    testIsEquivalenceEqualsEquivalence(arity, 'OPT')
+    testIsEquivalenceEqualsEquivalence(arity, 'OPTI')
+end
 
-local c0001 = Chord:new{0, 0, 0, 1}
-print('c0001', c0001:label())
-local ic0001 = c0001:I():eOP()
-print('ic0001', ic0001:label())
 
 function printVoicings(chord)
     print(chord:label())
@@ -227,70 +295,6 @@ local OPT = ChordSpace.allOfEquivalenceClass(arity, 'OPT')
 for i = 0, math.max(#OPT, #shouldbeOPT) do
     print (i, 'OPTI U OPTI:I():eOP()', shouldbeOPT[i], 'OPT', OPT[i])
 end
-
-function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
-    dump = dump or false
-    local isees, iseesSet = ChordSpace.allOfEquivalenceClass(arity, equivalence)
-    local ees, eesSet = ChordSpace.allOfEquivalenceClassByOperation(arity, equivalence)
-    local passes = true
-    local union = {}
-    local intersection = {}
-    for key, value in pairs(iseesSet) do
-        union[key] = value
-    end
-    for key, value in pairs(eesSet) do
-        union[key] = value
-    end
-    for key, value in pairs(union) do
-        if iseesSet[key] and eesSet[key] then
-            table.insert(intersection, tostring(value) .. ' matches')
-        end
-        if iseesSet[key] and not eesSet[key] then
-            table.insert(intersection, tostring(value) .. ' isees only')
-            passes = false
-        end
-        if not iseesSet[key] and eesSet[key] then
-            table.insert(intersection, tostring(value) .. ' ees only')
-            passes = false
-        end
-    end
-    print()
-    --table.sort(intersection)
-    if passes then
-        print(string.format('    PASS isees == ees FOR %d voice %s\n', arity, equivalence))
-    else
-         if not dump then
-            testIsEquivalenceEqualsEquivalence(arity, equivalence, true)
-        else
-            print(string.format('*** FAIL isees ~- ees FOR %d voice %s\n', arity, equivalence))
-            for key, value in pairs(intersection) do
-                print(key, value)
-            end
-        end
-    end
-    return passes
-end
-
-for arity = 2, 3 do
-    testIsEquivalenceEqualsEquivalence(arity, 'OP')
-    testIsEquivalenceEqualsEquivalence(arity, 'OPI')
-    testIsEquivalenceEqualsEquivalence(arity, 'OPT')
-    testIsEquivalenceEqualsEquivalence(arity, 'OPTI')
-end
-
-print('CHORD')
-local chord = Chord:new{  -4, 7, 7}	
-print(chord, 'iseOPI', chord:iseOPI(), 'iseOP', chord:iseOP())
-print(chord:label())
-print('INVERTED')
-local inverted = chord:I():eOP()
-print(inverted, 'iseOPI', inverted:iseOPI(), 'iseOP', inverted:iseOP())
-print(inverted:label())
-print('REINVERTED')
-local reinverted = inverted:I():eOP()
-print(reinverted, 'iseOPI', reinverted:iseOPI(), 'iseOP', reinverted:iseOP())
-print(reinverted:label())
-
 
 os.exit()
 
