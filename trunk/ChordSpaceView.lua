@@ -317,18 +317,18 @@ function ChordView:drawChord(chord, name, picking)
         local red, green, blue = hsv_to_rgb(hue, saturation, value)
         gl.glColor4f(red, green, blue, alpha)
     end end end
-    local radius = 1/16
+    local radius = 1/8
     if self:isE(chord) then
         if self.pickedChord ~= nil then
             if self.pickedChord:label() == chord:label() then
-                radius = 1/8
+                radius = radius * 2
                 gl.glColor4f(1, 1, 1, 1)
             end
         end
     end
-    if chord:isInOPIFlat() then
+    if chord:isInversionFlat() then
     --if chord:iseV() then
-        radius = radius * 3
+        radius = radius * 2
     end
     glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
@@ -346,6 +346,11 @@ function ChordView:createChords()
         dummy, self.chords = ChordSpace.allOfEquivalenceClass(3, self.equivalence)
     end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
+    --local count = #self.chords
+    --for i = 1, count do
+    --   local flat = self.chords[i]:inversionFlat()
+    --    self.chords[#self.chords] = flat
+    --end
 end
 
 function ChordView:isE(chord)
@@ -629,7 +634,11 @@ function ChordView:display()
             -- I?
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
-                --self.pickedChord = self:E(self.pickedChord:I():eOP())
+                --local flat = self.pickedChord:inversionFlat():eOP()
+                --flat.flat = true
+                --table.insert(self.chords, flat)
+                local midpoint = self.pickedChord:inversionMidpoint()
+                table.insert(self.chords, midpoint)
                 self.pickedChord = self:E(self.pickedChord:I():eP())
                 print(self.pickedChord:label())
                 print()
@@ -780,7 +789,7 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 1
-chordView.equivalence = 'OPI'
+chordView.equivalence = 'OP'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
