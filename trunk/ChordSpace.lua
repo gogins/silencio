@@ -56,11 +56,11 @@ considered as a sequence of more or less fleeting chords.
 
 EQUIVALENCE CLASSES
 
-An equivalence class is an operation that identifies elements of a 
-set. Equivalence classes induce quotient spaces or orbifolds, where
-the equivalence class identifies points on one face of the orbifold 
-with points on an opposing face. The fundamental domain of the 
-equivalence class is the space "within" the orbifold.
+An equivalence class identifies elements of a set. Operations that send one
+equivalent point to another induce quotient spaces or orbifolds, where the 
+equivalence operation identifies points on one face of the orbifold with 
+points on an opposing face. The fundamental domain of the equivalence class 
+is the space "within" the orbifold.
 
 Plain chord space has no equivalence classes. Ordered chords are represented 
 as vectors in parentheses (p1, ..., pN). Unordered chords are represented as 
@@ -102,7 +102,7 @@ I       Inversional equivalence. Care is needed to distinguish the
         tone of a chord.' Here, we use 'invert' and 'inversion' in the 
         mathematician's sense, and we use the terms 'revoice' and 'voicing' 
         for the musician's 'invert' and 'inversion'. The inversion point for 
-        any inversion lies on the unison diagonal. The fundamental domain 
+        any inversion lies on the unison diagonal. A fundamental domain 
         is defined as any half of chord space that is bounded by a plane 
         containing the inversion point. Represented as the chord having 
         the first interval between voices be smaller than or equal to the 
@@ -110,7 +110,7 @@ I       Inversional equivalence. Care is needed to distinguish the
         
 PI      Inversional equivalence with permutational equivalence. The 
         'inversion flat' of unordered chord space is a hyperplane consisting 
-        of all those chords that are invariant under inversion. The 
+        of all those unordered chords that are invariant under inversion. A 
         fundamental domain is defined by any half space bounded by a 
         hyperplane containing the inversion flat. It is represented as that 
         half of the space on or lower than the hyperplane defined by the 
@@ -855,19 +855,26 @@ function Chord:iseIGogins3()
     return true
 end
 
-function Chord:iseIGogins4()
-    local inverse = self:I():eOP()
-    local midpoint = self:inversionMidpoint()
-    if self <= midpoint then
-        return true
-    end
-    return false
+-- If v is the vector that points 'up' and p0 is some point on your plane, 
+-- and finally p is the point that might be below the plane, compute 
+-- the dot product v * (p-p0). This projects the vector to p on the up-direction. 
+-- This product is {-,0,+} if p is below, on, above the plane, respectively.
+-- Here the origin (always in the inversion flat) is p0, 
+-- the normal is v, and the chord whose status we need to know (self) is p.
+-- We don't know the normal, so we have to find that first.
+-- We do know the normal is orthogonal to the inversion flat and the 
+-- unison diagonal.
+
+function Chord:iseIVector()
+    local p0 = self:origin()
+    local p = self
+    
 end
 
 -- Self and inverse reflect in the inversion flat.
 -- We return which of the two is below the plane of symmetry.
 
-Chord.iseI = Chord.iseIGogins4
+Chord.iseI = Chord.iseIGogins3
 
 function Chord:iseRP(range) 
     if not self:iseP(range) then
