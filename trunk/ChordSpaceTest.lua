@@ -111,15 +111,18 @@ for arity = 2, 4 do
         local flat = chord:inversionFlat()
         local reflection = chord:reflect(flat):eOP()
         local rereflection = reflection:reflect(flat):eOP()
-        print(string.format('chord %5d:    %s', key, tostring(chord)))
-        print('inversion:   ', inversion)
-        print('reinversion: ', reinversion)
-        print('flat:        ', flat)
-        print('reflection:  ', reflection)
-        print('rereflection:', rereflection)
-        print('is flat:     ', chord:isInversionFlat())
-        print()
-        if not (inversion == reflection) then
+        print(string.format('chord %5d:  %s', key, tostring(chord)))
+        print(string.format('inversion:    %s', tostring(inversion)))
+        print(string.format('reinversion:  %s', tostring(reinversion)))
+        print(string.format('flat:         %s', tostring(flat)))
+        print(string.format('reflection:   %s', tostring(reflection)))
+        print(string.format('rereflection: %s', tostring(rereflection)))
+        print(string.format('is flat:      %s', tostring(chord:isInversionFlat())))
+        print(string.format('iseOPI:       %s', tostring(chord:iseOPI())))
+        print(string.format('iseOPI(I):    %s', tostring(inversion:iseOPI())))
+        print(string.format('eOPI:         %s', tostring(chord:eOPI())))
+        print(string.format('eOPI(I):      %s\n', tostring(inversion:eOPI())))
+         if not (inversion == reflection) then
             fail('Reflection in the inversion flat must be the same as inversion in the origin.')
         end
         if not(reinversion == rereflection) then
@@ -135,7 +138,7 @@ for arity = 2, 4 do
     print(string.format('All chords in inversion flat for %d voices:', arity))
     for key, chord in pairs(ops) do
         if chord:isInversionFlat() then
-            print(chord)
+            print(string.format('flat: %s  midpoint: %s', tostring(chord), tostring(chord:inversionMidpoint())))
         end
     end
 end
