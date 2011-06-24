@@ -855,20 +855,18 @@ function Chord:iseIGogins3()
     return true
 end
 
--- If v is the vector that points 'up' and p0 is some point on your plane, 
--- and finally p is the point that might be below the plane, compute 
--- the dot product v * (p-p0). This projects the vector to p on the up-direction. 
--- This product is {-,0,+} if p is below, on, above the plane, respectively.
--- Here the origin (always in the inversion flat) is p0, 
--- the normal is v, and the chord whose status we need to know (self) is p.
--- We don't know the normal, so we have to find that first.
--- We do know the normal is orthogonal to the inversion flat and the 
--- unison diagonal.
+-- Returns whether the chord is within the fundamental domain of 
+-- inversional equivalence, by determining whether the chord is on or below 
+-- the N - 1 dimensional hyperplane orthogonal to the plane of inversional 
+-- symmetry. This is computed using the point-hyperplane distance as in 
+-- A. J. Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 
+-- 1996. The bounding hyperplane includes the inversion flat and is 
+-- defined by a simplex constructed by starting with the inversion flat 
+-- and performing N - 2 orthogonal rotations.
 
 function Chord:iseIVector()
     local p0 = self:origin()
     local p = self
-    
 end
 
 -- Self and inverse reflect in the inversion flat.
