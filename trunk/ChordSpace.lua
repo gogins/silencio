@@ -72,6 +72,17 @@ and induce different orbifolds. Equivalence classes can be combined
 (Callendar, Quinn, and Tymoczko, "Generalized Voice-Leading Spaces,"
 _Science_ 320, 2008), and the more equivalence classes are combined, 
 the more abstract is the resulting orbifold compared to the parent space.
+
+In most cases, the chord space can be divided into a number, possibly 
+infinite, of geometrically equivalent fundamental domains for the same 
+equivalence class. Therefore, we use the notion of 'representative' 
+fundamental domain. For example, the representative fundamental domain 
+of unordered sequences, out of all possible orderings, consists of all 
+sequences in their ordinary sorted order. It is important, in the following,
+to identify representative fundamental domains that combine properly, e.g.
+so that the representative fundamental domain of OP / the representative 
+fundamental domain of PI equals the representative fundamental domain of 
+OPI.
  
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
         Not assuming cardinality equivalence ensures that there is a 
@@ -855,17 +866,36 @@ function Chord:iseIGogins3()
     return true
 end
 
--- Returns whether the chord is within the fundamental domain of 
--- inversional equivalence, by determining whether the chord is on or below 
--- the N - 1 dimensional hyperplane orthogonal to the plane of inversional 
--- symmetry. This is computed using the point-hyperplane distance as in 
--- A. J. Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 
--- 1996. The bounding hyperplane includes the inversion flat and is 
--- defined by a simplex constructed by starting with the inversion flat 
--- and performing N - 2 orthogonal rotations.
+--[[
+Returns whether the chord is within the representative fundamental domain of 
+inversional equivalence. _A_ fundamental domain of inversional equivalence is 
+bounded by _a_ hyperplane containing the inversion flat. The _representative_
+fundamental domain of inversion is bounded by _the_ hyperplane containing the 
+inversion flat and the unison diagonal (since in R transposing does not 
+invert).
+
+All of these domains meet at the origin of chord space. Therefore, the 
+bounding hyperplane is defined by an N - 1 dimensional simplex consisting 
+of a simplex defining the inversion flat plus a point projected into each 
+of the "lower" dimensions.
+
+Then the the point-hyperplane distance from the chord to the bounding 
+hyperplane is computed as in A. J. Hanson, "Geometry for N-Dimensional 
+Graphics," Indiana University, 1996. This is the ratio of the volume of 
+an N dimensional simplex to the volume of its N - 1 dimensional 'base.'
+Here the base is the simplex defining the bounding hyperplane above, 
+and the full simplex adds the chord in question.
+
+]]
 
 function Chord:iseIVector()
-    local p0 = self:origin()
+    if self:isInversionFlat() then
+        return true
+    end
+    local flat = self:inversionFlat()
+    
+    
+    local t0 = p0:T(1)
     local p = self
 end
 
