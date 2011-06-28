@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -28,6 +28,7 @@ function fail(message)
     print_()
     os.exit()
 end
+
 function result(expression, message)
     if expression then
         pass(message)
@@ -36,11 +37,34 @@ function result(expression, message)
     end
 end
 
+for n = 0, 12 do
+	local f = ChordSpace.factorial(n)
+	print(string.format('%2d factorial is: %9d.', n, f))
+end
+
 local a = Chord:new{3, 3, 6}
 local b = Chord:new{3, 3, 6}
 print(a:__hash())
 print(b:__hash())
 result(a == b, 'Chord hash codes for identical values must be identical.')
+
+chords = {}
+table.insert(chords, Chord:new{-3, 0, 0})
+table.insert(chords, Chord:new{0, 0, 0})
+table.insert(chords, Chord:new{0, -3, 0})
+table.insert(chords, Chord:new{0, 0, -3})
+volume1 = ChordSpace.volume(chords)
+print('volume:', volume1)
+chords = {}
+table.insert(chords, Chord:new{-3, 0, 0, 0})
+table.insert(chords, Chord:new{0, 0, 0, 0})
+table.insert(chords, Chord:new{3, -3, 0, 0})
+table.insert(chords, Chord:new{0, 0, -3, 0})
+volume2 = ChordSpace.volume(chords)
+print('volume:', volume2)
+result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
+
+
 
 voiceCount = 3
 print('All of OP')
@@ -208,7 +232,7 @@ function printVoicings(chord)
     end
 end
 
-local c3333 = Chord:new{3,3,3,3}     
+local c3333 = Chord:new{3,3,3,3}
 printVoicings(c3333)
 print()
 local chord = ChordSpace.chordsForNames['CM9']
@@ -346,7 +370,7 @@ os.exit()
 test('a = Chord:new()')
 result('a', a)
 test('a = Chord:new(); a:resize(3)')
-result('a', a, 'a.channel[3]', a.channel[3])    
+result('a', a, 'a.channel[3]', a.channel[3])
 result('a[1]', a[1])
 test('a[1] = 2')
 result('a', a)

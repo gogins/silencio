@@ -6,31 +6,31 @@ print [[
 C H O R D S P A C E
 
 Copyright 2010 by Michael Gogins.
-This software is licensed under the terms 
+This software is licensed under the terms
 of the GNU Lesser General Public License.
 
-This package, part of Silencio, implements a geometric approach 
-to some common operations on chords in neo-Riemannian music theory 
+This package, part of Silencio, implements a geometric approach
+to some common operations on chords in neo-Riemannian music theory
 for use in score generating software:
 
 --  Identifying whether a chord belongs to some equivalence class,
-    or moving a chord inside the fundamental domain of some 
+    or moving a chord inside the fundamental domain of some
     equivalence class.
-    
---  Causing chord progressions to move strictly within an orbifold that 
+
+--  Causing chord progressions to move strictly within an orbifold that
     generates some equivalence class.
-    
---  Implementing chord progressions based on the L, P, R, D, K, and Q 
+
+--  Implementing chord progressions based on the L, P, R, D, K, and Q
     operations of neo-Riemannian theory (thus implementing some aspects
     of "harmony").
-    
---  Implementing chord progressions performed within a more abstract 
-    equivalence class by means of the best-formed voice-leading within 
-    a less abstract equivalence class (thus implementing rudiments 
+
+--  Implementing chord progressions performed within a more abstract
+    equivalence class by means of the best-formed voice-leading within
+    a less abstract equivalence class (thus implementing rudiments
     of "counterpoint").
 
 The associated ChordSpaceView package can display these
-chord spaces and operations for trichords in an interactive 
+chord spaces and operations for trichords in an interactive
 3-dimensional view.
 
 DEFINITIONS
@@ -38,112 +38,112 @@ DEFINITIONS
 A voice is a distinct sound that is heard as having a pitch.
 
 Pitch is the distinct perception of sound frequency.
-It is a logarithmic perception; octaves, which sound 'equivalent' 
+It is a logarithmic perception; octaves, which sound 'equivalent'
 in some sense, represent doublings or halvings of frequency.
 
-Pitches and intervals are represented as real numbers. 
-Middle C is 60 and the octave is 12. Our usual system of 12-tone 
-equal temperament, as well as MIDI key numbers, are completely represented 
-by the whole numbers; any and all other pitches can be represented 
+Pitches and intervals are represented as real numbers.
+Middle C is 60 and the octave is 12. Our usual system of 12-tone
+equal temperament, as well as MIDI key numbers, are completely represented
+by the whole numbers; any and all other pitches can be represented
 simply by using fractions.
 
-A chord is simply a set of voices heard at the same time or, 
-what is the same thing, a point in a chord space having one dimension of 
+A chord is simply a set of voices heard at the same time or,
+what is the same thing, a point in a chord space having one dimension of
 pitch for each voice in the chord.
 
-For the purposes of algorithmic composition in Silencio, a score is  
-considered as a sequence of more or less fleeting chords. 
+For the purposes of algorithmic composition in Silencio, a score is
+considered as a sequence of more or less fleeting chords.
 
 EQUIVALENCE CLASSES
 
 An equivalence class identifies elements of a set. Operations that send one
-equivalent point to another induce quotient spaces or orbifolds, where the 
-equivalence operation identifies points on one face of the orbifold with 
-points on an opposing face. The fundamental domain of the equivalence class 
+equivalent point to another induce quotient spaces or orbifolds, where the
+equivalence operation identifies points on one face of the orbifold with
+points on an opposing face. The fundamental domain of the equivalence class
 is the space "within" the orbifold.
 
-Plain chord space has no equivalence classes. Ordered chords are represented 
-as vectors in parentheses (p1, ..., pN). Unordered chords are represented as 
-sorted vectors in braces {p1, ..., pN}. Unordering is itself an equivalence 
+Plain chord space has no equivalence classes. Ordered chords are represented
+as vectors in parentheses (p1, ..., pN). Unordered chords are represented as
+sorted vectors in braces {p1, ..., pN}. Unordering is itself an equivalence
 class.
 
-The following equivalence classes apply to pitches and chords, 
-and induce different orbifolds. Equivalence classes can be combined 
+The following equivalence classes apply to pitches and chords,
+and induce different orbifolds. Equivalence classes can be combined
 (Callendar, Quinn, and Tymoczko, "Generalized Voice-Leading Spaces,"
-_Science_ 320, 2008), and the more equivalence classes are combined, 
+_Science_ 320, 2008), and the more equivalence classes are combined,
 the more abstract is the resulting orbifold compared to the parent space.
 
-In most cases, the chord space can be divided into a number, possibly 
-infinite, of geometrically equivalent fundamental domains for the same 
-equivalence class. Therefore, we use the notion of 'representative' 
-fundamental domain. For example, the representative fundamental domain 
-of unordered sequences, out of all possible orderings, consists of all 
+In most cases, the chord space can be divided into a number, possibly
+infinite, of geometrically equivalent fundamental domains for the same
+equivalence class. Therefore, we use the notion of 'representative'
+fundamental domain. For example, the representative fundamental domain
+of unordered sequences, out of all possible orderings, consists of all
 sequences in their ordinary sorted order. It is important, in the following,
 to identify representative fundamental domains that combine properly, e.g.
-so that the representative fundamental domain of OP / the representative 
-fundamental domain of PI equals the representative fundamental domain of 
+so that the representative fundamental domain of OP / the representative
+fundamental domain of PI equals the representative fundamental domain of
 OPI.
- 
+
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
-        Not assuming cardinality equivalence ensures that there is a 
-        proto-metric in plain chord space that is inherited by all child 
-        chord spaces. Cardinality equivalence is never assumed here, because 
-        we are working in chord spaces of fixed dimensionality; e.g. we 
+        Not assuming cardinality equivalence ensures that there is a
+        proto-metric in plain chord space that is inherited by all child
+        chord spaces. Cardinality equivalence is never assumed here, because
+        we are working in chord spaces of fixed dimensionality; e.g. we
         represent the note middle C not as {60}, but as {60, 60, ..., 60}.
-        
-O       Octave equivalence. The fundamental domain is defined by the 
+
+O       Octave equivalence. The fundamental domain is defined by the
         pitches in a chord spanning the range of an octave or less.
 
-P       Permutational equivalence. The fundamental domain is defined by 
-        a "wedge" of plain chord space in which all chords possess the 
-        same permutation of voices. Represented by the voices of a chord 
+P       Permutational equivalence. The fundamental domain is defined by
+        a "wedge" of plain chord space in which all chords possess the
+        same permutation of voices. Represented by the voices of a chord
         always being sorted by pitch.
 
 T       Transpositional equivalence, e.g. {1, 2} == {7, 8}. The fundamental
-        domain is defined as a plane in chord space at right angles to the 
-        diagonal of unison chords. Represented by the chord always having a 
-        sum of pitches equal to 0, or a positive sum as close as possible 
+        domain is defined as a plane in chord space at right angles to the
+        diagonal of unison chords. Represented by the chord always having a
+        sum of pitches equal to 0, or a positive sum as close as possible
         to 0 within equal temperament (see below).
 
-I       Inversional equivalence. Care is needed to distinguish the 
-        mathematician's sense of 'invert', which means 'pitch-space inversion' 
-        or 'reflect in a point', from the musician's sense of 'invert', which 
-        varies according to context but in practice often means 
-        'registral inversion' or 'revoice by adding an octave to the lowest 
-        tone of a chord.' Here, we use 'invert' and 'inversion' in the 
-        mathematician's sense, and we use the terms 'revoice' and 'voicing' 
-        for the musician's 'invert' and 'inversion'. The inversion point for 
-        any inversion lies on the unison diagonal. A fundamental domain 
-        is defined as any half of chord space that is bounded by a plane 
-        containing the inversion point. Represented as the chord having 
-        the first interval between voices be smaller than or equal to the 
-        final interval (recursing for chords of more than 3 voices). 
-        
-PI      Inversional equivalence with permutational equivalence. The 
-        'inversion flat' of unordered chord space is a hyperplane consisting 
-        of all those unordered chords that are invariant under inversion. A 
-        fundamental domain is defined by any half space bounded by a 
-        hyperplane containing the inversion flat. It is represented as that 
-        half of the space on or lower than the hyperplane defined by the 
+I       Inversional equivalence. Care is needed to distinguish the
+        mathematician's sense of 'invert', which means 'pitch-space inversion'
+        or 'reflect in a point', from the musician's sense of 'invert', which
+        varies according to context but in practice often means
+        'registral inversion' or 'revoice by adding an octave to the lowest
+        tone of a chord.' Here, we use 'invert' and 'inversion' in the
+        mathematician's sense, and we use the terms 'revoice' and 'voicing'
+        for the musician's 'invert' and 'inversion'. The inversion point for
+        any inversion lies on the unison diagonal. A fundamental domain
+        is defined as any half of chord space that is bounded by a plane
+        containing the inversion point. Represented as the chord having
+        the first interval between voices be smaller than or equal to the
+        final interval (recursing for chords of more than 3 voices).
+
+PI      Inversional equivalence with permutational equivalence. The
+        'inversion flat' of unordered chord space is a hyperplane consisting
+        of all those unordered chords that are invariant under inversion. A
+        fundamental domain is defined by any half space bounded by a
+        hyperplane containing the inversion flat. It is represented as that
+        half of the space on or lower than the hyperplane defined by the
         inversion flat and the unison diagonal.
 
-OP      Octave equivalence with permutational equivalence. Tymoczko's 
-        orbifold for chords; i.e. chords with a fixed number of voices in a 
-        harmonic context. The fundamental domain defined as a 
-        hyperprism one octave long with as many sides as voices and the ends 
-        identified by octave equivalence and one cyclical permutation 
-        of voices, modulo the unordering. In OP for trichords in 12TET, the 
-        augmented triads run up the middle of the prism, the major and minor 
-        triads are in 6 alternating columns around the augmented triads, the 
-        two-pitch chords form the 3 sides, and the one-pitch chords form the 
+OP      Octave equivalence with permutational equivalence. Tymoczko's
+        orbifold for chords; i.e. chords with a fixed number of voices in a
+        harmonic context. The fundamental domain defined as a
+        hyperprism one octave long with as many sides as voices and the ends
+        identified by octave equivalence and one cyclical permutation
+        of voices, modulo the unordering. In OP for trichords in 12TET, the
+        augmented triads run up the middle of the prism, the major and minor
+        triads are in 6 alternating columns around the augmented triads, the
+        two-pitch chords form the 3 sides, and the one-pitch chords form the
         3 edges that join the sides.
 
 OPI     The OP prism modulo inversion, i.e. 1/2 of the OP prism.
 
-OPT     The layer of the OP prism as close as possible to the 
-        origin, modulo the number of voices. Chord type. Note that CM and 
-        Cm are different OPT. Because the OP prism is canted down from the 
-        origin, at least one pitch in each OPT chord (excepting the origin 
+OPT     The layer of the OP prism as close as possible to the
+        origin, modulo the number of voices. Chord type. Note that CM and
+        Cm are different OPT. Because the OP prism is canted down from the
+        origin, at least one pitch in each OPT chord (excepting the origin
         itself) is negative.
 
 OPTI    The OPT layer modulo inversion, i.e. 1/2 of the OPT layer.
@@ -151,19 +151,19 @@ OPTI    The OPT layer modulo inversion, i.e. 1/2 of the OPT layer.
 
 OPERATIONS
 
-Each of the above equivalence classes is, of course, an operation that sends 
-chords outside the fundamental domain to chords inside the fundamental domain. 
+Each of the above equivalence classes is, of course, an operation that sends
+chords outside the fundamental domain to chords inside the fundamental domain.
 And we define the following additional operations:
 
-T(p, x)         Translate p by x. 
+T(p, x)         Translate p by x.
 
 I(p [, x])      Reflect p in x, by default the octave.
 
-P               Send a major triad to the minor triad with the same root,      
+P               Send a major triad to the minor triad with the same root,
                 or vice versa (Riemann's parallel transformation).
 
 L               Send a major triad to the minor triad one major third higher,
-                or vice versa (Riemann's Leittonwechsel or leading-tone 
+                or vice versa (Riemann's Leittonwechsel or leading-tone
                 exchange).
 
 R               Send a major triad to the minor triad one minor third lower,
@@ -171,38 +171,38 @@ R               Send a major triad to the minor triad one minor third lower,
 
 D               Send a triad to the next triad a perfect fifth lower
                 (dominant transformation).
-                
-P, L, and R have been extended as follows, see Fiore and Satyendra, 
+
+P, L, and R have been extended as follows, see Fiore and Satyendra,
 "Generalized Contextual Groups", _Music Theory Online_ 11, August 2008:
-    
+
 K(c)            Interchange by inversion;
                 K(c):= I(c, c[1] + c[2]).
                 This is a generalized form of P; for major and minor triads,
                 it is exactly the same as P, but it also works with other
                 chord types.
-        
+
 Q(c, n, m)      Contexual transposition;
                 Q(c, n, m) := T(c, n) if c is a T-form of m,
                 or T(c, -n) if c is an I-form of M. Not a generalized form
                 of L or R; but, like them, K and Q generate the T-I group.
-                
-TODO: Implement Rachel Hall, "Linear Contextual Transformations," 2009, 
-which seems to further extend the Generalized Contextual Group using 
-affine transformations in chord space, and Maxx Cho, "The Voice-Leading 
-Automorphism and Riemannian Operators," 2009, which may show that tonality 
+
+TODO: Implement Rachel Hall, "Linear Contextual Transformations," 2009,
+which seems to further extend the Generalized Contextual Group using
+affine transformations in chord space, and Maxx Cho, "The Voice-Leading
+Automorphism and Riemannian Operators," 2009, which may show that tonality
 arises from a voice-leading automorphism in the Riemannian group.
 
 TODO: Implement various scales found in 20th and 21st century harmony
 along with 'splitting' and 'merging' operations.
-                
+
 MUSICAL MEANING AND USE
 
 The chord space in most musicians' heads is a combination of OP, OPT, and OPTI
-(actually, since analysts do in fact ignore unisons and doublings and so 
+(actually, since analysts do in fact ignore unisons and doublings and so
 do not in fact ignore C, these are OPC, OPTC, and OPTIC).
 
-In OP, root progressions are motions more or less up and down 
-the 'columns' of identically structured chords. Changes of chord type are 
+In OP, root progressions are motions more or less up and down
+the 'columns' of identically structured chords. Changes of chord type are
 motions across the layers of differently structured chords.
 P, L, and R send major triads to their nearest minor neighbors,
 and vice versa. I reflects a chord across the middle of the prism.
@@ -211,58 +211,58 @@ T moves a chord up and down parallel to the unison diagonal of the prism.
 VOICE-LEADING
 
 Those operations that are defined only in OP can be extended to
-R or RP by revoicing the results (projecting from one point in OP to several 
+R or RP by revoicing the results (projecting from one point in OP to several
 points in R or RP).
-            
+
 The closest voice-leadings are between the closest chords in the space.
 The 'best' voice-leadings are closest first by 'smoothness,'
-and then by 'parsimony.' See Dmitri Tymoczko, 
+and then by 'parsimony.' See Dmitri Tymoczko,
 _The Geometry of Musical Chords_, 2005 (Princeton University).
 
-This concept of voice-leading applies in all equivalence classes, not 
-only to root progressions of chords, and the meaning of 'well-formed 
-voice-leading' changes according to the equivalence class. In OP it means 
-well-formed harmonic progression, in r or rp it also means well-formed 
+This concept of voice-leading applies in all equivalence classes, not
+only to root progressions of chords, and the meaning of 'well-formed
+voice-leading' changes according to the equivalence class. In OP it means
+well-formed harmonic progression, in r or rp it also means well-formed
 contrapuntal voice-leading.
 
 Or, to make it really simple, OP is harmony and RP is counterpoint.
-    
-We do bijective contrapuntal voiceleading by connecting a chord in R or RP 
-with one OP to another of the several chords in R or RP with a different OP 
-by choosing the shortest path through R or RP, optionally avoiding 
+
+We do bijective contrapuntal voiceleading by connecting a chord in R or RP
+with one OP to another of the several chords in R or RP with a different OP
+by choosing the shortest path through R or RP, optionally avoiding
 parallel fifths. This invariably produces a well-formed voice-leading.
 
 PROJECTIONS
 
-We select voices and sub-chords from chords by 
-projecting the chord to subspaces of chord space. This can be 
+We select voices and sub-chords from chords by
+projecting the chord to subspaces of chord space. This can be
 done, e.g., to voice chords, arpeggiate them, or play scales.
 The operation is performed by multiplying a chord by
 a matrix whose diagonal represents the normal basis of the subspace,
-and where each element of the basis may be either identity 
+and where each element of the basis may be either identity
 (1) or any multiple of the octave (12).
 
-V(c [, n])      Iterates with optional stride n through all powers of the  
+V(c [, n])      Iterates with optional stride n through all powers of the
                 basis of OP under rp, for the purpose of revoicing the chord.
 
 S(c, v)         Projects the chord to the subspace defined by the basis
-                vector v, e.g. for trichords v := [0, 1, 0] picks the 
-                second voice. 
+                vector v, e.g. for trichords v := [0, 1, 0] picks the
+                second voice.
 
 A(c, v [, n])   Iterates through all cyclical permutations of v in S(c, v),
                 with optional stride n.
-                
+
 V, S, and A may be used in combination to produce any regular arpeggiation.
-                
+
 SCORE GENERATION
 
 Durations, instruments, dynamics, and so on can be attributed
-to chords by expanding them from vectors to tensors. 
+to chords by expanding them from vectors to tensors.
 
 Because Lua lacks a tensor package, and because the [] operator
-cannot truly be overridden, and because the () operator 
-cannot return an lvalue, the Chord class contains auxiliary tables to 
-represent the duration, channel, velocity, and pan of each voice. 
+cannot truly be overridden, and because the () operator
+cannot return an lvalue, the Chord class contains auxiliary tables to
+represent the duration, channel, velocity, and pan of each voice.
 These attributes are not sorted or manipulated along with the pitches,
 they are associated with the numerical order of the voices;
 but they can still be very useful in score generation.
@@ -272,33 +272,34 @@ Any Chord object can be written to any time slice of a Silence score.
 SCORE APPLICATION
 
 Any chord can be applied under any equivalence class to any time slice
-of a Silencio score. Notes already in the score in that slice will 
+of a Silencio score. Notes already in the score in that slice will
 be conformed to the chord under the equivalence class.
 
 SCORE TRANSFORMATION
 
-Any time slice of a Silence score can be transformed into 
-a Chord of any equivalence class, then operated upon, 
+Any time slice of a Silence score can be transformed into
+a Chord of any equivalence class, then operated upon,
 and then either written over or applied to that slice.
 
 IMPLEMENTATION
 
-Operations implemented as member functions of Chord  
+Operations implemented as member functions of Chord
 do not operate upon self, but return a transformed copy of self.
 
 Each function that identifies an equivalence class has a name
-beginning with 'ise', e.g. 'iseO' for 'is in the fundamental 
+beginning with 'ise', e.g. 'iseO' for 'is in the fundamental
 domain for octave equivalence in geometric theory.'
 
 Each function that implements an equivalence class has a name
-beginning with 'e', e.g. 'eOP' for pitch class set or 'eOPTI' for 
+beginning with 'e', e.g. 'eOP' for pitch class set or 'eOPTI' for
 set class.
 ]]
 end
 
 local Silencio = require("Silencio")
+local matrix = require("matrix")
 
--- The size of the octave, defined to be consistent with 
+-- The size of the octave, defined to be consistent with
 -- 12 tone equal temperament and MIDI.
 
 OCTAVE = 12
@@ -320,14 +321,14 @@ end
 
 function T(pitch, transposition)
     return pitch + transposition
-end 
+end
 
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function I(pitch, center)
     center = center or 0
     return center - pitch
-end    
+end
 
 -- Returns the Euclidean distance between chords a and b,
 -- which must have the same number of voices.
@@ -340,7 +341,7 @@ function euclidean(a, b)
     return math.sqrt(sumOfSquaredDifferences)
 end
 
--- Chords mainly represent pitches, but have auxiliary tables to represent 
+-- Chords mainly represent pitches, but have auxiliary tables to represent
 -- duration, channel (instrument), velocity (loudness), and pan.
 
 Chord = {}
@@ -584,7 +585,7 @@ function Chord:distanceToOrigin()
     return euclidean(self, origin)
 end
 
--- Returns all the 'inversions' (in the musician's sense) 
+-- Returns all the 'inversions' (in the musician's sense)
 -- or revoicings of the chord.
 
 function Chord:voicings()
@@ -669,8 +670,8 @@ function Chord:cyclicalPermutations()
 end
 
 -- Returns a copy of the chord 'inverted' in the musician's sense,
--- i.e. revoiced by cyclically permuting the chord and 
--- adding (or subtracting) an octave to the highest (or lowest) voice. 
+-- i.e. revoiced by cyclically permuting the chord and
+-- adding (or subtracting) an octave to the highest (or lowest) voice.
 -- The revoicing will move the chord up or down in pitch.
 
 function Chord:v(direction)
@@ -678,7 +679,7 @@ function Chord:v(direction)
     local chord = self:clone()
     while direction > 0 do
         chord = chord:cycle(-1)
-        chord[#chord] = chord[#chord] + OCTAVE   
+        chord[#chord] = chord[#chord] + OCTAVE
         direction = direction - 1
     end
     while direction < 0 do
@@ -689,8 +690,8 @@ function Chord:v(direction)
     return chord
 end
 
--- Returns the ith arpeggiation, current voice, and corresponding revoicing 
--- of the chord. Positive arpeggiations start with the lowest voice of the 
+-- Returns the ith arpeggiation, current voice, and corresponding revoicing
+-- of the chord. Positive arpeggiations start with the lowest voice of the
 -- chord and revoice up; negative arpeggiations start with the highest voice
 -- of the chord and revoice down.
 
@@ -720,7 +721,7 @@ end
 
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function Chord:T(transposition)  
+function Chord:T(transposition)
     local chord = self:clone()
     for voice, pitch in ipairs(chord) do
         chord[voice] = T(pitch, transposition)
@@ -832,7 +833,7 @@ function Chord:iseIGogins2()
     local chord = self:eOP()
     local inverse = self:I():eOP()
     local chordVoice = 2
-    local inverseVoice = #inverse 
+    local inverseVoice = #inverse
     while chordVoice < inverseVoice do
         local chordInterval = chord[chordVoice] - chord[chordVoice - 1]
         local inverseInterval = inverse[inverseVoice] - inverse[inverseVoice - 1]
@@ -867,36 +868,102 @@ function Chord:iseIGogins3()
 end
 
 --[[
-Returns whether the chord is within the representative fundamental domain of 
-inversional equivalence. _A_ fundamental domain of inversional equivalence is 
-bounded by _a_ hyperplane containing the inversion flat. The _representative_
-fundamental domain of inversion is bounded by _the_ hyperplane containing the 
-inversion flat and the unison diagonal (since in R transposing does not 
-invert).
+Returns whether the chord is within the representative fundamental domain of
+inversional equivalence. _A_ fundamental domain of inversional equivalence is
+bounded by _a_ hyperplane containing the inversion point (in R) or the
+inversion flat (in RP). The _representative_ fundamental domain of inversion
+is bounded by _the_ hyperplane containing the inversion point or flat and,
+because in R transposition does not invert, the unison diagonal.
 
-All of these domains meet at the origin of chord space. Therefore, the 
-bounding hyperplane is defined by an N - 1 dimensional simplex consisting 
-of a simplex defining the inversion flat plus a point projected into each 
+All of these domains meet at the origin of chord space. Therefore, the
+bounding hyperplane is defined by an N - 1 dimensional simplex consisting
+of a simplex defining the inversion flat plus a point projected into each
 of the "lower" dimensions.
 
-Then the the point-hyperplane distance from the chord to the bounding 
-hyperplane is computed as in A. J. Hanson, "Geometry for N-Dimensional 
-Graphics," Indiana University, 1996. This is the ratio of the volume of 
+Then the the point-hyperplane distance from the chord to the bounding
+hyperplane is computed as in A. J. Hanson, "Geometry for N-Dimensional
+Graphics," Indiana University, 1996. This is the ratio of the volume of
 an N dimensional simplex to the volume of its N - 1 dimensional 'base.'
-Here the base is the simplex defining the bounding hyperplane above, 
+Here the base is the simplex defining the bounding hyperplane above,
 and the full simplex adds the chord in question.
+
+
 
 ]]
 
-function Chord:iseIVector()
-    if self:isInversionFlat() then
-        return true
+-- Return n!.
+
+function ChordSpace.factorial (n)
+	if n == 0 then
+		return 1
+	else
+		return n * ChordSpace.factorial(n - 1)
+	end
+end
+
+-- Returns the volume of the simplex defined by the chords. For a simplex
+-- of N dimensions, there must be exactly N + 1 non-codimensional chords.
+-- For square simplexes, the volume is signed; for non-square simplexes,
+-- the volume is not signed.
+
+function ChordSpace.volume(chords)
+    -- Transform each chord into a homogeneous column vector.
+    local list = {}
+    for key, chord in pairs(chords) do
+        local c = chord:clone()
+        c[#chord + 1] = 1
+        print('chord:', c)
+        table.insert(list, c)
     end
-    local flat = self:inversionFlat()
-    
-    
-    local t0 = p0:T(1)
-    local p = self
+    local simplex = matrix:new(list):transpose()
+    --print('list:')
+    --simplex:print()
+	-- Ensure consistent sign across dimensions by using the
+    -- column-subtraction identity and placing the origin in the final column.
+    -- This also puts the simplex into homogeneous coordinates.
+    for row = 1, simplex:rows() do
+        for column = 1, simplex:columns() - 1 do
+			simplex[row][column] = (simplex[row][column] - simplex[row][simplex:columns()])
+		end
+	end
+    --print('consistent:')
+    --simplex:print()
+    -- This factor normalizes for the volume of the simplex versus the volume
+    -- of the paralleliped defined by it taken as a basis.
+    local factor = 1 / ChordSpace.factorial(#chords)
+    -- Non-square simplexes are handled by multiplying the simplex by its
+    -- transpose on the left to produce a square matrix.
+    local volume = 0
+    if simplex:rows() ~= simplex:columns() then
+        local transpose = simplex:transpose()
+        simplex = transpose * simplex
+        --print('square:')
+        --simplex:print()
+        volume = math.sqrt(math.pow(factor, 2) * simplex:det())
+    else
+        volume = factor * simplex:det()
+    end
+    return volume
+end
+
+function Chord:iseIVector(range)
+    range = range or octave
+    if self:isInversionFlat(range) then
+        return true, 0
+    end
+	-- Identify the simplex that defines the bounding hyperplane
+    -- of inversional symmetry and find its volume. This includes
+    -- the origin, a translation of the origin along the unison diagonal,
+    -- and one point in the inversion flat for each of its dimensions.
+	local simplex = {}
+    table.insert(simplex, self:origin())
+    table.insert(simplex, self:origin():T(1))
+    table.insert(simplex, self:origin():T(1):inversionFlat())
+    local hyperplaneVolume = ChordSpace.volume(simplex)
+    table.insert(simplex, self)
+	local chordVolume = ChordSpace.volume(simplex)
+    local chordHyperplaneDistance = chordVolume / hyperplaneVolume
+    return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
 
 -- Self and inverse reflect in the inversion flat.
@@ -904,7 +971,7 @@ end
 
 Chord.iseI = Chord.iseIGogins3
 
-function Chord:iseRP(range) 
+function Chord:iseRP(range)
     if not self:iseP(range) then
         return false
     end
@@ -968,7 +1035,7 @@ function Chord:isePI()
     local flat = chord:inversionFlat()
     local origin = chord:origin()
     local thirdPoint = origin:T(1)
-    
+
     if not self:iseI() then
         return false
     end
@@ -1034,7 +1101,7 @@ function Chord:iseRPI(range)
     if not self:iseRP(range) then
         return false
     end
-    if not self:iseI() then
+    if not self:iseIVector(range) then
         return false
     end
     return true
@@ -1047,7 +1114,7 @@ end
 Chord.iseOPI = Chord.iseOPIGogins
 
 -- Returns the inversion flat for a chord.
--- This is the chord that generates the 
+-- This is the chord that generates the
 -- inversion of a chord within P directly.
 
 function Chord:inversionFlat(range)
@@ -1115,13 +1182,13 @@ function Chord:eR(range)
     local chord = self:clone()
     -- The clue here is that at least one voice must be >= 0,
     -- but no voice can be > range.
-    -- Move all pitches inside the interval [0, range] 
+    -- Move all pitches inside the interval [0, range]
     -- (which is not the same as the fundamental domain).
     for voice, pitch in ipairs(chord) do
         chord[voice] = pitch % range
     end
     -- Reflect voices that are outside of the fundamental domain
-    -- back into it, which will revoice the chord, i.e. 
+    -- back into it, which will revoice the chord, i.e.
     -- the sum of pitches is in [0, range).
     while chord:sum() >= range do
         local maximumPitch, maximumVoice = chord:max()
@@ -1220,7 +1287,7 @@ end
 
 -- Is this wrong for {-6, 0, 6}?
 -- Tymoczko has either kites or triangles as fundamental domains
--- for voicings. This uses the triangle farthest from the 
+-- for voicings. This uses the triangle farthest from the
 -- unisons diagonal.
 
 function Chord:iseV(range)
@@ -1273,9 +1340,9 @@ end
 ]]
 
 -- Returns the chord under range, permutation, and transpositional
--- equivalence. This requires taking a cross section of the 
+-- equivalence. This requires taking a cross section of the
 -- orbifold perpendicular to the unison axis, and identifying
--- chords under rotational equivalence by 2 pi / N. 
+-- chords under rotational equivalence by 2 pi / N.
 
 function Chord:eRPT(range, g)
     range = range or OCTAVE
@@ -1366,7 +1433,7 @@ end
 
 -- Returns the chord inverted by the sum of its first two voices.
 -- NOTE: Does NOT return the result under any equivalence class.
-  
+
 function Chord:K(range)
     range = range or OCTAVE
     local chord = self:clone()
@@ -1411,7 +1478,7 @@ function Chord:Iform(Y, g)
     end
     return false
 end
-  
+
 -- Returns the contextual transposition of the chord by x with respect to m
 -- with minimum interval size g.
 -- NOTE: Does NOT return the result under any equivalence class.
@@ -1426,8 +1493,8 @@ function Chord:Q(x, m, g)
     end
     return self:clone()
 end
-        
--- Returns the next voicing of the chord that is under RP, 
+
+-- Returns the next voicing of the chord that is under RP,
 -- or nil if the chord is higher than RP.
 
 function Chord:V(range)
@@ -1435,7 +1502,7 @@ function Chord:V(range)
     local iterator = self:clone()
     local zero = self:eOP()
     -- Enumerate the next voicing by counting voicings in RP.
-    -- iterator[1] is the most significant voice, 
+    -- iterator[1] is the most significant voice,
     -- iterator[self.N] is the least significant voice.
     while iterator[1] < range do
         iterator[#self] = iterator[#self] + OCTAVE
@@ -1462,7 +1529,7 @@ function Chord:Voicings(range)
     local iterator = self:clone()
     local zero = self:eOP()
     -- Enumerate the next voicing by counting voicings in RP.
-    -- iterator[1] is the most significant voice, 
+    -- iterator[1] is the most significant voice,
     -- iterator[self.N] is the least significant voice.
     voicings[1] = zero:clone()
     while iterator[1] < range do
@@ -1483,7 +1550,7 @@ function Chord:Voicings(range)
 end
 
 -- Returns the voice-leading between chords a and b,
--- i.e. what you have to add to a to get b, as a 
+-- i.e. what you have to add to a to get b, as a
 -- chord of directed intervals.
 
 function ChordSpace.voiceleading(a, b)
@@ -1494,7 +1561,7 @@ function ChordSpace.voiceleading(a, b)
     return voiceleading
 end
 
--- Returns whether the voiceleading 
+-- Returns whether the voiceleading
 -- between chords a and b contains a parallel fifth.
 
 function ChordSpace.parallelFifth(a, b)
@@ -1506,7 +1573,7 @@ function ChordSpace.parallelFifth(a, b)
     end
 end
 
--- Returns the smoothness of the voiceleading between 
+-- Returns the smoothness of the voiceleading between
 -- chords a and b by L1 norm.
 
 function ChordSpace.voiceleadingSmoothness(a, b)
@@ -1602,7 +1669,7 @@ end
 
 -- Returns the voicing of the destination which has the closest voice-leading
 -- from the source within the range, optionally avoiding parallel fifths.
--- TODO: Do not collect all voicings, but test them individually in a loop 
+-- TODO: Do not collect all voicings, but test them individually in a loop
 -- as in the body of Voicings.
 
 function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
@@ -1646,8 +1713,8 @@ eOPI:               %s  iseOPI:  %s
 eOPT:               %s  iseOPT:  %s
 eOPTI:              %s  iseOPTI: %s
 layer:                  %-5.2f
-to origin:              %-5.2f]], 
-chordName, 
+to origin:              %-5.2f]],
+chordName,
 tostring(self),
 tostring(self:I()),
 tostring(self:ep()),
@@ -1672,9 +1739,9 @@ self:sum(),
 self:distanceToOrigin())
 end
 
--- Creates a complete Silencio "note on" event for the 
+-- Creates a complete Silencio "note on" event for the
 -- indicated voice of the chord. The other parameters are used
--- if the internal duration, channel, velocity, and pan of the 
+-- if the internal duration, channel, velocity, and pan of the
 -- chord are nil.
 
 function Chord:note(voice_, time_, duration_, channel_, velocity_, pan_)
@@ -1706,10 +1773,10 @@ function Chord:notes(time_, duration_, channel_, velocity_, pan_)
 end
 
 -- If the event is a note, moves its pitch
--- to the closest pitch of the chord. 
+-- to the closest pitch of the chord.
 -- If octaveEquivalence is true (the default),
--- the pitch-class of the note is moved to the closest pitch-class 
--- of the chord; otherwise, the pitch of the note is moved to the closest 
+-- the pitch-class of the note is moved to the closest pitch-class
+-- of the chord; otherwise, the pitch of the note is moved to the closest
 -- absolute pitch of the chord.
 
 function conformToChord(event, chord, octaveEquivalence)
@@ -1765,10 +1832,10 @@ function ChordSpace.insert(score, chord, time_, duration, channel, velocity, pan
 end
 
 -- For all the notes in the score
--- beginning at or later than the start time, 
+-- beginning at or later than the start time,
 -- and up to but not including the end time,
--- moves the pitch of the note to belong to the chord, using the 
--- conformToChord function. 
+-- moves the pitch of the note to belong to the chord, using the
+-- conformToChord function.
 
 function ChordSpace.apply(score, chord, start, end_, octaveEquivalence)
     octaveEquivalence = octaveEquivalence or true
@@ -1778,8 +1845,8 @@ function ChordSpace.apply(score, chord, start, end_, octaveEquivalence)
     end
 end
 
--- Returns a chord containing all the pitches of the score 
--- beginning at or later than the start time, 
+-- Returns a chord containing all the pitches of the score
+-- beginning at or later than the start time,
 -- and up to but not including the end time.
 
 function gather(score, start, end_)
@@ -1817,15 +1884,15 @@ function ChordSpace.allChordsInRange(voices, range, g)
     return chordset
 end
 
--- Returns all the chords with the specified number of voices that exist 
--- within the fundamental domain of the specified octave-based equivalence 
--- class that is generated by the interval g, which of course must evenly 
--- divide the octave. The chords are returned in a zero-based table, 
--- such that the indexes of the chords form an additive cyclic group 
--- representing the chords. 
+-- Returns all the chords with the specified number of voices that exist
+-- within the fundamental domain of the specified octave-based equivalence
+-- class that is generated by the interval g, which of course must evenly
+-- divide the octave. The chords are returned in a zero-based table,
+-- such that the indexes of the chords form an additive cyclic group
+-- representing the chords.
 
 function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
-    g = g or 1    
+    g = g or 1
     local equivalenceMapper = nil
     if equivalence == 'OP' then
         equivalenceMapper = Chord.eOP
@@ -1871,7 +1938,7 @@ function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
  end
 
 function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
-    g = g or 1    
+    g = g or 1
     local equivalenceMapper = nil
     if equivalence == 'OP' then
         equivalenceMapper = Chord.iseOP
@@ -1914,19 +1981,19 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     return zeroBasedChords, equivalentChords
 end
 
--- Orthogonal additive groups for unordered chords of given arity under range 
--- equivalence (RP): prime form or P, inversion or I, transposition or T, and 
--- voicing or V. P x I x T = OP, P x I x T x V = RP. There is a bijective 
--- mapping between chords in RP and values of P, I, T, V. Therefore, an 
--- operation on P, I, T, or V may be used to independently transform the 
--- respective symmetry of any chord. Some of these operations will reflect 
+-- Orthogonal additive groups for unordered chords of given arity under range
+-- equivalence (RP): prime form or P, inversion or I, transposition or T, and
+-- voicing or V. P x I x T = OP, P x I x T x V = RP. There is a bijective
+-- mapping between chords in RP and values of P, I, T, V. Therefore, an
+-- operation on P, I, T, or V may be used to independently transform the
+-- respective symmetry of any chord. Some of these operations will reflect
 -- in RP.
 
 ChordSpaceGroup = {}
 
--- N is the number of voices in the chord space, g is the generator of 
--- transposition, range is the size of chord space, 
--- optis is an ordered table of all OPTI chords for g, 
+-- N is the number of voices in the chord space, g is the generator of
+-- transposition, range is the size of chord space,
+-- optis is an ordered table of all OPTI chords for g,
 -- voicings is an ordered table of all octavewise permutations in RP.
 
 function ChordSpaceGroup:new(o)
@@ -1982,7 +2049,7 @@ function ChordSpaceGroup:initialize(voices, range, g)
     end
 end
 
--- Returns the chord for the indices of prime form, inversion, 
+-- Returns the chord for the indices of prime form, inversion,
 -- transposition, and voicing. The chord is not in rp; rather, the
 -- chord is considered to be in op, but then each voice may have
 -- zero or more octaves added to it.
@@ -2012,7 +2079,7 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     return voicing:eR(self.range), opti, op, voicing
 end
 
--- Returns the indices of prime form, inversion, transposition, 
+-- Returns the indices of prime form, inversion, transposition,
 -- and voicing for a chord. The chord is not in RP; rather, the
 -- chord is considered to be in OP, but then each voice may have
 -- zero or more octaves added to it.
@@ -2085,7 +2152,7 @@ pitchClassesForNames["B" ] = 11
 ChordSpace.chordsForNames = {}
 ChordSpace.namesForChords = {}
 
-local function fill(rootName, rootPitch, typeName, typePitches)             
+local function fill(rootName, rootPitch, typeName, typePitches)
     local chordName = rootName .. typeName
     local chord = Chord:new()
     local splitPitches = Silencio.split(typePitches)
