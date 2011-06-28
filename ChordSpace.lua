@@ -911,8 +911,8 @@ function ChordSpace.volume(chords)
     local list = {}
     for key, chord in pairs(chords) do
         local c = chord:clone()
-        c[#chord + 1] = 1
-        print('chord:', c)
+        c[#c + 1] = 1
+        --print('chord:', c)
         table.insert(list, c)
     end
     local simplex = matrix:new(list):transpose()
@@ -943,14 +943,14 @@ function ChordSpace.volume(chords)
     else
         volume = factor * simplex:det()
     end
-    return volume
+    return volume, simplex
 end
 
 function Chord:iseIVector(range)
     range = range or octave
-    if self:isInversionFlat(range) then
-        return true, 0
-    end
+    --if self:isInversionFlat(range) then
+    --    return true, 0
+    --end
 	-- Identify the simplex that defines the bounding hyperplane
     -- of inversional symmetry and find its volume. This includes
     -- the origin, a translation of the origin along the unison diagonal,
@@ -958,10 +958,10 @@ function Chord:iseIVector(range)
 	local simplex = {}
     table.insert(simplex, self:origin())
     table.insert(simplex, self:origin():T(1))
-    table.insert(simplex, self:origin():T(1):inversionFlat())
-    local hyperplaneVolume = ChordSpace.volume(simplex)
+    table.insert(simplex, self:inversionFlat())
+    local hyperplaneVolume, b = ChordSpace.volume(simplex)
     table.insert(simplex, self)
-	local chordVolume = ChordSpace.volume(simplex)
+	local chordVolume, s = ChordSpace.volume(simplex)
     local chordHyperplaneDistance = chordVolume / hyperplaneVolume
     return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
@@ -1691,6 +1691,7 @@ function Chord:label()
     if chordName == nil then
         chordName = 'Chord'
     end
+    local discard, chordToHyperplane = self:iseIVector()
     return string.format([[%s:
 pitches:            %s
 I:                  %s
@@ -1713,7 +1714,8 @@ eOPI:               %s  iseOPI:  %s
 eOPT:               %s  iseOPT:  %s
 eOPTI:              %s  iseOPTI: %s
 layer:                  %-5.2f
-to origin:              %-5.2f]],
+to origin:              %-5.2f
+to inversion plane:     %-5.2f]],
 chordName,
 tostring(self),
 tostring(self:I()),
@@ -1736,7 +1738,8 @@ tostring(self:eOPI()), tostring(self:iseOPI()),
 tostring(self:eOPT()), tostring(self:iseOPT()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
 self:sum(),
-self:distanceToOrigin())
+self:distanceToOrigin(),
+chordToHyperplane)
 end
 
 -- Creates a complete Silencio "note on" event for the
