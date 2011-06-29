@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = false
+verbose = true
 
 function print(message)
     if verbose then
@@ -63,8 +63,6 @@ table.insert(chords, Chord:new{0, 0, -3, 0})
 volume2 = ChordSpace.volume(chords)
 print('volume:', volume2)
 result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
-
-
 
 voiceCount = 3
 print('All of OP')
@@ -210,7 +208,7 @@ function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
     return passes
 end
 
-for arity = 2, 3 do
+for arity = 3, 4 do
     testIsEquivalenceEqualsEquivalence(arity, 'OP')
     testIsEquivalenceEqualsEquivalence(arity, 'OPI')
     testIsEquivalenceEqualsEquivalence(arity, 'OPT')

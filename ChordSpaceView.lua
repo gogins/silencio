@@ -301,20 +301,20 @@ function ChordView:drawChord(chord, name, picking)
     else if z == self.minorTriad1 then
         gl.glColor4f(0, 0, 1, alpha)
     else
-        local eq = 2
-        local hue = (z[1] + z[2] * 3.0 + z[3]) * 15
-        --if chord:iseOPTI() then
-        --    hue = 5
-        --else if chord:iseOPT() then
-        --    hue = 4
-        --else if chord:iseOPI() then
-        --    hue = 3
-        --end end end
+        local red = 0.5
+        local green = 0.5
+        local blue = 0.5
+        if chord:iseOPT() then
+            green = 0
+        end
+        if chord:iseOPI() then
+            blue = 0
+        end
         
         local saturation = 1.0
         local value = 1.0
         local value = 0.5 + chord:sum() / 24.0
-        local red, green, blue = hsv_to_rgb(hue, saturation, value)
+        --red, green, blue = hsv_to_rgb(hue, saturation, value)
         gl.glColor4f(red, green, blue, alpha)
     end end end
     local radius = 1/8
@@ -639,7 +639,7 @@ function ChordView:display()
                 --table.insert(self.chords, flat)
                 local midpoint = self.pickedChord:inversionMidpoint()
                 table.insert(self.chords, midpoint)
-                self.pickedChord = self:E(self.pickedChord:I():eP())
+                self.pickedChord = self:E(self.pickedChord:I():eOP())
                 print(self.pickedChord:label())
                 print()
             end
@@ -789,7 +789,7 @@ end
 
 chordView = ChordView:new()
 chordView.octaves = 1
-chordView.equivalence = 'OPI'
+chordView.equivalence = 'OP'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
