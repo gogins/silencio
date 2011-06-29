@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then

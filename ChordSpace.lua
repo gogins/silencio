@@ -749,7 +749,7 @@ function Chord:reflect(other)
 end
 
 function Chord:eI()
-    chord = self:clone()
+    local chord = self:clone()
     if chord:iseI() then
         return chord:clone()
     end
@@ -812,7 +812,7 @@ function Chord:iseITymoczko()
 end
 
 function Chord:iseIGogins1()
-    chord = self
+    local chord = self
     local upperVoice = #self
     for lowerVoice = 2, #self do
         local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
@@ -948,9 +948,6 @@ end
 
 function Chord:iseIVector(range)
     range = range or octave
-    --if self:isInversionFlat(range) then
-    --    return true, 0
-    --end
 	-- Identify the simplex that defines the bounding hyperplane
     -- of inversional symmetry and find its volume. This includes
     -- the origin, a translation of the origin along the unison diagonal,
@@ -1021,22 +1018,6 @@ function Chord:isePT(g)
         return false
     end
     if not self:iseT(g) then
-        return false
-    end
-    return true
-end
-
-function Chord:isePI()
-    if not self:iseP() then
-        return false
-    end
-    -- Identify a plane containing the inversion flat
-    -- and return whether or not the chord is below this plane.
-    local flat = chord:inversionFlat()
-    local origin = chord:origin()
-    local thirdPoint = origin:T(1)
-
-    if not self:iseI() then
         return false
     end
     return true
@@ -1113,9 +1094,11 @@ end
 
 Chord.iseOPI = Chord.iseOPIGogins
 
--- Returns the inversion flat for a chord.
+-- Returns the point in the inversion flat for a chord.
 -- This is the chord that generates the
 -- inversion of a chord within P directly.
+-- FIX: The point-hyperplane distance and this
+-- seem to be contradicting each other -- have I not understood?
 
 function Chord:inversionFlat(range)
     range = range or OCTAVE
@@ -1129,9 +1112,8 @@ end
 
 function Chord:isInversionFlat(range)
     range = range or OCTAVE
-    chord = self:eRP(range)
-    inverse = chord:I():ep(range)
-    if chord == inverse then
+    local inverse = self:I():ep(range)
+    if self == inverse then
         return true
     end
     return false
@@ -1253,7 +1235,7 @@ end
 
 function Chord:er(range)
     range = range or OCTAVE
-    chord = self:clone()
+    local chord = self:clone()
     for voice, pitch in ipairs(chord) do
         chord[voice] = pitch % range
     end
@@ -1347,7 +1329,7 @@ end
 function Chord:eRPT(range, g)
     range = range or OCTAVE
     g = g or 1
-    erp = self:eRP(range)
+    local erp = self:eRP(range)
     local voicings = erp:voicings()
     for i, voicing in ipairs(voicings) do
         if voicing:iseV() then
