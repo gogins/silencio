@@ -3,7 +3,7 @@ function ChordSpaceView.help()
 print [[
 '''
 Copyright 2010 by Michael Gogins.
-This software is licensed under the terms 
+This software is licensed under the terms
 of the GNU Lesser General Public License.
 
 The purposes of this package are:
@@ -13,7 +13,7 @@ The purposes of this package are:
 (2) To demonstrate chord space for trichords.
 
 TODO: Actually play chords, perhaps using Csound via FFI, or using fluidsynth.
- 
+
 ]]
 end
 
@@ -90,7 +90,7 @@ function hsv_to_rgb(h, s, v)
         return v, p, q
     end end end end end end
 end
- 
+
 function iterateColor(c)
     r = c[1] + 1
     if r < 100 then
@@ -117,13 +117,13 @@ function ChordView:new(o)
 end
 
 function ChordView:material()
-    gl.glShadeModel(gl.GL_SMOOTH)           
-    gl.glClearColor(0, 0, 0, 0.5)       
-    gl.glClearDepth(1.0)                 
-    gl.glEnable(gl.GL_DEPTH_TEST)          
-    gl.glDepthFunc(gl.GL_LEQUAL)           
+    gl.glShadeModel(gl.GL_SMOOTH)
+    gl.glClearColor(0, 0, 0, 0.5)
+    gl.glClearDepth(1.0)
+    gl.glEnable(gl.GL_DEPTH_TEST)
+    gl.glDepthFunc(gl.GL_LEQUAL)
     gl.glHint(gl.GL_PERSPECTIVE_CORRECTION_HINT, gl.GL_NICEST)
-    gl.glEnable(gl.GL_COLOR_MATERIAL)                                    
+    gl.glEnable(gl.GL_COLOR_MATERIAL)
     gl.glLightfv(gl.GL_LIGHT1, gl.GL_AMBIENT, LightAmbient)
     gl.glLightfv(gl.GL_LIGHT1, gl.GL_DIFFUSE, LightDiffuse)
     gl.glLightfv(gl.GL_LIGHT1, gl.GL_POSITION, LightPosition)
@@ -180,7 +180,7 @@ function ChordView:drawGrid()
     gl.glVertex3f(orthogonalAxisPoints, orthogonalAxisPoints, orthogonalAxisPoints)
     gl.glColor4f(1, 1, 1, 0.5)
     for i, c0 in pairs(self.chords) do
-        if self:isE(c0) then    
+        if self:isE(c0) then
             c1 = c0:clone()
             c1[1] = c0[1] + 1
             if self:isE(c1) then
@@ -202,7 +202,7 @@ function ChordView:drawGrid()
         end
     end
     gl.glEnd()
-end 
+end
 
 function ChordView:resize(width, height)
     gl.glViewport(0, 0, width, height)
@@ -288,7 +288,7 @@ function ChordView:drawChord(chord, name, picking)
     end
     gl.glPushMatrix()
     gl.glTranslatef(chord[1], chord[2], chord[3])
-    gl.glBegin(gl.GL_QUADS)                                                       
+    gl.glBegin(gl.GL_QUADS)
     local quadric = glu.gluNewQuadric()
     glu.gluQuadricNormals(quadric, glu.GLU_SMOOTH)
     local z = chord:eOPT()
@@ -310,7 +310,7 @@ function ChordView:drawChord(chord, name, picking)
         if chord:iseOPI() then
             blue = 0
         end
-        
+
         local saturation = 1.0
         local value = 1.0
         local value = 0.5 + chord:sum() / 24.0
@@ -451,7 +451,7 @@ function ChordView:findSize()
     end
 end
 
-function ChordView:startPicking(cursorX, cursorY) 
+function ChordView:startPicking(cursorX, cursorY)
     local viewport = ffi.new('GLint[4]')
 	gl.glGetIntegerv(gl.GL_VIEWPORT, viewport);
 	gl.glSelectBuffer(ffi.sizeof(self.pickbuffer), self.pickbuffer);
@@ -547,10 +547,10 @@ function ChordView:display()
     local lpressed = false
     local dpressed = false
     local kpressed = false
-    local qpressed = false    
-    local _1pressed = false    
-    local _2pressed = false    
-    local _3pressed = false    
+    local qpressed = false
+    local _1pressed = false
+    local _2pressed = false
+    local _3pressed = false
     local mpressed = false
     self.modality = Chord:new{0, 4, 7}
     while true do
@@ -637,9 +637,9 @@ function ChordView:display()
                 --local flat = self.pickedChord:inversionFlat():eOP()
                 --flat.flat = true
                 --table.insert(self.chords, flat)
-                local midpoint = self.pickedChord:inversionMidpoint()
-                table.insert(self.chords, midpoint)
-                self.pickedChord = self:E(self.pickedChord:I():eOP())
+                --local midpoint = self.pickedChord:inversionMidpoint()
+                --table.insert(self.chords, midpoint)
+                self.pickedChord = self:E(self.pickedChord:I(4):eOP())
                 print(self.pickedChord:label())
                 print()
             end
