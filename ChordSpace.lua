@@ -4,30 +4,53 @@ ChordSpace = {}
 
 PROBLEMS
 
-Tymoczko's representative fundamental domain of inversional equivalence does not 
-define the fundamental domain for inversion w.r.t. the origin. 
-His domain does bisect his representative
-fundamental domain for permutational equivalence (an equilateral triangle).
+CQT postulate that any hyperplane that contains the inversion flat and
+defines a half space bounds a fundamental domain of inversion. However, under
+range and permutational equivalence, there is only one such hyperplane, and
+it is the one that CQT's equation defines.
 
-The representative fundamental domain of inversional equivalence 
-that DOES define the fundamental domain for inversion w.r.t the origin does not 
-bisect Tymoczko's representative fundamental domain for permutational equivalence 
-(an equilateral triangle). It does bisect an alternative
-representative fundamental domain for permutational equivalence (a dart).
+CQT's representative fundamental domain of inversional equivalence does
+contain the inversion flat, but does not define a fundamental domain for
+inversion w.r.t. the origin. This appears to be a contradiction. CQT's
+representative fundamental domain of inversional equivalence does bisect his
+representative fundamental domain for permutational equivalence
+(an equilateral triangle).
 
-My vector algebra for identifying the representative fundamental domain of 
-inversional equivalence ALMOST defines a domain that bisects the dart.
-Certainly, if I can determine the proper defining simplex for any chord, it SHOULD
-work.
+I think the resolution of the contradiction is that the inversion for which
+the fundamental domain applies is not in the origin, but in the flat.
+
+CQT's representative fundamental domain of inversional equivalence does,
+at least for trichords, appear to define a fundamental domain for inversion
+w.r.t the octave / N.
+
+My linear algebra ALMOST identifies the representative fundamental domain of
+inversional equivalence w.r.t the origin, but does not contain the inversion
+flat, so here too there appears to be a contradiction. My linear algebra also
+does not bisect CQT's representative fundamental domain for permutational
+equivalence (an equilateral triangle) -- but does bisect an alternative
+representative fundamental domain for permutational equivalence (a kite).
 
 I need to either:
 
--- Find the inversion point that works with Tymoczko's domains in all arities, or
+-- Find the inversion point that works with CQT's domains in all arities, and that
+   also generates an inversion flat the is contained in the representative fundamental
+   domain, or
 
--- Find the equation for the dart, and fix up my vector algebra.
+-- Find the equation for the kite, and fix up my vector algebra.
 
-I don't understand why the inversion flat should/should not be in the plane of 
+-- Accept CQT's equation, and define another operation of inversion from which
+   to generate my decomposed groups.
+
+I don't understand why the inversion flat should/should not be in the plane of
 inversional symmetry.
+
+I must find out if the inversion flat changes when the point of inversion changes.
+Answer: Of course it does.
+
+I must find out of there is an inversion point for which CQT's representative
+fundamental domain of inversional equivalence is also the actual fundamental domain
+for that particular inversion. There must be an equation that supplies this inversion
+point, actually.
 
 
 ]]
@@ -981,14 +1004,14 @@ end
 function Chord:iseIVector(range)
     range = range or octave
 	-- Identify the plane of inversional symmetry.
-    -- We need an algorithm to identify the minimum set of 
+    -- We need an algorithm to identify the minimum set of
     -- non-collinear points in all inversion midpoints.
 	local simplex = {}
     for dimension = 1, #self do
         table.insert(simplex, self:move(dimension, 1):inversionMidpoint())
     end
     local hyperplaneVolume, b = ChordSpace.volume(simplex)
-    -- Then the volume of the simplex with the chord divided by 
+    -- Then the volume of the simplex with the chord divided by
     -- the volume of the simplex without the chord is the distance.
     -- This is a signed quantity because one of these simplexes will
     -- be a square matrix with a plain (signed) determinant.
@@ -998,7 +1021,7 @@ function Chord:iseIVector(range)
     return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
 
--- Returns whether the chord is on or below the plane 
+-- Returns whether the chord is on or below the plane
 -- of inversional symmetry (the inversion midpoints).
 
 Chord.iseI = Chord.iseIVector
@@ -1135,9 +1158,10 @@ Chord.iseOPI = Chord.iseOPIGogins
 -- FIX: The point-hyperplane distance and this
 -- seem to be contradicting each other -- have I not understood?
 
-function Chord:inversionFlat(range)
+function Chord:inversionFlat(range, point)
     range = range or OCTAVE
-    local inverse = self:I():eRP(range)
+    point = point or 0
+    local inverse = self:I(point):eRP(range)
     local flat = self:clone()
     for voice = 1, #self do
         flat[voice] = inverse[voice] + self[voice]
@@ -1723,6 +1747,7 @@ eopt(I):            %s
 eP:                 %s  iseP:    %s
 eOP:                %s  iseOP:   %s
 inversion flat:     %s  is flat: %s
+flat of 12/N:       %s
 inversion midpoint: %s
 eOP(I):             %s
 eopt(eOP):          %s
@@ -1747,6 +1772,7 @@ tostring(self:I():eopt()),
 tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
 tostring(self:inversionFlat()), tostring(self:isInversionFlat()),
+tostring(self:inversionFlat(12, 3)),
 tostring(self:inversionMidpoint()),
 tostring(self:I():eOP()),
 tostring(self:eOP():eopt()),
