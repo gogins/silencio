@@ -1,5 +1,37 @@
 ChordSpace = {}
 
+--[[
+
+PROBLEMS
+
+Tymoczko's representative fundamental domain of inversional equivalence does not 
+define the fundamental domain for inversion w.r.t. the origin. 
+His domain does bisect his representative
+fundamental domain for permutational equivalence (an equilateral triangle).
+
+The representative fundamental domain of inversional equivalence 
+that DOES define the fundamental domain for inversion w.r.t the origin does not 
+bisect Tymoczko's representative fundamental domain for permutational equivalence 
+(an equilateral triangle). It does bisect an alternative
+representative fundamental domain for permutational equivalence (a dart).
+
+My vector algebra for identifying the representative fundamental domain of 
+inversional equivalence ALMOST defines a domain that bisects the dart.
+Certainly, if I can determine the proper defining simplex for any chord, it SHOULD
+work.
+
+I need to either:
+
+-- Find the inversion point that works with Tymoczko's domains in all arities, or
+
+-- Find the equation for the dart, and fix up my vector algebra.
+
+I don't understand why the inversion flat should/should not be in the plane of 
+inversional symmetry.
+
+
+]]
+
 function ChordSpace.help()
 print [[
 '''
@@ -948,25 +980,28 @@ end
 
 function Chord:iseIVector(range)
     range = range or octave
-	-- Identify the simplex that defines the bounding hyperplane
-    -- of inversional symmetry and find its volume. This includes
-    -- the origin, a translation of the origin along the unison diagonal,
-    -- and one point in the inversion flat for each of its dimensions.
+	-- Identify the plane of inversional symmetry.
+    -- We need an algorithm to identify the minimum set of 
+    -- non-collinear points in all inversion midpoints.
 	local simplex = {}
-    table.insert(simplex, self:origin())
-    table.insert(simplex, self:origin():T(1))
-    table.insert(simplex, self:inversionFlat())
+    for dimension = 1, #self do
+        table.insert(simplex, self:move(dimension, 1):inversionMidpoint())
+    end
     local hyperplaneVolume, b = ChordSpace.volume(simplex)
+    -- Then the volume of the simplex with the chord divided by 
+    -- the volume of the simplex without the chord is the distance.
+    -- This is a signed quantity because one of these simplexes will
+    -- be a square matrix with a plain (signed) determinant.
     table.insert(simplex, self)
 	local chordVolume, s = ChordSpace.volume(simplex)
     local chordHyperplaneDistance = chordVolume / hyperplaneVolume
     return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
 
--- Self and inverse reflect in the inversion flat.
--- We return which of the two is below the plane of symmetry.
+-- Returns whether the chord is on or below the plane 
+-- of inversional symmetry (the inversion midpoints).
 
-Chord.iseI = Chord.iseIGogins3
+Chord.iseI = Chord.iseIVector
 
 function Chord:iseRP(range)
     if not self:iseP(range) then
