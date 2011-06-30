@@ -1164,18 +1164,20 @@ Chord.iseOPI = Chord.iseOPIGogins
 -- Returns the point in the inversion flat for a chord.
 -- This is the point that generates the
 -- inversion of a chord within P directly.
--- FIX: The point-hyperplane distance and this
--- seem to be contradicting each other -- have I not understood?
 
 function Chord:inversionFlat(range, point)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     point = point or 0
-    local inverse = self:I(point):eRP(range)
-    local flat = self:clone()
-    for voice = 1, #self do
-        flat[voice] = inverse[voice] + self[voice]
+    local flat = Chord:new()
+    local N2 = math.floor(#self / 2)
+    for voice = 1, N2 do
+        table.insert(flat, self[voice])
+        table.insert(flat, point - self[voice])
     end
-    return flat
+    if #flat < #self then
+        table.insert(flat, point / 2)
+    end    
+    return flat:ep()
 end
 
 function Chord:isInversionFlat(range)
@@ -1742,6 +1744,7 @@ function Chord:label()
         chordName = 'Chord'
     end
     local discard, chordToHyperplane = self:iseIVector()
+    chordToHyperplane = chordToHyperplane or 0
     return string.format([[%s:
 pitches:            %s
 I:                  %s
