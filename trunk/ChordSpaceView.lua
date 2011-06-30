@@ -633,12 +633,12 @@ function ChordView:display()
             -- I?
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
-                --local flat = self.pickedChord:inversionFlat():eOP()
+                local flat = self.pickedChord:inversionFlat()
                 --flat.flat = true
-                --table.insert(self.chords, flat)
+                table.insert(self.chords, flat)
                 --local midpoint = self.pickedChord:inversionMidpoint()
                 --table.insert(self.chords, midpoint)
-                self.pickedChord = self:E(self.pickedChord:I(4):eOP())
+                self.pickedChord = self:E(self.pickedChord:I():eOP())
                 print(self.pickedChord:label())
                 print()
             end
