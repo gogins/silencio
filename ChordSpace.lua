@@ -4,7 +4,7 @@ ChordSpace = {}
 
 PROBLEMS
 
-CQT postulate that any hyperplane that contains the inversion flat and
+CQT postulate that any hyperplane which contains the inversion flat and
 defines a half space bounds a fundamental domain of inversion. However, under
 range and permutational equivalence, there is only one such hyperplane, and
 it is the one that CQT's equation defines.
@@ -16,7 +16,7 @@ representative fundamental domain of inversional equivalence does bisect his
 representative fundamental domain for permutational equivalence
 (an equilateral triangle).
 
-I think the resolution of the contradiction is that the inversion for which
+I think the resolution of this contradiction is that the inversion for which
 the fundamental domain applies is not in the origin, but in the flat.
 
 CQT's representative fundamental domain of inversional equivalence does,
@@ -1004,12 +1004,21 @@ end
 function Chord:iseIVector(range)
     range = range or octave
 	-- Identify the plane of inversional symmetry.
-    -- We need an algorithm to identify the minimum set of
-    -- non-collinear points in all inversion midpoints.
-	local simplex = {}
-    for dimension = 1, #self do
-        table.insert(simplex, self:move(dimension, 1):inversionMidpoint())
+    -- We need an algorithm to identify the spanning basis 
+    -- for the set of all inversion midpoints and their 
+    -- transpositions. This could be done by reduction or 
+    -- by solving the associated system of linear equations,
+    -- but we can it more simply here.
+    if self == self:inversionFlat(range) then
+        return true
     end
+	local simplex = {}
+    local a = self:origin()
+    local c = a:T(1)
+    local b = self:inversionFlat(range)
+    table.insert(simplex, a)
+    table.insert(simplex, b)
+    table.insert(simplex, c)
     local hyperplaneVolume, b = ChordSpace.volume(simplex)
     -- Then the volume of the simplex with the chord divided by
     -- the volume of the simplex without the chord is the distance.
@@ -1140,7 +1149,7 @@ function Chord:iseRPI(range)
     if not self:iseRP(range) then
         return false
     end
-    if not self:iseIVector(range) then
+    if not self:iseI(range) then
         return false
     end
     return true
@@ -1153,7 +1162,7 @@ end
 Chord.iseOPI = Chord.iseOPIGogins
 
 -- Returns the point in the inversion flat for a chord.
--- This is the chord that generates the
+-- This is the point that generates the
 -- inversion of a chord within P directly.
 -- FIX: The point-hyperplane distance and this
 -- seem to be contradicting each other -- have I not understood?
