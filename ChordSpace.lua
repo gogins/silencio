@@ -4,24 +4,21 @@ ChordSpace = {}
 
 PROBLEMS
 
-CQT postulate that any hyperplane which contains the inversion flat and
-defines a half space bounds a fundamental domain of inversion. However, under
+CQT postulate that any half space bounded by a hyperplane that contains the
+inversion flat is a fundamental domain of inversion. However, under
 range and permutational equivalence, there is only one such hyperplane, and
 it is the one that CQT's equation defines.
 
 CQT's representative fundamental domain of inversional equivalence does
-contain the inversion flat, but does not define a fundamental domain for
+contain the inversion flat, but does not define the fundamental domain for
 inversion w.r.t. the origin. This appears to be a contradiction. CQT's
 representative fundamental domain of inversional equivalence does bisect his
 representative fundamental domain for permutational equivalence
 (an equilateral triangle).
 
-I think the resolution of this contradiction is that the inversion for which
-the fundamental domain applies is not in the origin, but in the flat.
-
 CQT's representative fundamental domain of inversional equivalence does,
 at least for trichords, appear to define a fundamental domain for inversion
-w.r.t the octave / N.
+w.r.t the octave / N. VERIFY THIS.
 
 My linear algebra ALMOST identifies the representative fundamental domain of
 inversional equivalence w.r.t the origin, but does not contain the inversion
@@ -52,6 +49,8 @@ fundamental domain of inversional equivalence is also the actual fundamental dom
 for that particular inversion. There must be an equation that supplies this inversion
 point, actually.
 
+I can fix up my vector algebra by obtaining all points in the inversion flat,
+and transposing them, and reducing this set to a basis for the hyperplane.
 
 ]]
 
@@ -1004,9 +1003,9 @@ end
 function Chord:iseIVector(range)
     range = range or octave
 	-- Identify the plane of inversional symmetry.
-    -- We need an algorithm to identify the spanning basis 
-    -- for the set of all inversion midpoints and their 
-    -- transpositions. This could be done by reduction or 
+    -- We need an algorithm to identify the spanning basis
+    -- for the set of all inversion midpoints and their
+    -- transpositions. This could be done by reduction or
     -- by solving the associated system of linear equations,
     -- but we can it more simply here.
     if self == self:inversionFlat(range) then
@@ -1165,7 +1164,7 @@ Chord.iseOPI = Chord.iseOPIGogins
 -- This is the point that generates the
 -- inversion of a chord within P directly.
 
-function Chord:inversionFlat(range, point)
+function Chord:inversionFlatTymoczko(range, point)
     range = range or ChordSpace.OCTAVE
     point = point or 0
     local flat = Chord:new()
@@ -1176,9 +1175,25 @@ function Chord:inversionFlat(range, point)
     end
     if #flat < #self then
         table.insert(flat, point / 2)
-    end    
+    end
     return flat:ep()
 end
+
+-- This is correct -- satisfies CQT's equation, and
+-- produces the same inversion in P as the origin.
+
+function Chord:inversionFlatGogins(range, point)
+    range = range or OCTAVE
+    point = point or 0
+    local inverse = self:I(point):eRP(range)
+    local flat = self:clone()
+    for voice = 1, #self do
+        flat[voice] = inverse[voice] + self[voice]
+    end
+    return flat
+end
+
+Chord.inversionFlat = Chord.inversionFlatGogins
 
 function Chord:isInversionFlat(range)
     range = range or OCTAVE
