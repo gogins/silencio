@@ -310,7 +310,6 @@ function ChordView:drawChord(chord, name, picking)
         if chord:iseOPI() then
             blue = 0
         end
-
         local saturation = 1.0
         local value = 1.0
         local value = 0.5 + chord:sum() / 24.0
