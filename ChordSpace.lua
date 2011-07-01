@@ -4,7 +4,7 @@ ChordSpace = {}
 
 PROBLEMS
 
-CQT postulate that any half space bounded by a hyperplane that contains the
+CQT show that any half space bounded by a hyperplane that contains the
 inversion flat is a fundamental domain of inversion. However, under
 range and permutational equivalence, there is only one such hyperplane, and
 it is the one that CQT's equation defines.
@@ -51,6 +51,9 @@ point, actually.
 
 I can fix up my vector algebra by obtaining all points in the inversion flat,
 and transposing them, and reducing this set to a basis for the hyperplane.
+
+I am the victim of my own false visualizations. Reflection in the inversion flat
+in OP always reflects twice, first for permutation then for octave equivalence.
 
 ]]
 
@@ -356,7 +359,7 @@ local matrix = require("matrix")
 -- The size of the octave, defined to be consistent with
 -- 12 tone equal temperament and MIDI.
 
-OCTAVE = 12
+ChordSpace.OCTAVE = 12
 
 -- Middle C.
 
@@ -368,7 +371,7 @@ function er(pitch, range)
 end
 
 function eo(pitch)
-    return pitch % OCTAVE
+    return pitch % ChordSpace.OCTAVE
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
@@ -671,7 +674,7 @@ end
 -- under an optional range equivalence (defaulting to the octave).
 
 function Chord:count(pitch, range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local n = 0
     for voice, value in ipairs(self) do
         if er(value, range) == pitch then
@@ -733,12 +736,12 @@ function Chord:v(direction)
     local chord = self:clone()
     while direction > 0 do
         chord = chord:cycle(-1)
-        chord[#chord] = chord[#chord] + OCTAVE
+        chord[#chord] = chord[#chord] + ChordSpace.OCTAVE
         direction = direction - 1
     end
     while direction < 0 do
         chord = chord:cycle(1)
-        chord[1] = chord[1] - OCTAVE
+        chord[1] = chord[1] - ChordSpace.OCTAVE
         direction = direction + 1
     end
     return chord
@@ -834,7 +837,7 @@ function Chord:iseR(range)
 end
 
 function Chord:iseO()
-    return self:iseR(OCTAVE)
+    return self:iseR(ChordSpace.OCTAVE)
 end
 
 function Chord:iseP()
@@ -1001,7 +1004,7 @@ function ChordSpace.volume(chords)
 end
 
 function Chord:iseIVector(range)
-    range = range or octave
+    range = range or ChordSpace.OCTAVE
 	-- Identify the plane of inversional symmetry.
     -- We need an algorithm to identify the spanning basis
     -- for the set of all inversion midpoints and their
@@ -1032,7 +1035,7 @@ end
 -- Returns whether the chord is on or below the plane
 -- of inversional symmetry (the inversion midpoints).
 
-Chord.iseI = Chord.iseIVector
+Chord.iseI = Chord.iseIGogins3
 
 function Chord:iseRP(range)
     if not self:iseP(range) then
@@ -1045,11 +1048,11 @@ function Chord:iseRP(range)
 end
 
 function Chord:iseOP()
-    return self:iseRP(OCTAVE)
+    return self:iseRP(ChordSpace.OCTAVE)
 end
 
 function Chord:iseRT(range, g)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     g = g or 1
     if not self:iseR(range) then
         return false
@@ -1061,7 +1064,7 @@ function Chord:iseRT(range, g)
 end
 
 function Chord:iseOT()
-    return self:iseRT(OCTAVE)
+    return self:iseRT(ChordSpace.OCTAVE)
 end
 
 function Chord:iseRI(range)
@@ -1075,7 +1078,7 @@ function Chord:iseRI(range)
 end
 
 function Chord:iseOI()
-    return self:isRI(OCTAVE)
+    return self:isRI(ChordSpace.OCTAVE)
 end
 
 function Chord:isePT(g)
@@ -1101,7 +1104,7 @@ function Chord:iseTI(g)
 end
 
 function Chord:iseRPT(range, g)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     g = g or 1
     local eRPT = self:eRPT(range, g)
     if not (self == eRPT) then
@@ -1112,7 +1115,7 @@ end
 
 function Chord:iseOPT(g)
     g = g or 1
-    return self:iseRPT(OCTAVE, g)
+    return self:iseRPT(ChordSpace.OCTAVE, g)
 end
 
 function Chord:iseRPI(range)
@@ -1131,11 +1134,11 @@ function Chord:iseOPITymoczko()
             return false
         end
     end
-    if not (self[#self] <= self[1] + OCTAVE) then
+    if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
         return false
     end
     local layer = self:sum()
-    if not (0 <= layer and layer <= OCTAVE) then
+    if not (0 <= layer and layer <= ChordSpace.OCTAVE) then
         return false
     end
     if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
@@ -1155,10 +1158,21 @@ function Chord:iseRPI(range)
 end
 
 function Chord:iseOPIGogins()
-    return self:iseRPI(OCTAVE)
+    return self:iseRPI(ChordSpace.OCTAVE)
 end
 
 Chord.iseOPI = Chord.iseOPIGogins
+
+-- Returns the chord that is halfway
+-- in between a chord and its inversion.
+-- These chords define the plane of symmetry
+-- for inversion. All chords are unordered.
+
+function Chord:inversionMidpoint(range)
+    range = range or ChordSpace.OCTAVE
+    local inverse = self:I():eRP(range)
+    return self:midpoint(inverse)
+end
 
 -- Returns the point in the inversion flat for a chord.
 -- This is the point that generates the
@@ -1179,13 +1193,14 @@ function Chord:inversionFlatTymoczko(range, point)
     return flat:ep()
 end
 
--- This is correct -- satisfies CQT's equation, and
--- produces the same inversion in P as the origin.
+-- This has got to be wrong, produces 2 orthogonal lines.
+-- And therefore, this is probably telling me exactly what is wrong 
+-- with my whole picture, if I could only understand it.
 
 function Chord:inversionFlatGogins(range, point)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     point = point or 0
-    local inverse = self:I(point):eRP(range)
+    local inverse = self:I():eRP(range)
     local flat = self:clone()
     for voice = 1, #self do
         flat[voice] = inverse[voice] + self[voice]
@@ -1193,10 +1208,10 @@ function Chord:inversionFlatGogins(range, point)
     return flat
 end
 
-Chord.inversionFlat = Chord.inversionFlatGogins
+Chord.inversionFlat = Chord.inversionMidpoint
 
 function Chord:isInversionFlat(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local inverse = self:I():ep(range)
     if self == inverse then
         return true
@@ -1215,17 +1230,6 @@ function Chord:midpoint(other)
     return midpoint:ep()
 end
 
--- Returns the chord that is halfway
--- in between a chord and its inversion.
--- These chords define the plane of symmetry
--- for inversion. All chords are unordered.
-
-function Chord:inversionMidpoint(range)
-    range = range or OCTAVE
-    local inverse = self:I():eRP(range)
-    return self:midpoint(inverse)
-end
-
 function Chord:iseRPTI(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
@@ -1239,7 +1243,7 @@ end
 
 function Chord:iseOPTI(g)
     g = g or 1
-    return self:iseRPTI(OCTAVE, g)
+    return self:iseRPTI(ChordSpace.OCTAVE, g)
 end
 
 -- Returns whether the chord is in the fundamental domain
@@ -1267,7 +1271,7 @@ function Chord:eR(range)
 end
 
 function Chord:eO()
-    return self:eR(OCTAVE)
+    return self:eR(ChordSpace.OCTAVE)
 end
 
 function Chord:eP()
@@ -1296,7 +1300,7 @@ end
 Chord.eRP = Chord.eRPTymoczko
 
 function Chord:eOP()
-    return self:eRP(OCTAVE)
+    return self:eRP(ChordSpace.OCTAVE)
 end
 
 -- Returns the chord transposed such that its layer is 0 or,
@@ -1319,7 +1323,7 @@ function Chord:eT(g)
 end
 
 function Chord:er(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local chord = self:clone()
     for voice, pitch in ipairs(chord) do
         chord[voice] = pitch % range
@@ -1328,7 +1332,7 @@ function Chord:er(range)
 end
 
 function Chord:eo()
-    return self:er(OCTAVE)
+    return self:er(ChordSpace.OCTAVE)
 end
 
 function Chord:erp(range)
@@ -1336,7 +1340,7 @@ function Chord:erp(range)
 end
 
 function Chord:eop()
-    return self:erp(OCTAVE)
+    return self:erp(ChordSpace.OCTAVE)
 end
 
 function Chord:et()
@@ -1358,7 +1362,6 @@ end
 -- unisons diagonal.
 
 function Chord:iseV(range)
-    range = range or OCTAVE
     local isev = true
     for voice = 1, #self - 1 do
         if not ((self[1] + range - self[#self]) <= (self[voice + 1] - self[voice])) then
@@ -1371,7 +1374,7 @@ end
 
 --[[
 function Chord:iseV(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local voicings = self:voicings()
     for i = 1, #voicings do
         voicings[i] = voicings[i]:et():ep()
@@ -1387,7 +1390,7 @@ end
 
 --[[
 function Chord:iseV(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local voicings = self:voicings()
     local minimumVoicing = voicings[1]
     local minimumDistance = minimumVoicing:distanceToUnisonDiagonal()
@@ -1412,12 +1415,13 @@ end
 -- chords under rotational equivalence by 2 pi / N.
 
 function Chord:eRPT(range, g)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     g = g or 1
     local erp = self:eRP(range)
     local voicings = erp:voicings()
+    -- FIX: There is a bug here for some chords on the mirrors.
     for i, voicing in ipairs(voicings) do
-        if voicing:iseV() then
+        if voicing:iseV(range) then
             return voicing:eT(g)
         end
     end
@@ -1425,7 +1429,7 @@ function Chord:eRPT(range, g)
 
 function Chord:eOPT(g)
     g = g or 1
-    return self:eRPT(OCTAVE, g)
+    return self:eRPT(ChordSpace.OCTAVE, g)
 end
 
 function Chord:eOPTI(g)
@@ -1502,7 +1506,7 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:K(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local chord = self:clone()
     if #chord < 2 then
         return chord
@@ -1518,7 +1522,7 @@ end
 function Chord:Tform(Y, g)
     local eopx = self:eop()
     local i = 0
-    while i < OCTAVE do
+    while i < ChordSpace.OCTAVE do
         local ty = Y:T(i)
         local eopty = ty:eop()
         if eopx == eopty then
@@ -1535,7 +1539,7 @@ end
 function Chord:Iform(Y, g)
     local eopx = self:eop()
     local i = 0
-    while i < OCTAVE do
+    while i < ChordSpace.OCTAVE do
         local iy = Y:I(i)
         local eopiy = iy:eop()
         if eopx == eopiy then
@@ -1565,14 +1569,14 @@ end
 -- or nil if the chord is higher than RP.
 
 function Chord:V(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local iterator = self:clone()
     local zero = self:eOP()
     -- Enumerate the next voicing by counting voicings in RP.
     -- iterator[1] is the most significant voice,
     -- iterator[self.N] is the least significant voice.
     while iterator[1] < range do
-        iterator[#self] = iterator[#self] + OCTAVE
+        iterator[#self] = iterator[#self] + ChordSpace.OCTAVE
         local unorderedIterator = iterator:ep()
         if unorderedIterator:iseRP(range) then
             return unorderedIterator
@@ -1581,7 +1585,7 @@ function Chord:V(range)
         for voice = #self, 2, -1 do
             if iterator[voice] >= range then
                 iterator[voice] = zero[voice]
-                iterator[voice - 1] = iterator[voice - 1] + OCTAVE
+                iterator[voice - 1] = iterator[voice - 1] + ChordSpace.OCTAVE
             end
         end
     end
@@ -1591,7 +1595,7 @@ end
 -- Returns all voicings of the chord under RP.
 
 function Chord:Voicings(range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local voicings = {}
     local iterator = self:clone()
     local zero = self:eOP()
@@ -1600,7 +1604,7 @@ function Chord:Voicings(range)
     -- iterator[self.N] is the least significant voice.
     voicings[1] = zero:clone()
     while iterator[1] < range do
-        iterator[#self] = iterator[#self] + OCTAVE
+        iterator[#self] = iterator[#self] + ChordSpace.OCTAVE
         local unorderedIterator = iterator:ep()
         if unorderedIterator:iseRP(range) then
             voicings[#voicings + 1] = unorderedIterator
@@ -1609,7 +1613,7 @@ function Chord:Voicings(range)
         for voice = #self, 2, -1 do
             if iterator[voice] >= range then
                 iterator[voice] = zero[voice]
-                iterator[voice - 1] = iterator[voice - 1] + OCTAVE
+                iterator[voice - 1] = iterator[voice - 1] + ChordSpace.OCTAVE
             end
         end
     end
@@ -1655,7 +1659,7 @@ end
 -- is the smoother (shortest moves), optionally avoiding parallel fifths.
 
 function ChordSpace.voiceleadingSmoother(source, d1, d2, avoidParallels, range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     if avoidParallels then
         if ChordSpace.parallelFifth(source, d1) then
             return d2
@@ -1859,14 +1863,14 @@ function conformToChord(event, chord, octaveEquivalence)
     else
         local pitch = event[KEY]
         if octaveEquivalence then
-            local pitchClass = pitch % OCTAVE
+            local pitchClass = pitch % ChordSpace.OCTAVE
             local octave = pitch - pitchClass
-            local chordPitchClass = chord[1] % OCTAVE
+            local chordPitchClass = chord[1] % ChordSpace.OCTAVE
             local distance = math.abs(chordPitchClass - pitchClass)
             local closestPitchClass = chordPitchClass
             local minimumDistance = distance
             for voice = 2, #chord do
-                chordPitchClass = chord[voice] % OCTAVE
+                chordPitchClass = chord[voice] % ChordSpace.OCTAVE
                 distance = math.abs(chordPitchClass - pitchClass)
                 if distance < minimumDistance then
                     minimumDistance = distance
@@ -1935,7 +1939,7 @@ function gather(score, start, end_)
 end
 
 function ChordSpace.allChordsInRange(voices, range, g)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     g = g or 1
     -- Enumerate all chords in O.
     local chordset = {}
@@ -1955,6 +1959,23 @@ function ChordSpace.allChordsInRange(voices, range, g)
         end
     end
     return chordset
+end
+
+function ChordSpace.flats(voices, range, g)
+    range = range or ChordSpace.OCTAVE
+    g = g or 1
+    local flatsSet = {}
+    local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
+    for key, rp in pairs(rps) do
+        local flat = rp:inversionFlat(range)
+        flatsSet[flat:__hash()] = flat
+    end
+    local sortedFlats = {}
+    for key, flat in pairs(flatsSet) do
+        table.insert(sortedFlats, flat)
+    end
+    table.sort(sortedFlats)
+    return sortedFlats
 end
 
 -- Returns all the chords with the specified number of voices that exist
@@ -1986,7 +2007,7 @@ function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
         equivalenceMapper = Chord.eOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE + 1)
+    local chordset = ChordSpace.allChordsInRange(voices, ChordSpace.OCTAVE + 1)
     -- Coerce all chords to the equivalence class.
     local equivalentChords = {}
     for hash, chord in pairs(chordset) do
@@ -2032,7 +2053,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, OCTAVE + 1)
+    local chordset = ChordSpace.allChordsInRange(voices, ChordSpace.OCTAVE + 1)
     -- Select only those O chords that are within the complete
     -- equivalence class.
     local equivalentChords = {}
@@ -2080,7 +2101,7 @@ end
 -- number of voices within the indicated range.
 
 function ChordSpace.octavewisePermutations(voices, range)
-    range = range or OCTAVE
+    range = range or ChordSpace.OCTAVE
     local voicings = {}
     local zero = Chord:new()
     zero:resize(voices)
@@ -2091,12 +2112,12 @@ function ChordSpace.octavewisePermutations(voices, range)
     voicing = 0
     while odometer[1] <= range do
         voicings[voicing] = odometer:clone()
-        odometer[voices] = odometer[voices] + OCTAVE
+        odometer[voices] = odometer[voices] + ChordSpace.OCTAVE
          -- "Carry" octaves.
         for voice = voices, 2, - 1 do
             if odometer[voice] > range then
                 odometer[voice] = zero[voice]
-                odometer[voice - 1] = odometer[voice - 1] + OCTAVE
+                odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
             end
         end
         voicing = voicing + 1
@@ -2130,7 +2151,7 @@ end
 function ChordSpaceGroup:toChord(P, I, T, V)
     P = P % #self.optisForIndexes
     I = I % 2
-    T = T % OCTAVE
+    T = T % ChordSpace.OCTAVE
     V = V % #self.voicingsForIndexes
     print('P:', P, 'I:', I, 'T:', T, 'V:', V)
     local opti = self.optisForIndexes[P]
@@ -2172,7 +2193,7 @@ function ChordSpaceGroup:fromChord(chord)
     local T = 0
     local opt = chord:eOPT()
     local op = chord:eOP()
-    for t = 0, OCTAVE - 1, self.g do
+    for t = 0, ChordSpace.OCTAVE - 1, self.g do
         if opt:T(t):eOP() == op then
             T = t
             break

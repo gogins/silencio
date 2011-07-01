@@ -166,7 +166,7 @@ end
 
 function ChordView:drawGrid()
     gl.glBegin(gl.GL_LINES)
-    local range = OCTAVE * self.octaves
+    local range = ChordSpace.OCTAVE * self.octaves
     gl.glColor4f(1, 0, 0, 0.5)
     gl.glVertex3f(0, 0, 0)
     gl.glVertex3f(0, 0, range)
@@ -345,16 +345,21 @@ function ChordView:createChords()
         dummy, self.chords = ChordSpace.allOfEquivalenceClass(3, self.equivalence)
     end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
+    local flats = ChordSpace.flats(3)
+    for key, flat in ipairs(flats) do
+        table.insert(self.chords, flat)
+    end
     --local count = #self.chords
     --for i = 1, count do
     --   local flat = self.chords[i]:inversionFlat()
     --    self.chords[#self.chords] = flat
     --end
+    print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 
 function ChordView:isE(chord)
     if self.equivalence == 'R' then
-        return chord:iseR(self.octaves * OCTAVE)
+        return chord:iseR(self.octaves * ChordSpace.OCTAVE)
     end
     if self.equivalence == 'O' then
         return chord:iseO()
@@ -369,7 +374,7 @@ function ChordView:isE(chord)
         return chord:iseI()
     end
     if self.equivalence == 'RP' then
-        return chord:iseRP(self.octaves * OCTAVE)
+        return chord:iseRP(self.octaves * ChordSpace.OCTAVE)
     end
     if self.equivalence == 'OP' then
         return chord:iseOP()
@@ -394,7 +399,7 @@ end
 function ChordView:E(chord)
     -- print('E: chord:', chord)
     if self.equivalence == 'R' then
-        return chord:eR(self.octaves * OCTAVE)
+        return chord:eR(self.octaves * ChordSpace.OCTAVE)
     end
     if self.equivalence == 'O' then
         return chord:eO()
@@ -409,7 +414,7 @@ function ChordView:E(chord)
         return chord:eI()
     end
     if self.equivalence == 'RP' then
-        return chord:eRP(self.octaves * OCTAVE)
+        return chord:eRP(self.octaves * ChordSpace.OCTAVE)
     end
     if self.equivalence == 'OP' then
         return chord:eOP()
@@ -634,7 +639,7 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
                 local flat = self.pickedChord:inversionFlat()
-                --flat.flat = true
+                flat.flat = true
                 table.insert(self.chords, flat)
                 --local midpoint = self.pickedChord:inversionMidpoint()
                 --table.insert(self.chords, midpoint)

@@ -127,6 +127,7 @@ pass('Each chord in OPTI must be eOPTI.')
 
 for arity = 2, 4 do
     local ops = ChordSpace.allOfEquivalenceClass(arity, 'OP')
+    local flatset ={}
     for key, chord in pairs(ops) do
         local inversion = chord:I():eOP()
         local reinversion = inversion:I():eOP()
@@ -158,10 +159,9 @@ for arity = 2, 4 do
     pass('Re-inversion must be the same as re-reflection.')
     pass('Re-inversion and re-reflection must be the same as the original chord.')
     print(string.format('All chords in inversion flat for %d voices:', arity))
-    for key, chord in pairs(ops) do
-        if chord:isInversionFlat() then
-            print(string.format('flat: %s  midpoint: %s', tostring(chord), tostring(chord:inversionMidpoint())))
-        end
+    flats = ChordSpace.flats(3, ChordSpace.OCTAVE)
+    for key, flat in pairs(flats) do
+        print(string.format('flat: %s', tostring(flat)))
     end
 end
 
