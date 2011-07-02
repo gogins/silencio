@@ -522,6 +522,7 @@ end
 
 function ChordView:display()
     glfw.glfwInit()
+    local dP = 2
     local window = glfw.glfwOpenWindow( 800, 600, glfw.GLFW_WINDOWED, "Chord Space", nil)
     glfw.glfwEnable(window, glfw.GLFW_STICKY_KEYS)
     glfw.glfwDisable(window, glfw.GLFW_AUTO_POLL_EVENTS)
@@ -600,27 +601,27 @@ function ChordView:display()
         end
         -- Spin in?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_9) == glfw.GLFW_PRESS then
-            rz = rz - .7
+            rz = rz - dP
         end
         -- Spin out?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_3) == glfw.GLFW_PRESS then
-            rz = rz + .7
+            rz = rz + dP
         end
         -- Spin left?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_7) == glfw.GLFW_PRESS then
-            rx = rx - .7
+            rx = rx - dP
         end
         -- Spin right?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_1) == glfw.GLFW_PRESS then
-            rx = rx + .7
+            rx = rx + dP
         end
         -- Spin up?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_8) == glfw.GLFW_PRESS then
-            ry = ry - .7
+            ry = ry - dP
         end
         -- Spin down?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_2) == glfw.GLFW_PRESS then
-            ry = ry + .7
+            ry = ry + dP
         end
         -- Operate on a chord, if one has been picked, keeping it within the specified orbifold.
         if self.pickedChord ~= nil then
@@ -643,7 +644,7 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
                 local layer = self.pickedChord:sum()
-                self.pickedChord = self:E(self.pickedChord:I():eOP())
+                self.pickedChord = self:E(self.pickedChord:I())
                 print(self.pickedChord:label())
                 print()
             end

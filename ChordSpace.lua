@@ -4,28 +4,34 @@ ChordSpace = {}
 
 PROBLEMS
 
-Inverting any chord in the quotient space RPI sends that chord to itself. This 
-can be visualized in PI by "folding" the upper half prism back down over the 
-lower half prism (which is the representative fundamental domain for RPI). The 
-hopping of chords up and down the translational columns is thus explained -- 
-they are hopping in RP, but fixed in RPI.
+Inverting any chord in the quotient space RPI sends that chord to itself. This
+can be visualized in RP by folding the upper half prism along the inversion
+flat back down over the lower half prism (which is the representative
+fundamental domain for RPI). The hopping of chords up and down the
+translational columns in RP is thus explained -- they are hopping in RP, but
+fixed in RPI.
 
-CQT state that any half space bounded by a hyperplane that contains the 
-inversion flat is a fundamental domain of inversion, and that identifying 
-this hyperplane with its reflection in the inversion flat defines the 
-quotient space PI. In RPI, there is only one such hyperplane -- the one 
+CQT state that any half space bounded by a hyperplane that contains the
+inversion flat is a fundamental domain of inversion, and that identifying
+this hyperplane with its reflection in the inversion flat defines the
+quotient space PI. In RPI, there is only one such hyperplane -- the one
 defined by CQT's equation. This is CQT's representative fundamental domain for
-RPI. It does contain the inversion flat, but as far as I can see it does NOT 
-define the quotient space for RPI w.r.t the origin. This appears to be a 
-contradiction. CQT's representative fundamental domain for RPI does bisect 
-their representative fundamental domain for RPT (an equilateral triangle).
+RPI. It does contain the inversion flat, but as far as I can see it does NOT
+define the quotient space for RPI w.r.t the origin. This appears to be a
+contradiction. CQT's representative fundamental domain for RPI does bisect
+their representative fundamental domain for RPT (an equilateral triangle),
+and thir intersection does define CQT's representative fundamental domain for
+RPTI.
 
 EITHER I AM WRONGLY IDENTIFYING THE INVERSION FLAT, OR I AM STILL NOT UNDERSTANDING
 CQT ABOUT THE FLAT/THE RPI DOMAIN, OR CQT ARE WRONG SOMEWHERE.
 
-CQT's representative fundamental domain for RPI does, at least for trichords, 
-appear to define a fundamental domain for inversion w.r.t the octave / N. 
-VERIFY THIS.
+I expect I am wrong about the flat, because of the two lines, one of which looks right.
+
+CQT's representative fundamental domain for RPI does, at least for trichords,
+appear to define a fundamental domain for inversion w.r.t the octave / N.
+VERIFY THIS. If this holds for all arities, perhaps I can use this and be done
+with it.
 
 My linear algebra ALMOST identifies the representative fundamental domain of
 inversional equivalence w.r.t the origin, but does not contain the inversion
@@ -34,7 +40,7 @@ does not bisect CQT's representative fundamental domain for permutational
 equivalence (an equilateral triangle) -- but does bisect an alternative
 representative fundamental domain for permutational equivalence (a kite).
 
-I believe that all inversion midpoints, and all their transpositions, define 
+I believe that all inversion midpoints, and all their transpositions, define
 the plane of inversional symmetry.
 
 I need to either:
@@ -46,20 +52,20 @@ I need to either:
 --  Fix up my vector algebra by obtaining all points in the inversion midpoint
     (which, for 3 voices, is also a line but is orthogonal to the flat),
     and transposing them, and reducing this set to a basis for the hyperplane.
-    After that I still need the equation for the kite. But this latter option seems 
-    more correct. But there is a problem in that the inversion midpoint for the 
-    origin is the origin. But is this a problem? That may actually help define our 
+    After that I still need the equation for the kite. But this latter option seems
+    more correct. But there is a problem in that the inversion midpoint for the
+    origin is the origin. But is this a problem? That may actually help define our
     simplex.
-    
+
 OK, so we do the vector algebra and define a half wedge that starts at the top. Then
-there is STILL a problem in that points along the top edge invert by hopping up and down 
+there is STILL a problem in that points along the top edge invert by hopping up and down
 the edge. They are not fixed points. But they do not move from the one side of the wedge
-to the other either. Of course, it if they move up and down a column that is parallel 
+to the other either. Of course, it if they move up and down a column that is parallel
 to the unison diagonal, they are still inversionally equivalent.
 
 Transpose by the layer? No.
 
-My own thoughts are not consistent, because my visualizations of these inversions are 
+My own thoughts are not consistent, because my visualizations of these inversions are
 misleading.
 
 ]]
@@ -1201,7 +1207,7 @@ function Chord:inversionFlatTymoczko(range, point)
 end
 
 -- This has got to be wrong, produces 2 orthogonal lines.
--- And therefore, this is probably telling me exactly what is wrong 
+-- And therefore, this is probably telling me exactly what is wrong
 -- with my whole picture, if I could only understand it.
 
 function Chord:inversionFlatGogins(range, point)
