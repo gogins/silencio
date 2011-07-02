@@ -27,33 +27,33 @@ does not bisect CQT's representative fundamental domain for permutational
 equivalence (an equilateral triangle) -- but does bisect an alternative
 representative fundamental domain for permutational equivalence (a kite).
 
-I need to either:
-
--- Find the inversion point that works with CQT's domains in all arities, and that
-   also generates an inversion flat the is contained in the representative fundamental
-   domain, or
-
--- Find the equation for the kite, and fix up my vector algebra.
-
--- Accept CQT's equation, and define another operation of inversion from which
-   to generate my decomposed groups.
-
-I don't understand why the inversion flat should/should not be in the plane of
-inversional symmetry.
-
 I must find out if the inversion flat changes when the point of inversion changes.
 Answer: Of course it does.
 
-I must find out of there is an inversion point for which CQT's representative
-fundamental domain of inversional equivalence is also the actual fundamental domain
-for that particular inversion. There must be an equation that supplies this inversion
-point, actually.
+I believe that all inversion midpoints, and all their transpositions, define 
+the plane of inversional symmetry.
 
-I can fix up my vector algebra by obtaining all points in the inversion flat,
-and transposing them, and reducing this set to a basis for the hyperplane.
+I need to either:
 
-I am the victim of my own false visualizations. Reflection in the inversion flat
-in OP always reflects twice, first for permutation then for octave equivalence.
+--  Find out of there is an inversion point for which CQT's representative
+    fundamental domain of inversional equivalence is also the actual fundamental domain
+    for that particular inversion (e.g. 4 for trichords).
+
+--  Fix up my vector algebra by obtaining all points in the inversion midpoint
+    (which, for 3 voices, is also a line but is orthogonal to the flat),
+    and transposing them, and reducing this set to a basis for the hyperplane.
+    After that I still need the equation for the kite. But this latter option seems 
+    more correct. But there is a problem in that the inversion midpoint for the 
+    origin is the origin. But is this a problem? That may actually help define our 
+    simplex.
+    
+OK, so we do the vector algebra and define a half wedge that starts at the top. Then
+there is STILL a problem in that points along the top edge invert by hopping up and down 
+the edge. They are not fixed points. But they do not move from the one side of the wedge
+to the other either. 
+
+I should think that if they remain in one fundamental domain, they should not move.
+Transpose by the layer? No.
 
 ]]
 
@@ -1208,7 +1208,7 @@ function Chord:inversionFlatGogins(range, point)
     return flat
 end
 
-Chord.inversionFlat = Chord.inversionMidpoint
+Chord.inversionFlat = Chord.inversionFlatGogins
 
 function Chord:isInversionFlat(range)
     range = range or ChordSpace.OCTAVE
@@ -1967,7 +1967,25 @@ function ChordSpace.flats(voices, range, g)
     local flatsSet = {}
     local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
     for key, rp in pairs(rps) do
-        local flat = rp:inversionFlat(range)
+        if rp:isInversionFlat(range) then
+            flatsSet[rp:__hash()] = rp
+        end
+    end
+    local sortedFlats = {}
+    for key, flat in pairs(flatsSet) do
+        table.insert(sortedFlats, flat)
+    end
+    table.sort(sortedFlats)
+    return sortedFlats
+end
+
+function ChordSpace.inversionMidpoints(voices)
+    range = range or ChordSpace.OCTAVE
+    g = g or 1
+    local flatsSet = {}
+    local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP')
+    for key, rp in pairs(rps) do
+        local flat = rp:inversionMidpoint()
         flatsSet[flat:__hash()] = flat
     end
     local sortedFlats = {}
