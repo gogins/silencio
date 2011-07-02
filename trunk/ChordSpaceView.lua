@@ -345,10 +345,14 @@ function ChordView:createChords()
         dummy, self.chords = ChordSpace.allOfEquivalenceClass(3, self.equivalence)
     end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
-    local flats = ChordSpace.flats(3)
-    for key, flat in ipairs(flats) do
-        table.insert(self.chords, flat)
-    end
+    --local midpoints = ChordSpace.inversionMidpoints(3)
+    --for key, midpoint in ipairs(midpoints) do
+    --    table.insert(self.chords, midpoint)
+    --end
+    --local flats = ChordSpace.flats(3)
+    --for key, flat in ipairs(flats) do
+    --    table.insert(self.chords, flat)
+    --end
     --local count = #self.chords
     --for i = 1, count do
     --   local flat = self.chords[i]:inversionFlat()
@@ -638,11 +642,7 @@ function ChordView:display()
             -- I?
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
-                local flat = self.pickedChord:inversionFlat()
-                flat.flat = true
-                table.insert(self.chords, flat)
-                --local midpoint = self.pickedChord:inversionMidpoint()
-                --table.insert(self.chords, midpoint)
+                local layer = self.pickedChord:sum()
                 self.pickedChord = self:E(self.pickedChord:I():eOP())
                 print(self.pickedChord:label())
                 print()
