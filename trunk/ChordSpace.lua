@@ -9,7 +9,7 @@ can be visualized in RP by folding the upper half prism along the inversion
 flat back down over the lower half prism (which is the representative
 fundamental domain for RPI). The hopping of chords up and down the
 translational columns in RP is thus explained -- they are hopping in RP, but
-fixed in RPI.
+fixed in RPI. But there may be exceptions to this...
 
 CQT state that any half space bounded by a hyperplane that contains the
 inversion flat is a fundamental domain of inversion, and that identifying
@@ -23,50 +23,47 @@ their representative fundamental domain for RPT (an equilateral triangle),
 and thir intersection does define CQT's representative fundamental domain for
 RPTI.
 
-EITHER I AM WRONGLY IDENTIFYING THE INVERSION FLAT, OR I AM STILL NOT UNDERSTANDING
-CQT ABOUT THE FLAT/THE RPI DOMAIN, OR CQT ARE WRONG SOMEWHERE.
-
-I expect I am wrong about the flat, because of the two lines, one of which looks right.
+CQT define the inversion flat for permutational equivalence only (P). If one
+defines the inversion flat of all chords in OP, there are two lines. The
+line closer to the origin consists of chords in the flat that also are in OP.
+The line farther from the origin is the first line with an octave added, which
+permutes the voices, e.g. {-6, 0, 6} is in the inversion flat, but so is
+{-6, 6, 12}. Of course {-6, 6, 12} in P is {-6, 0, 6} in OP. But these two
+flats do not produce the same reflection in OP. Only the two lines actually
+work.
 
 CQT's representative fundamental domain for RPI does, at least for trichords,
 appear to define a fundamental domain for inversion w.r.t the octave / N.
-VERIFY THIS. If this holds for all arities, perhaps I can use this and be done
-with it.
+Prove or disprove this. If this holds for all arities, perhaps I can use this
+and be done with it. But it does not hold even for trichords, because some
+chords in OP reflect in the one line of the flat, and other chords reflect in
+the other line.
 
-My linear algebra ALMOST identifies the representative fundamental domain of
-inversional equivalence w.r.t the origin, but does not contain the inversion
-flat, so here too there appears to be a contradiction. My linear algebra also
-does not bisect CQT's representative fundamental domain for permutational
-equivalence (an equilateral triangle) -- but does bisect an alternative
-representative fundamental domain for permutational equivalence (a kite).
+The midpoints of inversions w.r.t. the origin also define two lines with the
+same orientation as the flat. In both cases, reflecting the flats or midpoints
+back into RP reduces them to single lines.
 
-I believe that all inversion midpoints, and all their transpositions, define
-the plane of inversional symmetry.
+After that, I need the equation for Callendar's kite-shaped domain of OT
+equivalence.
 
-I need to either:
+First, I need to prove that all inversions do lie on one side or the other of
+a plane of symmetry. I have written code to iterate through OP and pick every
+chord and its inverse in turn. If a chord is white, then its purple inverse
+should be in the other prism (which includes the plane of symmetry). This does
+not seem always to be the case...
 
---  Find out of there is an inversion point for which CQT's representative
-    fundamental domain of inversional equivalence is also the actual fundamental domain
-    for that particular inversion (e.g. 4 for trichords).
+Then, I need my own way to identify the plane of symmetry since either I'm not
+understanding CQT, or they are wrong. This plane is parallel to the unison
+diagonal.
 
---  Fix up my vector algebra by obtaining all points in the inversion midpoint
-    (which, for 3 voices, is also a line but is orthogonal to the flat),
-    and transposing them, and reducing this set to a basis for the hyperplane.
-    After that I still need the equation for the kite. But this latter option seems
-    more correct. But there is a problem in that the inversion midpoint for the
-    origin is the origin. But is this a problem? That may actually help define our
-    simplex.
+I have been watching the inversions cycle. It looks like permuting a chord
+before testing its invesional equivalence by CQT's equation produces the best
+fit so far to the actual fundamental domain of inversion by the origin. This
+of course is similar to inverting by octave / N.
 
-OK, so we do the vector algebra and define a half wedge that starts at the top. Then
-there is STILL a problem in that points along the top edge invert by hopping up and down
-the edge. They are not fixed points. But they do not move from the one side of the wedge
-to the other either. Of course, it if they move up and down a column that is parallel
-to the unison diagonal, they are still inversionally equivalent.
-
-Transpose by the layer? No.
-
-My own thoughts are not consistent, because my visualizations of these inversions are
-misleading.
+As for the two lines in the flat, perhaps they can be got rid of by
+permuting the extra line to extend the other line. This permutation
+would be on the lower voices.
 
 ]]
 
@@ -881,24 +878,6 @@ function Chord:iseITymoczko()
     return false
 end
 
-function Chord:iseIGogins1()
-    local chord = self
-    local upperVoice = #self
-    for lowerVoice = 2, #self do
-        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
-        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
-        if lowerInterval < upperInterval then
-            return true
-        end
-        if lowerInterval > upperInterval then
-            return false
-        end
-        lowerVoice = lowerVoice + 1
-        upperVoice = upperVoice - 1
-    end
-    return true
-end
-
 function Chord:iseIGogins2()
     local chord = self:eOP()
     local inverse = self:I():eOP()
@@ -920,11 +899,12 @@ function Chord:iseIGogins2()
 end
 
 function Chord:iseIGogins3()
+    chord = self:v()
     local lowerVoice = 2
-    local upperVoice = #self
+    local upperVoice = #chord
     while lowerVoice < upperVoice do
-        local lowerInterval = self[lowerVoice] - self[lowerVoice - 1]
-        local upperInterval = self[upperVoice] - self[upperVoice - 1]
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
         if lowerInterval < upperInterval then
             return true
         end
@@ -956,8 +936,6 @@ Graphics," Indiana University, 1996. This is the ratio of the volume of
 an N dimensional simplex to the volume of its N - 1 dimensional 'base.'
 Here the base is the simplex defining the bounding hyperplane above,
 and the full simplex adds the chord in question.
-
-
 
 ]]
 
@@ -1221,11 +1199,22 @@ function Chord:inversionFlatGogins(range, point)
     return flat
 end
 
+function Chord:inversionFlatGogins2(range, point)
+    range = range or ChordSpace.OCTAVE
+    point = point or 0
+    local inverse = self:I():ep(range)
+    local flat = self:clone()
+    for voice = 1, #self do
+        flat[voice] = inverse[voice] + self[voice]
+    end
+    return flat
+end
+
 Chord.inversionFlat = Chord.inversionFlatGogins
 
 function Chord:isInversionFlat(range)
     range = range or ChordSpace.OCTAVE
-    local inverse = self:I():ep(range)
+    local inverse = self:I():eRP(range)
     if self == inverse then
         return true
     end
@@ -1233,14 +1222,13 @@ function Chord:isInversionFlat(range)
 end
 
 -- Returns the chord that is midway between self and other.
--- All chords an unordered.
 
 function Chord:midpoint(other)
     local midpoint = self:clone()
-    for voice, pitch in ipairs(self) do
-        midpoint[voice] = pitch + (other[voice] - pitch) / 2
+    for voice = 1, #self do
+        midpoint[voice] = self[voice] - ((self[voice] - other[voice]) / 2)
     end
-    return midpoint:ep()
+    return midpoint
 end
 
 function Chord:iseRPTI(range, g)
@@ -1980,9 +1968,11 @@ function ChordSpace.flats(voices, range, g)
     local flatsSet = {}
     local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
     for key, rp in pairs(rps) do
-        if rp:isInversionFlat(range) then
-            flatsSet[rp:__hash()] = rp
-        end
+        --if rp:isInversionFlat(range) then
+        --    flatsSet[rp:__hash()] = rp
+        --end
+        local flat = rp:inversionFlat(range)
+        flatsSet[flat:__hash()] = flat
     end
     local sortedFlats = {}
     for key, flat in pairs(flatsSet) do

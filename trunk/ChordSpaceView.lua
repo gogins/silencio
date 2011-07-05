@@ -321,7 +321,11 @@ function ChordView:drawChord(chord, name, picking)
         if self.pickedChord ~= nil then
             if self.pickedChord:label() == chord:label() then
                 radius = radius * 2
-                gl.glColor4f(1, 1, 1, 1)
+                if self.drawInverse == true then
+                    gl.glColor4f(1, 0, 1, 1)
+                else
+                    gl.glColor4f(1, 1, 1, 1)
+                end
             end
         end
     end
@@ -348,15 +352,12 @@ function ChordView:createChords()
     --local midpoints = ChordSpace.inversionMidpoints(3)
     --for key, midpoint in ipairs(midpoints) do
     --    table.insert(self.chords, midpoint)
+    --    print('Midpoint:', tostring(midpoint))
     --end
     --local flats = ChordSpace.flats(3)
     --for key, flat in ipairs(flats) do
     --    table.insert(self.chords, flat)
-    --end
-    --local count = #self.chords
-    --for i = 1, count do
-    --   local flat = self.chords[i]:inversionFlat()
-    --    self.chords[#self.chords] = flat
+    --    print('Flat:', tostring(flat))
     --end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
@@ -559,9 +560,10 @@ function ChordView:display()
     local qpressed = false
     local _1pressed = false
     local _2pressed = false
-    local _3pressed = false
-    local mpressed = false
+    local _3pressed sed = false
     self.modality = Chord:new{0, 4, 7}
+    self.drawInverse = false
+    local index = 1
     while true do
         glfw.glfwPollEvents()
         -- Check for resizing.
@@ -574,6 +576,13 @@ function ChordView:display()
         -- Get key input...
        if glfw.glfwGetKey(window, glfw.GLFW_KEY_ESCAPE) == glfw.GLFW_PRESS then
             break
+        end
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_C) == glfw.GLFW_PRESS then
+            if self.iterateInversions == true then
+                self.iterateInversions = false
+            else
+                self.iterateInversions = true
+            end
         end
         -- Zoom in?
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_KP_ADD) == glfw.GLFW_PRESS then
@@ -787,12 +796,32 @@ function ChordView:display()
             self:draw(true)
             self:stopPicking()
         else
-            self:draw(false)
+            if self.iterateInversions == true then
+                if self.drawInverse == false then
+                    if index > #self.chords then
+                        index = 1
+                    end
+                    self.pickedChord = self.chords[index]
+                    print(index, 'chord:  ', tostring(self.pickedChord))
+                    self:draw(false)
+                    self.drawInverse = true
+                else
+                    self.pickedChord = self.chords[index]:I():eOP()
+                    print(index, 'inverse:', tostring(self.pickedChord))
+                    print()
+                    self:draw(false)
+                    self.drawInverse = false
+                    index = index + 1
+                end
+            else
+                self:draw(false)
+            end
         end
     end
 end
 
 chordView = ChordView:new()
+chordView.iterateInversions = false
 chordView.octaves = 1
 chordView.equivalence = 'OP'
 chordView.constructChordsByOperation = false
