@@ -4,24 +4,22 @@ ChordSpace = {}
 
 PROBLEMS
 
-Inverting any chord in the quotient space RPI sends that chord to itself. This
-can be visualized in RP by folding the upper half prism along the inversion
+Inverting any chord in the quotient space PI sends that chord to itself. This
+can be visualized in P by folding the upper half prism along the inversion
 flat back down over the lower half prism (which is the representative
-fundamental domain for RPI). The hopping of chords up and down the
-translational columns in RP is thus explained -- they are hopping in RP, but
-fixed in RPI. But there may be exceptions to this...
+fundamental domain for PI). The hopping of chords up and down the
+translational columns in RP is thus explained -- they are hopping in P, but
+fixed in PI. 
+
+Moving from P to RP complicates matters by the octave / voices twist. CQT do
+not completely account for this.
 
 CQT state that any half space bounded by a hyperplane that contains the
 inversion flat is a fundamental domain of inversion, and that identifying
 this hyperplane with its reflection in the inversion flat defines the
 quotient space PI. In RPI, there is only one such hyperplane -- the one
 defined by CQT's equation. This is CQT's representative fundamental domain for
-RPI. It does contain the inversion flat, but as far as I can see it does NOT
-define the quotient space for RPI w.r.t the origin. This appears to be a
-contradiction. CQT's representative fundamental domain for RPI does bisect
-their representative fundamental domain for RPT (an equilateral triangle),
-and thir intersection does define CQT's representative fundamental domain for
-RPTI.
+RPI. 
 
 CQT define the inversion flat for permutational equivalence only (P). If one
 defines the inversion flat of all chords in OP, there are two lines. The
@@ -1195,6 +1193,9 @@ function Chord:inversionFlatGogins(range, point)
     local flat = self:clone()
     for voice = 1, #self do
         flat[voice] = inverse[voice] + self[voice]
+        if flat[voice] % 12 == 0 then
+            flat[voice] = 0
+        end
     end
     return flat
 end
@@ -1779,8 +1780,6 @@ eopt(I):            %s
 eP:                 %s  iseP:    %s
 eOP:                %s  iseOP:   %s
 inversion flat:     %s  is flat: %s
-flat of 12/N:       %s
-inversion midpoint: %s
 eOP(I):             %s
 eopt(eOP):          %s
 eopt(eOP(I)):       %s
@@ -1804,8 +1803,6 @@ tostring(self:I():eopt()),
 tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
 tostring(self:inversionFlat()), tostring(self:isInversionFlat()),
-tostring(self:inversionFlat(12, 3)),
-tostring(self:inversionMidpoint()),
 tostring(self:I():eOP()),
 tostring(self:eOP():eopt()),
 tostring(self:I():eOP():eopt()),
@@ -2359,5 +2356,12 @@ end
 
 table.sort(ChordSpace.chordsForNames)
 table.sort(ChordSpace.namesForChords)
+
+c = Chord:new{2, 2, 2}
+print('chord:', c:label())
+f = Chord:new{0, 0, 0}
+i = c:reflect(f):eOP()
+print('flat:', f)
+print('inverse?', tostring(i))
 
 return ChordSpace
