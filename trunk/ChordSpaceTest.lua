@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -125,6 +125,8 @@ end
 pass('Each chord in OPTI must return iseOPTI true.')
 pass('Each chord in OPTI must be eOPTI.')
 
+verbose = true
+
 for arity = 2, 4 do
     local ops = ChordSpace.allOfEquivalenceClass(arity, 'OP')
     local flatset ={}
@@ -132,20 +134,21 @@ for arity = 2, 4 do
         local inversion = chord:I():eOP()
         local reinversion = inversion:I():eOP()
         local flat = chord:inversionFlat()
-        local reflection = chord:reflect(flat):eOP()
+        local reflection = chord:reflect(flat)
+        local opreflection = reflection:eOP()
         local rereflection = reflection:reflect(flat):eOP()
         print(string.format('chord %5d:  %s', key, tostring(chord)))
         print(string.format('inversion:    %s', tostring(inversion)))
         print(string.format('reinversion:  %s', tostring(reinversion)))
         print(string.format('flat:         %s', tostring(flat)))
-        print(string.format('reflection:   %s', tostring(reflection)))
+        print(string.format('reflection:   %s', tostring(opreflection)))
         print(string.format('rereflection: %s', tostring(rereflection)))
         print(string.format('is flat:      %s', tostring(chord:isInversionFlat())))
         print(string.format('iseOPI:       %s', tostring(chord:iseOPI())))
         print(string.format('iseOPI(I):    %s', tostring(inversion:iseOPI())))
         print(string.format('eOPI:         %s', tostring(chord:eOPI())))
         print(string.format('eOPI(I):      %s\n', tostring(inversion:eOPI())))
-         if not (inversion == reflection) then
+         if not (inversion == opreflection) then
             fail('Reflection in the inversion flat must be the same as inversion in the origin.')
         end
         if not(reinversion == rereflection) then
