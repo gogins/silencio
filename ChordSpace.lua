@@ -9,17 +9,17 @@ can be visualized in P by folding the upper half prism along the inversion
 flat back down over the lower half prism (which is the representative
 fundamental domain for PI). The hopping of chords up and down the
 translational columns in RP is thus explained -- they are hopping in P, but
-fixed in PI. 
-
-Moving from P to RP complicates matters by the octave / voices twist. CQT do
-not completely account for this.
+fixed in PI.
 
 CQT state that any half space bounded by a hyperplane that contains the
 inversion flat is a fundamental domain of inversion, and that identifying
 this hyperplane with its reflection in the inversion flat defines the
-quotient space PI. In RPI, there is only one such hyperplane -- the one
-defined by CQT's equation. This is CQT's representative fundamental domain for
-RPI. 
+quotient space PI.
+
+Moving from P to RP complicates matters by the octave / voices twist. CQT do
+not completely account for this. In RPI, there is only one such hyperplane --
+the one defined by CQT's equation. This is CQT's representative fundamental
+domain for RPI.
 
 CQT define the inversion flat for permutational equivalence only (P). If one
 defines the inversion flat of all chords in OP, there are two lines. The
@@ -41,27 +41,8 @@ The midpoints of inversions w.r.t. the origin also define two lines with the
 same orientation as the flat. In both cases, reflecting the flats or midpoints
 back into RP reduces them to single lines.
 
-After that, I need the equation for Callendar's kite-shaped domain of OT
-equivalence.
-
-First, I need to prove that all inversions do lie on one side or the other of
-a plane of symmetry. I have written code to iterate through OP and pick every
-chord and its inverse in turn. If a chord is white, then its purple inverse
-should be in the other prism (which includes the plane of symmetry). This does
-not seem always to be the case...
-
-Then, I need my own way to identify the plane of symmetry since either I'm not
-understanding CQT, or they are wrong. This plane is parallel to the unison
-diagonal.
-
-I have been watching the inversions cycle. It looks like permuting a chord
-before testing its invesional equivalence by CQT's equation produces the best
-fit so far to the actual fundamental domain of inversion by the origin. This
-of course is similar to inverting by octave / N.
-
-As for the two lines in the flat, perhaps they can be got rid of by
-permuting the extra line to extend the other line. This permutation
-would be on the lower voices.
+What I need to do is identify and create inversional equivalence only in P.
+The chord, the flat, the inversion, etc., will then all be reflected by R.
 
 ]]
 
@@ -821,13 +802,16 @@ function Chord:eI()
     return chord:I()
 end
 
--- TODO: Fix this.
+function Chord:eRPI(range)
+    local rp = self:eRP(range)
+    if rp:iseI() then
+        return rp
+    end
+    return rp:I():eRP(range)
+end
 
 function Chord:eOPI()
-    if self:iseOPI() then
-        return self:clone()
-    end
-    return self:I():eOP()
+    return self:eRPI(ChordSpace.OCTAVE)
 end
 
 function Chord:iseR(range)
@@ -1167,55 +1151,18 @@ end
 -- This is the point that generates the
 -- inversion of a chord within P directly.
 
-function Chord:inversionFlatTymoczko(range, point)
-    range = range or ChordSpace.OCTAVE
-    point = point or 0
-    local flat = Chord:new()
-    local N2 = math.floor(#self / 2)
-    for voice = 1, N2 do
-        table.insert(flat, self[voice])
-        table.insert(flat, point - self[voice])
-    end
-    if #flat < #self then
-        table.insert(flat, point / 2)
-    end
-    return flat:ep()
-end
-
--- This has got to be wrong, produces 2 orthogonal lines.
--- And therefore, this is probably telling me exactly what is wrong
--- with my whole picture, if I could only understand it.
-
-function Chord:inversionFlatGogins(range, point)
-    range = range or ChordSpace.OCTAVE
-    point = point or 0
-    local inverse = self:I():eRP(range)
-    local flat = self:clone()
+function Chord:inversionFlat()
+    local chord = self:ep()
+    local inverse = self:I():ep()
+    local flat = chord:clone()
     for voice = 1, #self do
-        flat[voice] = inverse[voice] + self[voice]
-        if flat[voice] % 12 == 0 then
-            flat[voice] = 0
-        end
+        flat[voice] = inverse[voice] + chord[voice]
     end
     return flat
 end
-
-function Chord:inversionFlatGogins2(range, point)
-    range = range or ChordSpace.OCTAVE
-    point = point or 0
-    local inverse = self:I():ep(range)
-    local flat = self:clone()
-    for voice = 1, #self do
-        flat[voice] = inverse[voice] + self[voice]
-    end
-    return flat
-end
-
-Chord.inversionFlat = Chord.inversionFlatGogins
 
 function Chord:isInversionFlat(range)
-    range = range or ChordSpace.OCTAVE
-    local inverse = self:I():eRP(range)
+    local inverse = self:I():ep()
     if self == inverse then
         return true
     end
@@ -1358,11 +1305,6 @@ function Chord:eopt()
     return self:et():eop()
 end
 
--- Is this wrong for {-6, 0, 6}?
--- Tymoczko has either kites or triangles as fundamental domains
--- for voicings. This uses the triangle farthest from the
--- unisons diagonal.
-
 function Chord:iseV(range)
     local isev = true
     for voice = 1, #self - 1 do
@@ -1372,44 +1314,6 @@ function Chord:iseV(range)
     end
     return isev
 end
--- ]]
-
---[[
-function Chord:iseV(range)
-    range = range or ChordSpace.OCTAVE
-    local voicings = self:voicings()
-    for i = 1, #voicings do
-        voicings[i] = voicings[i]:et():ep()
-    end
-    table.sort(voicings)
-    local etp = self:et():ep()
-    if etp == voicings[#voicings] then
-        return true
-    end
-    return false
-end
-]]
-
---[[
-function Chord:iseV(range)
-    range = range or ChordSpace.OCTAVE
-    local voicings = self:voicings()
-    local minimumVoicing = voicings[1]
-    local minimumDistance = minimumVoicing:distanceToUnisonDiagonal()
-    for i = 2, #voicings do
-        voicing = voicings[i]
-        distance = voicing:distanceToUnisonDiagonal()
-        if distance < minimumDistance then
-            minimumDistance = distance
-            minimumVoicing = voicing
-        end
-    end
-    if self:et():ep() == minimumVoicing:et():ep() then
-        return true
-    end
-    return false
-end
-]]
 
 -- Returns the chord under range, permutation, and transpositional
 -- equivalence. This requires taking a cross section of the
