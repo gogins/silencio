@@ -331,7 +331,7 @@ function ChordView:drawChord(chord, name, picking)
     end
     if chord:isInversionFlat() then
     --if chord:iseV() then
-        radius = radius * 2
+        radius = radius * 3
     end
     glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
@@ -803,6 +803,7 @@ function ChordView:display()
                     end
                     self.pickedChord = self.chords[index]
                     print(index, 'chord:  ', tostring(self.pickedChord))
+                    print(index, 'flat:   ', tostring(self.pickedChord:inversionFlat()))
                     self:draw(false)
                     self.drawInverse = true
                 else
