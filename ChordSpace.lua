@@ -749,12 +749,6 @@ function Chord:a(arpeggiation)
     return chord[1], 1, chord
 end
 
-function Chord:distanceToUnisonDiagonal()
-    local unisonChord = self:intersectionWithUnisonDiagonal()
-    local distanceToUnisonDiagonal = euclidean(self, unisonChord)
-    return distanceToUnisonDiagonal
-end
-
 function Chord:intersectionWithUnisonDiagonal()
     local layer = self:sum()
     local distancePerVoice = layer / #self
@@ -763,6 +757,12 @@ function Chord:intersectionWithUnisonDiagonal()
         unisonChord[voice] = distancePerVoice
     end
     return unisonChord
+end
+
+function Chord:distanceToUnisonDiagonal()
+    local unisonChord = self:intersectionWithUnisonDiagonal()
+    local distanceToUnisonDiagonal = euclidean(self, unisonChord)
+    return distanceToUnisonDiagonal
 end
 
 -- NOTE: Does NOT return the result under any equivalence class.
@@ -775,16 +775,21 @@ function Chord:T(transposition)
     return chord
 end
 
--- NOTE: Does NOT return the result under any equivalence class.
+-- Inverts the chord by another chord that is on the unison diagonal, by 
+-- default the origin. NOTE: Does NOT return the result under any equivalence 
+-- class.
 
 function Chord:I(center)
     center = center or 0
-    local chord = self:clone()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = I(pitch, center)
+    local inverse = self:clone()
+    for voice, pitch in ipairs(self) do
+        inverse[voice] = I(pitch, center)
     end
-    return chord
+    return inverse
 end
+
+-- Inverts the chord by another chord that is not necessarily on the unison
+-- diagonal. NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:reflect(other)
     local reflection = self:clone()
@@ -795,16 +800,22 @@ function Chord:reflect(other)
 end
 
 function Chord:eI()
-    local chord = self:clone()
-    if chord:iseI() then
-        return chord:clone()
+    if self:iseI() then
+        return self:clone()
     end
-    return chord:I()
+    return self:I()
+end
+
+function Chord:ePI()
+    if self:isePI() then
+        return self:clone()
+    end
+    return self:I():eP()
 end
 
 function Chord:eRPI(range)
     local rp = self:eRP(range)
-    if rp:iseI() then
+    if rp:isePI() then
         return rp
     end
     return rp:I():eRP(range)
@@ -850,78 +861,28 @@ function Chord:iseT(g)
     return true
 end
 
--- I believe this is only partly correct.
-
-function Chord:iseITymoczko()
-    local chord = self
-    if (chord[2] - chord[1]) <= (chord[#chord] - chord[#chord - 1]) then
-        return true
+function Chord:isePITymoczko()
+    if not self:eP() then
+        return false
     end
-    return false
+    return self:iseI()
 end
 
-function Chord:iseIGogins2()
-    local chord = self:eOP()
-    local inverse = self:I():eOP()
-    local chordVoice = 2
-    local inverseVoice = #inverse
-    while chordVoice < inverseVoice do
-        local chordInterval = chord[chordVoice] - chord[chordVoice - 1]
-        local inverseInterval = inverse[inverseVoice] - inverse[inverseVoice - 1]
-        if chordInterval < inverseInterval then
-            return true
-        end
-        if chordInterval > inverseInterval then
-            return false
-        end
-        chordVoice = chordVoice + 1
-        inverseVoice = inverseVoice - 1
+function Chord:iseRPI(range)
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:isePI(range) then
+        return false
     end
     return true
 end
 
-function Chord:iseIGogins3()
-    chord = self:v()
-    local lowerVoice = 2
-    local upperVoice = #chord
-    while lowerVoice < upperVoice do
-        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
-        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
-        if lowerInterval < upperInterval then
-            return true
-        end
-        if lowerInterval > upperInterval then
-            return false
-        end
-        lowerVoice = lowerVoice + 1
-        upperVoice = upperVoice - 1
-    end
-    return true
+function Chord:iseOPI()
+    return self:iseRPI(ChordSpace.OCTAVE)
 end
 
---[[
-Returns whether the chord is within the representative fundamental domain of
-inversional equivalence. _A_ fundamental domain of inversional equivalence is
-bounded by _a_ hyperplane containing the inversion point (in R) or the
-inversion flat (in RP). The _representative_ fundamental domain of inversion
-is bounded by _the_ hyperplane containing the inversion point or flat and,
-because in R transposition does not invert, the unison diagonal.
-
-All of these domains meet at the origin of chord space. Therefore, the
-bounding hyperplane is defined by an N - 1 dimensional simplex consisting
-of a simplex defining the inversion flat plus a point projected into each
-of the "lower" dimensions.
-
-Then the the point-hyperplane distance from the chord to the bounding
-hyperplane is computed as in A. J. Hanson, "Geometry for N-Dimensional
-Graphics," Indiana University, 1996. This is the ratio of the volume of
-an N dimensional simplex to the volume of its N - 1 dimensional 'base.'
-Here the base is the simplex defining the bounding hyperplane above,
-and the full simplex adds the chord in question.
-
-]]
-
--- Return n!.
+-- Return n!
 
 function ChordSpace.factorial (n)
 	if n == 0 then
@@ -976,21 +937,31 @@ function ChordSpace.volume(chords)
     return volume, simplex
 end
 
-function Chord:iseIVector(range)
-    range = range or ChordSpace.OCTAVE
-	-- Identify the plane of inversional symmetry.
+--[[
+
+Returns whether the point-hyperplane distance from the chord to the bounding
+hyperplane is less than or equal to zero. The distance is computed as in A. J. 
+Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 1996. This 
+is the ratio of the volume of an N dimensional simplex to the volume of its 
+N - 1 dimensional 'base.' Here the base is the simplex defining the bounding 
+hyperplane of PI symmetry, and the full simplex adds the chord in question.
+
+]]
+
+function Chord:isePIVector()
+ 	-- Identify the plane of inversional symmetry.
     -- We need an algorithm to identify the spanning basis
     -- for the set of all inversion midpoints and their
     -- transpositions. This could be done by reduction or
     -- by solving the associated system of linear equations,
     -- but we can it more simply here.
-    if self == self:inversionFlat(range) then
+    if self == self:inversionFlat() then
         return true
     end
 	local simplex = {}
     local a = self:origin()
     local c = a:T(1)
-    local b = self:inversionFlat(range)
+    local b = self:inversionFlat()
     table.insert(simplex, a)
     table.insert(simplex, b)
     table.insert(simplex, c)
@@ -1005,16 +976,22 @@ function Chord:iseIVector(range)
     return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
 
--- Returns whether the chord is on or below the plane
--- of inversional symmetry (the inversion midpoints).
+function Chord:isePISimple()
+    local t = self:eopt()
+    local ti = self:I():eopt()
+    if t <= ti then
+        return true
+    end
+    return false
+end
 
-Chord.iseI = Chord.iseIGogins3
+Chord.isePI = Chord.isePISimple
 
 function Chord:iseRP(range)
-    if not self:iseP(range) then
+    if not self:iseR(range) then
         return false
     end
-    if not self:iseR(range) then
+    if not self:iseP(range) then
         return false
     end
     return true
@@ -1038,6 +1015,25 @@ end
 
 function Chord:iseOT()
     return self:iseRT(ChordSpace.OCTAVE)
+end
+
+function Chord:iseI()
+    chord = self:clone()
+    local lowerVoice = 2
+    local upperVoice = #chord
+    while lowerVoice < upperVoice do
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
+        if lowerInterval < upperInterval then
+            return true
+        end
+        if lowerInterval > upperInterval then
+            return false
+        end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
+    end
+    return true
 end
 
 function Chord:iseRI(range)
@@ -1091,16 +1087,6 @@ function Chord:iseOPT(g)
     return self:iseRPT(ChordSpace.OCTAVE, g)
 end
 
-function Chord:iseRPI(range)
-    if not self:iseRP(range) then
-        return false
-    end
-    if not self:iseI() then
-        return false
-    end
-    return true
-end
-
 function Chord:iseOPITymoczko()
     for voice = 1, #self - 1 do
         if not (self[voice] <= self[voice + 1]) then
@@ -1120,22 +1106,6 @@ function Chord:iseOPITymoczko()
     return true
 end
 
-function Chord:iseRPI(range)
-    if not self:iseRP(range) then
-        return false
-    end
-    if not self:iseI(range) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOPIGogins()
-    return self:iseRPI(ChordSpace.OCTAVE)
-end
-
-Chord.iseOPI = Chord.iseOPIGogins
-
 -- Returns the chord that is halfway
 -- in between a chord and its inversion.
 -- These chords define the plane of symmetry
@@ -1152,8 +1122,8 @@ end
 -- inversion of a chord within P directly.
 
 function Chord:inversionFlat()
-    local chord = self:ep()
-    local inverse = self:I():ep()
+    local chord = self:eP()
+    local inverse = self:I():eP()
     local flat = chord:clone()
     for voice = 1, #self do
         flat[voice] = inverse[voice] + chord[voice]
@@ -1161,8 +1131,8 @@ function Chord:inversionFlat()
     return flat
 end
 
-function Chord:isInversionFlat(range)
-    local inverse = self:I():ep()
+function Chord:isInversionFlat()
+    local inverse = self:I():eP()
     if self == inverse then
         return true
     end
@@ -1668,7 +1638,7 @@ function Chord:label()
     if chordName == nil then
         chordName = 'Chord'
     end
-    local discard, chordToHyperplane = self:iseIVector()
+    local discard, chordToHyperplane = self:isePIVector()
     chordToHyperplane = chordToHyperplane or 0
     return string.format([[%s:
 pitches:            %s
