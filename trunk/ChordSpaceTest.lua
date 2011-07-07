@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = false
+verbose = true
 
 function print(message)
     if verbose then
@@ -185,16 +185,16 @@ function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
         if iseesSet[key] and eesSet[key] then
             table.insert(intersection, tostring(value) .. ' matches')
         end
-        if iseesSet[key] and not eesSet[key] then
+        if iseesSet[key] and (not eesSet[key]) then
             table.insert(intersection, tostring(value) .. ' isees only')
             passes = false
         end
-        if not iseesSet[key] and eesSet[key] then
+        if (not iseesSet[key]) and eesSet[key] then
             table.insert(intersection, tostring(value) .. ' ees only')
             passes = false
         end
     end
-    print()
+    print_()
     --table.sort(intersection)
     if passes then
         pass(string.format('isees must == ees FOR %d voice %s\n', arity, equivalence))
