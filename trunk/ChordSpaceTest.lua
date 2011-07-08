@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -125,7 +125,7 @@ end
 pass('Each chord in OPTI must return iseOPTI true.')
 pass('Each chord in OPTI must be eOPTI.')
 
-verbose = true
+verbose = false
 
 for arity = 2, 4 do
     local ops = ChordSpace.allOfEquivalenceClass(arity, 'OP')
