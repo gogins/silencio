@@ -354,11 +354,11 @@ function ChordView:createChords()
     --    table.insert(self.chords, midpoint)
     --    print('Midpoint:', tostring(midpoint))
     --end
-    --local flats = ChordSpace.flats(3)
-    --for key, flat in ipairs(flats) do
-    --    table.insert(self.chords, flat)
-    --    print('Flat:', tostring(flat))
-    --end
+    local flats = ChordSpace.flats(3)
+    for key, flat in ipairs(flats) do
+        table.insert(self.chords, flat)
+        print('Flat:', tostring(flat))
+    end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 

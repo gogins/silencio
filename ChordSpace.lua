@@ -5,6 +5,41 @@ ChordSpace = {}
 Look at different inversion flats in OP, causes vector math to fail.
 Use inversion midpoints/translations, in both P and OP.
 
+Inversion flat now a single line extending the part within OP.
+
+chord   160:  {  -3.0000   7.0000   7.0000}
+inversion:    {  -7.0000   3.0000   5.0000}
+reinversion:  {  -3.0000   7.0000   7.0000}
+flat:         { -10.0000   0.0000  10.0000}
+
+NOTE: reflection is not the same as opreflection.
+
+reflection:   {  -7.0000  -7.0000   3.0000}
+opreflection: {  -7.0000   3.0000   5.0000}
+
+NOTE: rereflection is from reflection, not opreflection.
+
+rereflection: {  -3.0000   7.0000   7.0000}
+is flat:      false
+iseOPI:       false
+iseOPI(I):    false
+eOPI:         {  -7.0000   3.0000   5.0000}
+eOPI(I):      {  -3.0000   7.0000   7.0000}
+
+So, I now suspect that CQT erred in extending their equation to identify the
+representative fundamental domain for PI from PI to OPI.
+
+This means that neither CQT's equation, nor my linear algebra which turns out
+to assume that equation, can be used to identify the representative
+fundamental domain of OPI.
+
+I can try some 'RP flat' which will fold up inside RP. I would think that then
+there will voices - 1 RP flats for each RP, and then depending on which flat
+a chord reflects in to invert, that flat can be used in the linear algebra to
+identify the domain.
+
+Or I can try to find some equivalent shortcut.
+
 PROBLEMS
 
 Inverting any chord in the quotient space PI sends that chord to itself. This
@@ -778,8 +813,8 @@ function Chord:T(transposition)
     return chord
 end
 
--- Inverts the chord by another chord that is on the unison diagonal, by 
--- default the origin. NOTE: Does NOT return the result under any equivalence 
+-- Inverts the chord by another chord that is on the unison diagonal, by
+-- default the origin. NOTE: Does NOT return the result under any equivalence
 -- class.
 
 function Chord:I(center)
@@ -810,7 +845,10 @@ function Chord:eI()
 end
 
 function Chord:ePI()
-    return self:eI():eP()
+    if self:isePI() then
+        return self:clone()
+    end
+    return self:I():eP()
 end
 
 function Chord:eRPI(range)
@@ -936,10 +974,10 @@ end
 --[[
 
 Returns whether the point-hyperplane distance from the chord to the bounding
-hyperplane is less than or equal to zero. The distance is computed as in A. J. 
-Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 1996. This 
-is the ratio of the volume of an N dimensional simplex to the volume of its 
-N - 1 dimensional 'base.' Here the base is the simplex defining the bounding 
+hyperplane is less than or equal to zero. The distance is computed as in A. J.
+Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 1996. This
+is the ratio of the volume of an N dimensional simplex to the volume of its
+N - 1 dimensional 'base.' Here the base is the simplex defining the bounding
 hyperplane of PI symmetry, and the full simplex adds the chord in question.
 
 ]]
@@ -947,10 +985,10 @@ hyperplane of PI symmetry, and the full simplex adds the chord in question.
 function Chord:isePIVector()
  	-- Identify the plane of inversional symmetry.
     -- We need an algorithm to identify the spanning basis
-    -- for the set of all inversion midpoints and their
+    -- for the set of all inversion flats and their
     -- transpositions. This could be done by reduction or
     -- by solving the associated system of linear equations,
-    -- but we can it more simply here.
+    -- but we can do it more simply here.
     if self == self:inversionFlat() then
         return true
     end
@@ -974,7 +1012,7 @@ end
 
 
 
-Chord.isePI = Chord.isePITymoczko
+Chord.isePI = Chord.isePIVector
 
 function Chord:iseRP(range)
     if not self:iseR(range) then
@@ -1278,7 +1316,7 @@ function Chord:iseV(range)
 end
 
 -- Returns the chord under range, permutation, and transpositional
--- equivalence. 
+-- equivalence.
 
 function Chord:eRPT(range, g)
     range = range or ChordSpace.OCTAVE
@@ -2208,12 +2246,5 @@ end
 
 table.sort(ChordSpace.chordsForNames)
 table.sort(ChordSpace.namesForChords)
-
-c = Chord:new{2, 2, 2}
-print('chord:', c:label())
-f = Chord:new{0, 0, 0}
-i = c:reflect(f):eOP()
-print('flat:', f)
-print('inverse?', tostring(i))
 
 return ChordSpace
