@@ -141,7 +141,8 @@ for arity = 2, 4 do
         print(string.format('inversion:    %s', tostring(inversion)))
         print(string.format('reinversion:  %s', tostring(reinversion)))
         print(string.format('flat:         %s', tostring(flat)))
-        print(string.format('reflection:   %s', tostring(opreflection)))
+        print(string.format('reflection:   %s', tostring(reflection)))
+        print(string.format('opreflection: %s', tostring(opreflection)))
         print(string.format('rereflection: %s', tostring(rereflection)))
         print(string.format('is flat:      %s', tostring(chord:isInversionFlat())))
         print(string.format('iseOPI:       %s', tostring(chord:iseOPI())))
@@ -168,55 +169,49 @@ for arity = 2, 4 do
     end
 end
 
-function testIsEquivalenceEqualsEquivalence(arity, equivalence, dump)
+function iseOPIeOPI(arity)
     dump = dump or false
-    local isees, iseesSet = ChordSpace.allOfEquivalenceClass(arity, equivalence)
-    local ees, eesSet = ChordSpace.allOfEquivalenceClassByOperation(arity, equivalence)
+    local chords = ChordSpace.allChordsInRange(arity, ChordSpace.OCTAVE)
     local passes = true
-    local union = {}
-    local intersection = {}
-    for key, value in pairs(iseesSet) do
-        union[key] = value
-    end
-    for key, value in pairs(eesSet) do
-        union[key] = value
-    end
-    for key, value in pairs(union) do
-        if iseesSet[key] and eesSet[key] then
-            table.insert(intersection, tostring(value) .. ' matches')
-        end
-        if iseesSet[key] and (not eesSet[key]) then
-            table.insert(intersection, tostring(value) .. ' isees only')
-            passes = false
-        end
-        if (not iseesSet[key]) and eesSet[key] then
-            table.insert(intersection, tostring(value) .. ' ees only')
-            passes = false
-        end
-    end
-    print_()
-    --table.sort(intersection)
-    if passes then
-        pass(string.format('isees must == ees FOR %d voice %s\n', arity, equivalence))
-    else
-         if not dump then
-            testIsEquivalenceEqualsEquivalence(arity, equivalence, true)
-        else
-            for key, value in pairs(intersection) do
-                print_(key, value)
+    local chord = nil
+    local opi = nil
+    for i = 1, #chords do
+        chord = chords[i]
+        if chord:iseOP() then
+            opi = chord:eOPI()
+            if chord == opi then
+                if chord:iseOPI() == false or opi:iseOPI() == false then
+                    passes = false
+                    break
+                end
+            else
+                if chord:iseOPI() == opi:iseOPI() then
+                    passes = false
+                    break
+                end
+                if chord:iseOPI() and chord ~= opi then
+                    passes = false
+                    break
+                end
+                if opi:iseOPI() and chord == opi then
+                    passes = false
+                    break
+                end
             end
-            fail(string.format('isees must == ees FOR %d voice %s', arity, equivalence))
         end
     end
-    return passes
+    if passes == false then
+        print_(chord:label())
+        print_(opi:label())
+    end
+    result(passes, string.format('eOPI must equate to iseOPI for %d voices.', arity))
 end
 
-for arity = 3, 4 do
-    testIsEquivalenceEqualsEquivalence(arity, 'OP')
-    testIsEquivalenceEqualsEquivalence(arity, 'OPI')
-    testIsEquivalenceEqualsEquivalence(arity, 'OPT')
-    testIsEquivalenceEqualsEquivalence(arity, 'OPTI')
+for arity = 2, 5 do
+    iseOPIeOPI(arity)
 end
+
+
 
 function printVoicings(chord)
     print(chord:label())

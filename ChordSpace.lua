@@ -2,6 +2,9 @@ ChordSpace = {}
 
 --[[
 
+Look at different inversion flats in OP, causes vector math to fail.
+Use inversion midpoints/translations, in both P and OP.
+
 PROBLEMS
 
 Inverting any chord in the quotient space PI sends that chord to itself. This
@@ -769,8 +772,8 @@ end
 
 function Chord:T(transposition)
     local chord = self:clone()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = T(pitch, transposition)
+    for voice = 1, #self do
+        chord[voice] = T(self[voice], transposition)
     end
     return chord
 end
@@ -782,8 +785,8 @@ end
 function Chord:I(center)
     center = center or 0
     local inverse = self:clone()
-    for voice, pitch in ipairs(self) do
-        inverse[voice] = I(pitch, center)
+    for voice = 1, #self do
+        inverse[voice] = I(self[voice], center)
     end
     return inverse
 end
@@ -793,7 +796,7 @@ end
 
 function Chord:reflect(other)
     local reflection = self:clone()
-    for voice, pitch in ipairs(self) do
+    for voice = 1, #self do
         reflection[voice] = other[voice] - self[voice]
     end
     return reflection
@@ -807,18 +810,11 @@ function Chord:eI()
 end
 
 function Chord:ePI()
-    if self:isePI() then
-        return self:clone()
-    end
-    return self:I():eP()
+    return self:eI():eP()
 end
 
 function Chord:eRPI(range)
-    local rp = self:eRP(range)
-    if rp:isePI() then
-        return rp
-    end
-    return rp:I():eRP(range)
+    return self:ePI():eRP(range)
 end
 
 function Chord:eOPI()
@@ -862,20 +858,20 @@ function Chord:iseT(g)
 end
 
 function Chord:isePITymoczko()
-    if not self:eP() then
+    if not self:iseI() then
         return false
     end
-    return self:iseI()
+    return self:iseP()
 end
 
 function Chord:iseRPI(range)
-    if not self:iseR(range) then
-        return false
-    end
     if not self:isePI(range) then
         return false
     end
-    return true
+     if not self:iseR(range) then
+        return false
+    end
+   return true
 end
 
 function Chord:iseOPI()
@@ -976,16 +972,9 @@ function Chord:isePIVector()
     return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
 
-function Chord:isePISimple()
-    local t = self:eopt()
-    local ti = self:I():eopt()
-    if t <= ti then
-        return true
-    end
-    return false
-end
 
-Chord.isePI = Chord.isePISimple
+
+Chord.isePI = Chord.isePITymoczko
 
 function Chord:iseRP(range)
     if not self:iseR(range) then
@@ -1022,6 +1011,7 @@ function Chord:iseI()
     local lowerVoice = 2
     local upperVoice = #chord
     while lowerVoice < upperVoice do
+        -- x[2] - x[1] <= x[#x] - x[#x - 1]
         local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
         local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
         if lowerInterval < upperInterval then
@@ -1037,10 +1027,10 @@ function Chord:iseI()
 end
 
 function Chord:iseRI(range)
-    if not self:iseR(range) then
+    if not self:iseI() then
         return false
     end
-    if not self:iseI() then
+    if not self:iseR(range) then
         return false
     end
     return true
@@ -1122,16 +1112,18 @@ end
 -- inversion of a chord within P directly.
 
 function Chord:inversionFlat()
-    local chord = self:eP()
-    local inverse = self:I():eP()
-    local flat = chord:clone()
+    local chord = self:clone()
+    local inverse = chord:I():eP()
+    local flat = self:clone()
     for voice = 1, #self do
-        flat[voice] = inverse[voice] + chord[voice]
+        -- Solve for flat: inverse = flat - chord
+        flat[voice] = chord[voice] + inverse[voice]
     end
     return flat
 end
 
 function Chord:isInversionFlat()
+    range = range or ChordSpace.OCTAVE
     local inverse = self:I():eP()
     if self == inverse then
         return true
@@ -1151,10 +1143,10 @@ end
 
 function Chord:iseRPTI(range, g)
     g = g or 1
-    if not self:iseRPT(range, g) then
+    if not self:isePI() then
         return false
     end
-    if not self:iseI() then
+    if not self:iseRPT(range, g) then
         return false
     end
     return true
@@ -1174,8 +1166,8 @@ function Chord:eR(range)
     -- but no voice can be > range.
     -- Move all pitches inside the interval [0, range]
     -- (which is not the same as the fundamental domain).
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = pitch % range
+    for voice = 1, #chord do
+        chord[voice] = chord[voice] % range
     end
     -- Reflect voices that are outside of the fundamental domain
     -- back into it, which will revoice the chord, i.e.
@@ -1263,8 +1255,8 @@ function Chord:eop()
 end
 
 function Chord:et()
-    local min = self:min()
-    return self:T(-min)
+    local min_ = self:min()
+    return self:T(-min_)
 end
 
 function Chord:ept()
@@ -1286,17 +1278,14 @@ function Chord:iseV(range)
 end
 
 -- Returns the chord under range, permutation, and transpositional
--- equivalence. This requires taking a cross section of the
--- orbifold perpendicular to the unison axis, and identifying
--- chords under rotational equivalence by 2 pi / N.
+-- equivalence. 
 
 function Chord:eRPT(range, g)
     range = range or ChordSpace.OCTAVE
     g = g or 1
     local erp = self:eRP(range)
     local voicings = erp:voicings()
-    -- FIX: There is a bug here for some chords on the mirrors.
-    for i, voicing in ipairs(voicings) do
+    for key, voicing in pairs(voicings) do
         if voicing:iseV(range) then
             return voicing:eT(g)
         end
@@ -1643,14 +1632,6 @@ function Chord:label()
     return string.format([[%s:
 pitches:            %s
 I:                  %s
-ep:                 %s
-eop:                %s
-ep(I):              %s
-eop(I):             %s
-et:                 %s
-ept:                %s
-eopt:               %s
-eopt(I):            %s
 eP:                 %s  iseP:    %s
 eOP:                %s  iseOP:   %s
 inversion flat:     %s  is flat: %s
@@ -1666,14 +1647,6 @@ to inversion plane:     %-5.2f]],
 chordName,
 tostring(self),
 tostring(self:I()),
-tostring(self:ep()),
-tostring(self:eop()),
-tostring(self:I():ep()),
-tostring(self:I():eop()),
-tostring(self:et()),
-tostring(self:ept()),
-tostring(self:eopt()),
-tostring(self:I():eopt()),
 tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
 tostring(self:inversionFlat()), tostring(self:isInversionFlat()),
@@ -1830,7 +1803,12 @@ function ChordSpace.allChordsInRange(voices, range, g)
             end
         end
     end
-    return chordset
+    local sortedChords = {}
+    for key, chord_ in pairs(chordset) do
+        table.insert(sortedChords, chord_)
+    end
+    table.sort(sortedChords)
+    return sortedChords
 end
 
 function ChordSpace.flats(voices, range, g)
