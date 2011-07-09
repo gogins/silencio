@@ -329,7 +329,7 @@ function ChordView:drawChord(chord, name, picking)
             end
         end
     end
-    if chord:isInversionFlat() then
+    if chord:isFlatP() then
     --if chord:iseV() then
         radius = radius * 3
     end
@@ -354,11 +354,11 @@ function ChordView:createChords()
     --    table.insert(self.chords, midpoint)
     --    print('Midpoint:', tostring(midpoint))
     --end
-    local flats = ChordSpace.flats(3)
-    for key, flat in ipairs(flats) do
-        table.insert(self.chords, flat)
-        print('Flat:', tostring(flat))
-    end
+    ---local flats = ChordSpace.flatsRP(3)
+    --for key, flat in ipairs(flats) do
+    --    table.insert(self.chords, flat)
+    --    print('Flat:', tostring(flat))
+    --end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 
@@ -802,13 +802,15 @@ function ChordView:display()
                         index = 1
                     end
                     self.pickedChord = self.chords[index]
-                    print(index, 'chord:  ', tostring(self.pickedChord))
-                    print(index, 'flat:   ', tostring(self.pickedChord:inversionFlat()))
+                    print(index, 'chord:   ', tostring(self.pickedChord))
+                    print(index, 'flatP:   ', tostring(self.pickedChord:flatP()))
+                    print(index, 'flatRP:  ', tostring(self.pickedChord:flatRP()))
+                    print(index, 'midpoint:', tostring(self.pickedChord:inversionMidpoint()))
                     self:draw(false)
                     self.drawInverse = true
                 else
                     self.pickedChord = self.chords[index]:I():eOP()
-                    print(index, 'inverse:', tostring(self.pickedChord))
+                    print(index, 'inverse: ', tostring(self.pickedChord))
                     print()
                     self:draw(false)
                     self.drawInverse = false
@@ -824,7 +826,7 @@ end
 chordView = ChordView:new()
 chordView.iterateInversions = false
 chordView.octaves = 1
-chordView.equivalence = 'OP'
+chordView.equivalence = 'OPT'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()

@@ -133,7 +133,7 @@ for arity = 2, 4 do
     for key, chord in pairs(ops) do
         local inversion = chord:I():eOP()
         local reinversion = inversion:I():eOP()
-        local flat = chord:inversionFlat()
+        local flat = chord:flatP()
         local reflection = chord:reflect(flat)
         local opreflection = reflection:eOP()
         local rereflection = reflection:reflect(flat):eOP()
@@ -144,7 +144,7 @@ for arity = 2, 4 do
         print(string.format('reflection:   %s', tostring(reflection)))
         print(string.format('opreflection: %s', tostring(opreflection)))
         print(string.format('rereflection: %s', tostring(rereflection)))
-        print(string.format('is flat:      %s', tostring(chord:isInversionFlat())))
+        print(string.format('is flat:      %s', tostring(chord:isFlatP())))
         print(string.format('iseOPI:       %s', tostring(chord:iseOPI())))
         print(string.format('iseOPI(I):    %s', tostring(inversion:iseOPI())))
         print(string.format('eOPI:         %s', tostring(chord:eOPI())))
@@ -163,7 +163,7 @@ for arity = 2, 4 do
     pass('Re-inversion must be the same as re-reflection.')
     pass('Re-inversion and re-reflection must be the same as the original chord.')
     print(string.format('All chords in inversion flat for %d voices:', arity))
-    flats = ChordSpace.flats(3, ChordSpace.OCTAVE)
+    flats = ChordSpace.flatsP(3, ChordSpace.OCTAVE)
     for key, flat in pairs(flats) do
         print(string.format('flat: %s', tostring(flat)))
     end
@@ -211,8 +211,6 @@ for arity = 2, 5 do
     iseOPIeOPI(arity)
 end
 
-
-
 function printVoicings(chord)
     print(chord:label())
     local voicings = chord:voicings()
@@ -234,7 +232,7 @@ local chord = ChordSpace.chordsForNames['CM9']
 printVoicings(chord)
 print()
 
---os.exit()
+os.exit()
 
 print('c3333', c3333:label())
 local ic3333 = c3333:I():eOP()
@@ -292,7 +290,9 @@ end
 print('areeV:', areeV)
 print()
 
---os.exit()
+os.exit()
+
+verbose = true
 
 print ('Does OPTI U OPTI:I():eOP() == OPT?')
 local arity = 3
@@ -325,7 +325,7 @@ print(chord:label())
 local chord = Chord:new{-2,1,5,6}
 print(chord:label())
 
--- os.exit()
+os.exit()
 
 print(chord:label())
 print('ChordSpaceGroup')

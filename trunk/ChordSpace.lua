@@ -34,7 +34,7 @@ to assume that equation, can be used to identify the representative
 fundamental domain of OPI.
 
 I can try some 'RP flat' which will fold up inside RP. I would think that then
-there will voices - 1 RP flats for each RP, and then depending on which flat
+there will be voices - 1 RP flats for each RP, and then depending on which flat
 a chord reflects in to invert, that flat can be used in the linear algebra to
 identify the domain.
 
@@ -902,7 +902,7 @@ function Chord:isePITymoczko()
     return self:iseP()
 end
 
-function Chord:iseRPI(range)
+function Chord:iseRPI1(range)
     if not self:isePI(range) then
         return false
     end
@@ -911,6 +911,17 @@ function Chord:iseRPI(range)
     end
    return true
 end
+
+function Chord:iseRPI2(range)
+    range = range or ChordSpace.OCTAVE
+    local inverse = self:I():eRP(range)
+    if self <= inverse then
+        return true
+    end
+    return false
+end
+
+Chord.iseRPI = Chord.iseRPI2
 
 function Chord:iseOPI()
     return self:iseRPI(ChordSpace.OCTAVE)
@@ -982,20 +993,21 @@ hyperplane of PI symmetry, and the full simplex adds the chord in question.
 
 ]]
 
-function Chord:isePIVector()
+function Chord:isePIVector(range)
+    range = range or ChordSpace.OCTAVE
  	-- Identify the plane of inversional symmetry.
     -- We need an algorithm to identify the spanning basis
     -- for the set of all inversion flats and their
     -- transpositions. This could be done by reduction or
     -- by solving the associated system of linear equations,
     -- but we can do it more simply here.
-    if self == self:inversionFlat() then
+    if self == self:flatRP(range) then
         return true
     end
 	local simplex = {}
     local a = self:origin()
     local c = a:T(1)
-    local b = self:inversionFlat()
+    local b = self:flatRP(range)
     table.insert(simplex, a)
     table.insert(simplex, b)
     table.insert(simplex, c)
@@ -1010,9 +1022,14 @@ function Chord:isePIVector()
     return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
 end
 
+function Chord:isePISimple()
+    if self <= self:I():eP() then
+        return true
+    end
+    return false
+end
 
-
-Chord.isePI = Chord.isePIVector
+Chord.isePI = Chord.isePISimple
 
 function Chord:iseRP(range)
     if not self:iseR(range) then
@@ -1145,11 +1162,11 @@ function Chord:inversionMidpoint(range)
     return self:midpoint(inverse)
 end
 
--- Returns the point in the inversion flat for a chord.
--- This is the point that generates the
--- inversion of a chord within P directly.
+-- Returns the point in the inversion flat for a chord under permutational 
+-- equivalence. This is the point that generates the inversion of a chord 
+-- within P directly.
 
-function Chord:inversionFlat()
+function Chord:flatP()
     local chord = self:clone()
     local inverse = chord:I():eP()
     local flat = self:clone()
@@ -1160,9 +1177,34 @@ function Chord:inversionFlat()
     return flat
 end
 
-function Chord:isInversionFlat()
+function Chord:isFlatP()
     range = range or ChordSpace.OCTAVE
     local inverse = self:I():eP()
+    if self == inverse then
+        return true
+    end
+    return false
+end
+
+-- Returns the point in the inversion flat for a chord under range and 
+-- permutational equivalence. This is the point that generates the inversion 
+-- of a chord within RP directly.
+
+function Chord:flatRP(range)
+    range = range or ChordSpace.OCTAVE
+    local chord = self:clone()
+    local inverse = chord:I():eRP(range)
+    local flat = self:clone()
+    for voice = 1, #self do
+        -- Solve for flat: inverse = flat - chord
+        flat[voice] = chord[voice] + inverse[voice]
+    end
+    return flat
+end
+
+function Chord:isFlatRP(range)
+    range = range or ChordSpace.OCTAVE
+    local inverse = self:I():eRP(range)
     if self == inverse then
         return true
     end
@@ -1687,7 +1729,7 @@ tostring(self),
 tostring(self:I()),
 tostring(self:eP()), tostring(self:iseP()),
 tostring(self:eOP()), tostring(self:iseOP()),
-tostring(self:inversionFlat()), tostring(self:isInversionFlat()),
+tostring(self:flatP()), tostring(self:isFlatP()),
 tostring(self:I():eOP()),
 tostring(self:eOP():eopt()),
 tostring(self:I():eOP():eopt()),
@@ -1849,16 +1891,36 @@ function ChordSpace.allChordsInRange(voices, range, g)
     return sortedChords
 end
 
-function ChordSpace.flats(voices, range, g)
+function ChordSpace.flatsP(voices, range, g)
     range = range or ChordSpace.OCTAVE
     g = g or 1
     local flatsSet = {}
     local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
     for key, rp in pairs(rps) do
-        --if rp:isInversionFlat(range) then
+        --if rp:isFlatP(range) then
         --    flatsSet[rp:__hash()] = rp
         --end
-        local flat = rp:inversionFlat(range)
+        local flat = rp:flatP(range)
+        flatsSet[flat:__hash()] = flat
+    end
+    local sortedFlats = {}
+    for key, flat in pairs(flatsSet) do
+        table.insert(sortedFlats, flat)
+    end
+    table.sort(sortedFlats)
+    return sortedFlats
+end
+
+function ChordSpace.flatsRP(voices, range, g)
+    range = range or ChordSpace.OCTAVE
+    g = g or 1
+    local flatsSet = {}
+    local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
+    for key, rp in pairs(rps) do
+        --if rp:isFlatP(range) then
+        --    flatsSet[rp:__hash()] = rp
+        --end
+        local flat = rp:flatRP(range)
         flatsSet[flat:__hash()] = flat
     end
     local sortedFlats = {}
