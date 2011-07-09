@@ -90,59 +90,58 @@ print [[
 C H O R D S P A C E
 
 Copyright 2010 by Michael Gogins.
-This software is licensed under the terms
-of the GNU Lesser General Public License.
 
-This package, part of Silencio, implements a geometric approach
-to some common operations on chords in neo-Riemannian music theory
-for use in score generating software:
+This software is licensed under the terms of the GNU Lesser General Public 
+License.
 
---  Identifying whether a chord belongs to some equivalence class,
-    or moving a chord inside the fundamental domain of some
-    equivalence class.
+This package, part of Silencio, implements a geometric approach to some common 
+operations on chords in neo-Riemannian music theory for use in score 
+generating software:
 
---  Causing chord progressions to move strictly within an orbifold that
+--  Identifying whether a chord belongs to some equivalence class of music 
+    theory, or moving a chord inside the representative fundamental domain of 
+    some equivalence class.
+
+--  Causing chord progressions to move strictly within an orbifold that 
     generates some equivalence class.
 
---  Implementing chord progressions based on the L, P, R, D, K, and Q
-    operations of neo-Riemannian theory (thus implementing some aspects
-    of "harmony").
+--  Implementing chord progressions based on the L, P, R, D, K, and Q 
+    operations of neo-Riemannian theory (thus implementing some aspects of 
+    "harmony").
 
---  Implementing chord progressions performed within a more abstract
-    equivalence class by means of the best-formed voice-leading within
-    a less abstract equivalence class (thus implementing rudiments
-    of "counterpoint").
+--  Implementing chord progressions performed within a more abstract 
+    equivalence class by means of the best-formed voice-leading within a less 
+    abstract equivalence class (thus implementing rudiments of 
+    "counterpoint").
 
-The associated ChordSpaceView package can display these
-chord spaces and operations for trichords in an interactive
-3-dimensional view.
+The associated ChordSpaceView package can display these chord spaces and 
+operations for trichords in an interactive 3-dimensional view.
 
 DEFINITIONS
 
+Pitch is the perception of a distinct sound frequency. It is a logarithmic 
+perception; octaves, which sound 'equivalent' in some sense, represent 
+doublings or halvings of frequency.
+
+Pitches and intervals are represented as real numbers. Middle C is 60 and the 
+octave is 12. Our usual system of 12-tone equal temperament, as well as MIDI 
+key numbers, are completely represented by the whole numbers; any and all 
+other pitches can be represented simply by using fractions.
+
 A voice is a distinct sound that is heard as having a pitch.
 
-Pitch is the distinct perception of sound frequency.
-It is a logarithmic perception; octaves, which sound 'equivalent'
-in some sense, represent doublings or halvings of frequency.
+A chord is simply a set of voices heard at the same time or, what is the same 
+thing, a point in a chord space having one dimension of pitch for each voice 
+in the chord.
 
-Pitches and intervals are represented as real numbers.
-Middle C is 60 and the octave is 12. Our usual system of 12-tone
-equal temperament, as well as MIDI key numbers, are completely represented
-by the whole numbers; any and all other pitches can be represented
-simply by using fractions.
-
-A chord is simply a set of voices heard at the same time or,
-what is the same thing, a point in a chord space having one dimension of
-pitch for each voice in the chord.
-
-For the purposes of algorithmic composition in Silencio, a score is
-considered as a sequence of more or less fleeting chords.
+For the purposes of algorithmic composition in Silencio, a score is considered 
+as a sequence of more or less fleeting chords.
 
 EQUIVALENCE CLASSES
 
 An equivalence class identifies elements of a set. Operations that send one
 equivalent point to another induce quotient spaces or orbifolds, where the
-equivalence operation identifies points on one face of the orbifold with
+equivalence operation identifies points on one face of the orbifold with 
 points on an opposing face. The fundamental domain of the equivalence class
 is the space "within" the orbifold.
 
@@ -151,57 +150,56 @@ as vectors in parentheses (p1, ..., pN). Unordered chords are represented as
 sorted vectors in braces {p1, ..., pN}. Unordering is itself an equivalence
 class.
 
-The following equivalence classes apply to pitches and chords,
-and induce different orbifolds. Equivalence classes can be combined
-(Callendar, Quinn, and Tymoczko, "Generalized Voice-Leading Spaces,"
-_Science_ 320, 2008), and the more equivalence classes are combined,
-the more abstract is the resulting orbifold compared to the parent space.
+The following equivalence classes apply to pitches and chords, and exist in 
+different orbifolds. Equivalence classes can be combined (Callendar, Quinn, 
+and Tymoczko, "Generalized Voice-Leading Spaces," _Science_ 320, 2008), and 
+the more equivalence classes are combined, the more abstract is the resulting 
+orbifold compared to the parent space.
 
-In most cases, the chord space can be divided into a number, possibly
+In most cases, the chord space can be divided into a number, possibly 
 infinite, of geometrically equivalent fundamental domains for the same
 equivalence class. Therefore, we use the notion of 'representative'
-fundamental domain. For example, the representative fundamental domain
-of unordered sequences, out of all possible orderings, consists of all
-sequences in their ordinary sorted order. It is important, in the following,
-to identify representative fundamental domains that combine properly, e.g.
-so that the representative fundamental domain of OP / the representative
-fundamental domain of PI equals the representative fundamental domain of
-OPI.
+fundamental domain. For example, the representative fundamental domain of 
+unordered sequences, out of all possible orderings, consists of all sequences 
+in their ordinary sorted order. It is important, in the following, to identify 
+representative fundamental domains that combine properly, e.g. such that the 
+representative fundamental domain of OP / the representative fundamental 
+domain of PI equals the representative fundamental domain of OPI.
 
-C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}.
-        Not assuming cardinality equivalence ensures that there is a
-        proto-metric in plain chord space that is inherited by all child
-        chord spaces. Cardinality equivalence is never assumed here, because
-        we are working in chord spaces of fixed dimensionality; e.g. we
-        represent the note middle C not as {60}, but as {60, 60, ..., 60}.
+C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}. Not assuming 
+        cardinality equivalence ensures that there is a proto-metric in plain 
+        chord space that is inherited by all child chord spaces. Cardinality 
+        equivalence is never assumed here, because we are working in chord 
+        spaces of fixed dimensionality; e.g. we represent the note middle C 
+        not as {60}, but as {60, 60, ..., 60}.
 
-O       Octave equivalence. The fundamental domain is defined by the
-        pitches in a chord spanning the range of an octave or less.
+O       Octave equivalence. The fundamental domain is defined by the pitches 
+        in a chord spanning the range of an octave or less.
 
-P       Permutational equivalence. The fundamental domain is defined by
-        a "wedge" of plain chord space in which all chords possess the
-        same permutation of voices. Represented by the voices of a chord
-        always being sorted by pitch.
+P       Permutational equivalence. The fundamental domain is defined by a 
+        "wedge" of plain chord space in which all chords possess the same 
+        permutation of voices. Represented by the voices of a chord always 
+        being sorted by pitch.
 
 T       Transpositional equivalence, e.g. {1, 2} == {7, 8}. The fundamental
         domain is defined as a plane in chord space at right angles to the
         diagonal of unison chords. Represented by the chord always having a
-        sum of pitches equal to 0, or a positive sum as close as possible
-        to 0 within equal temperament (see below).
+        sum of pitches equal to 0, or a positive sum as close as possible to 0 
+        within equal temperament (see below).
 
-I       Inversional equivalence. Care is needed to distinguish the
+I       Inversional equivalence. Care is needed to distinguish the 
         mathematician's sense of 'invert', which means 'pitch-space inversion'
         or 'reflect in a point', from the musician's sense of 'invert', which
-        varies according to context but in practice often means
-        'registral inversion' or 'revoice by adding an octave to the lowest
-        tone of a chord.' Here, we use 'invert' and 'inversion' in the
-        mathematician's sense, and we use the terms 'revoice' and 'voicing'
-        for the musician's 'invert' and 'inversion'. The inversion point for
-        any inversion lies on the unison diagonal. A fundamental domain
-        is defined as any half of chord space that is bounded by a plane
-        containing the inversion point. Represented as the chord having
-        the first interval between voices be smaller than or equal to the
-        final interval (recursing for chords of more than 3 voices).
+        varies according to context but in practice often means 'registral 
+        inversion' or 'revoice by adding an octave to the lowest tone of a 
+        chord.' Here, we use 'invert' and 'inversion' in the mathematician's 
+        sense, and we use the terms 'revoice' and 'voicing' for the musician's 
+        'invert' and 'inversion'. The inversion point for any inversion lies 
+        on the unison diagonal. A fundamental domain is defined as any half of 
+        chord space that is bounded by a plane containing the inversion point. 
+        Represented as the chord having the first interval between voices be 
+        smaller than or equal to the final interval (recursing for chords of 
+        more than 3 voices).
 
 PI      Inversional equivalence with permutational equivalence. The
         'inversion flat' of unordered chord space is a hyperplane consisting
@@ -211,24 +209,25 @@ PI      Inversional equivalence with permutational equivalence. The
         half of the space on or lower than the hyperplane defined by the
         inversion flat and the unison diagonal.
 
-OP      Octave equivalence with permutational equivalence. Tymoczko's
-        orbifold for chords; i.e. chords with a fixed number of voices in a
-        harmonic context. The fundamental domain defined as a
-        hyperprism one octave long with as many sides as voices and the ends
-        identified by octave equivalence and one cyclical permutation
-        of voices, modulo the unordering. In OP for trichords in 12TET, the
-        augmented triads run up the middle of the prism, the major and minor
-        triads are in 6 alternating columns around the augmented triads, the
-        two-pitch chords form the 3 sides, and the one-pitch chords form the
-        3 edges that join the sides.
+OP      Octave equivalence with permutational equivalence. Tymoczko's orbifold 
+        for chords; i.e. chords with a fixed number of voices in a harmonic 
+        context. The fundamental domain defined as a hyperprism one octave 
+        long with as many sides as voices and the ends identified by octave 
+        equivalence and one cyclical permutation of voices, modulo the 
+        unordering. In OP for trichords in 12TET, the augmented triads run up 
+        the middle of the prism, the major and minor triads are in 6 
+        alternating columns around the augmented triads, the two-pitch chords 
+        form the 3 sides, and the one-pitch chords form the 3 edges that join 
+        the sides.
 
-OPI     The OP prism modulo inversion, i.e. 1/2 of the OP prism.
+OPI     The OP prism modulo inversion, i.e. 1/2 of the OP prism. The 
+        representative fundamental consits of those chords less than or equal 
+        to their inversions modulo OP.
 
-OPT     The layer of the OP prism as close as possible to the
-        origin, modulo the number of voices. Chord type. Note that CM and
-        Cm are different OPT. Because the OP prism is canted down from the
-        origin, at least one pitch in each OPT chord (excepting the origin
-        itself) is negative.
+OPT     The layer of the OP prism as close as possible to the origin, modulo 
+        the number of voices. Chord type. Note that CM and Cm are different 
+        OPT. Because the OP prism is canted down from the origin, at least one 
+        pitch in each OPT chord (excepting the origin itself) is negative.
 
 OPTI    The OPT layer modulo inversion, i.e. 1/2 of the OPT layer.
         Set-class. Note that CM and Cm are the same OPTI.
@@ -282,32 +281,32 @@ along with 'splitting' and 'merging' operations.
 MUSICAL MEANING AND USE
 
 The chord space in most musicians' heads is a combination of OP, OPT, and OPTI
-(actually, since analysts do in fact ignore unisons and doublings and so
-do not in fact ignore C, these are OPC, OPTC, and OPTIC).
+(actually, since analysts do in fact ignore unisons and doublings and so do 
+not in fact ignore C, these are OPC, OPTC, and OPTIC).
 
-In OP, root progressions are motions more or less up and down
-the 'columns' of identically structured chords. Changes of chord type are
-motions across the layers of differently structured chords.
-P, L, and R send major triads to their nearest minor neighbors,
-and vice versa. I reflects a chord across the middle of the prism.
-T moves a chord up and down parallel to the unison diagonal of the prism.
+In OP, root progressions are motions more or less up and down the 'columns' of 
+identically structured chords. Changes of chord type are motions across the 
+layers of differently structured chords. P, L, and R send major triads to 
+their nearest minor neighbors, and vice versa. I reflects a chord across the 
+middle of the prism. T moves a chord up and down parallel to the unison 
+diagonal of the prism.
 
 VOICE-LEADING
 
-Those operations that are defined only in OP can be extended to
-R or RP by revoicing the results (projecting from one point in OP to several
-points in R or RP).
+Those operations that are defined only in OP can be extended to R or RP by 
+revoicing the results (projecting from one point in OP to several points in R 
+or RP).
 
-The closest voice-leadings are between the closest chords in the space.
-The 'best' voice-leadings are closest first by 'smoothness,'
-and then by 'parsimony.' See Dmitri Tymoczko,
-_The Geometry of Musical Chords_, 2005 (Princeton University).
+The closest voice-leadings are between the closest chords in the space. The 
+'best' voice-leadings are closest first by 'smoothness,' and then by 
+'parsimony.' See Dmitri Tymoczko, _The Geometry of Musical Chords_, 2005 
+(Princeton University).
 
-This concept of voice-leading applies in all equivalence classes, not
-only to root progressions of chords, and the meaning of 'well-formed
-voice-leading' changes according to the equivalence class. In OP it means
-well-formed harmonic progression, in r or rp it also means well-formed
-contrapuntal voice-leading.
+This concept of voice-leading applies in all equivalence classes, not only to 
+root progressions of chords, and the meaning of 'well-formed voice-leading' 
+changes according to the equivalence class. In OP it means well-formed 
+harmonic progression, in r or rp it also means well-formed contrapuntal 
+voice-leading.
 
 Or, to make it really simple, OP is harmony and RP is counterpoint.
 
@@ -318,65 +317,61 @@ parallel fifths. This invariably produces a well-formed voice-leading.
 
 PROJECTIONS
 
-We select voices and sub-chords from chords by
-projecting the chord to subspaces of chord space. This can be
-done, e.g., to voice chords, arpeggiate them, or play scales.
-The operation is performed by multiplying a chord by
-a matrix whose diagonal represents the normal basis of the subspace,
-and where each element of the basis may be either identity
-(1) or any multiple of the octave (12).
+We select voices and sub-chords from chords by projecting the chord to 
+subspaces of chord space. This can be done, e.g., to voice chords, arpeggiate 
+them, or play scales. The operation is performed by multiplying a chord by a 
+matrix whose diagonal represents the normal basis of the subspace, and where 
+each element of the basis may be either identity (1) or any multiple of the 
+octave (12).
 
-V(c [, n])      Iterates with optional stride n through all powers of the
+V(c [, n])      Iterates with optional stride n through all powers of the 
                 basis of OP under rp, for the purpose of revoicing the chord.
 
-S(c, v)         Projects the chord to the subspace defined by the basis
-                vector v, e.g. for trichords v := [0, 1, 0] picks the
-                second voice.
+S(c, v)         Projects the chord to the subspace defined by the basis vector 
+                v, e.g. for trichords v := [0, 1, 0] picks the second voice.
 
-A(c, v [, n])   Iterates through all cyclical permutations of v in S(c, v),
+A(c, v [, n])   Iterates through all cyclical permutations of v in S(c, v), 
                 with optional stride n.
 
 V, S, and A may be used in combination to produce any regular arpeggiation.
 
 SCORE GENERATION
 
-Durations, instruments, dynamics, and so on can be attributed
-to chords by expanding them from vectors to tensors.
+Durations, instruments, dynamics, and so on can be attributed to chords by 
+expanding them from vectors to tensors.
 
-Because Lua lacks a tensor package, and because the [] operator
-cannot truly be overridden, and because the () operator
-cannot return an lvalue, the Chord class contains auxiliary tables to
-represent the duration, channel, velocity, and pan of each voice.
-These attributes are not sorted or manipulated along with the pitches,
-they are associated with the numerical order of the voices;
+Because Lua lacks a tensor package, and because the [] operator cannot truly 
+be overridden, and because the () operator cannot return an lvalue, the Chord 
+class contains auxiliary tables to represent the duration, channel, velocity, 
+and pan of each voice. These attributes are not sorted or manipulated along 
+with the pitches, they are associated with the numerical order of the voices;
 but they can still be very useful in score generation.
 
 Any Chord object can be written to any time slice of a Silence score.
 
 SCORE APPLICATION
 
-Any chord can be applied under any equivalence class to any time slice
-of a Silencio score. Notes already in the score in that slice will
-be conformed to the chord under the equivalence class.
+Any chord can be applied under any equivalence class to any time slice of a 
+Silencio score. Notes already in the score in that slice will be conformed to 
+the chord under the equivalence class.
 
 SCORE TRANSFORMATION
 
-Any time slice of a Silence score can be transformed into
-a Chord of any equivalence class, then operated upon,
-and then either written over or applied to that slice.
+Any time slice of a Silence score can be transformed into a Chord of any 
+equivalence class, then operated upon, and then either written over or applied 
+to that slice.
 
 IMPLEMENTATION
 
-Operations implemented as member functions of Chord
-do not operate upon self, but return a transformed copy of self.
+Operations implemented as member functions of Chord do not operate upon self, 
+but return a transformed copy of self.
 
-Each function that identifies an equivalence class has a name
-beginning with 'ise', e.g. 'iseO' for 'is in the fundamental
-domain for octave equivalence in geometric theory.'
+Each function that identifies an equivalence class has a name beginning with 
+'ise', e.g. 'iseO' for 'is in the fundamental domain for octave equivalence in 
+geometric theory.'
 
-Each function that implements an equivalence class has a name
-beginning with 'e', e.g. 'eOP' for pitch class set or 'eOPTI' for
-set class.
+Each function that implements an equivalence class has a name beginning with 
+'e', e.g. 'eOP' for pitch class set or 'eOPTI' for set class.
 ]]
 end
 
@@ -852,7 +847,11 @@ function Chord:ePI()
 end
 
 function Chord:eRPI(range)
-    return self:ePI():eRP(range)
+    --return self:ePI():eRP(range)
+    if self:iseRPI(range) then
+        return self:clone()
+    end
+    return self:I():eRP(range)
 end
 
 function Chord:eOPI()

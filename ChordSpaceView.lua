@@ -320,7 +320,7 @@ function ChordView:drawChord(chord, name, picking)
     if self:isE(chord) then
         if self.pickedChord ~= nil then
             if self.pickedChord:label() == chord:label() then
-                radius = radius * 2
+                radius = radius * 1.5
                 if self.drawInverse == true then
                     gl.glColor4f(1, 0, 1, 1)
                 else
@@ -329,9 +329,11 @@ function ChordView:drawChord(chord, name, picking)
             end
         end
     end
-    if chord:isFlatP() then
-    --if chord:iseV() then
-        radius = radius * 3
+    if chord:isFlatRP() then
+        radius = radius * 1.5
+    end
+    if chord:iseV(self.octaves * ChordSpace.OCTAVE) then
+        radius = radius * 1.5
     end
     glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
@@ -826,7 +828,7 @@ end
 chordView = ChordView:new()
 chordView.iterateInversions = false
 chordView.octaves = 1
-chordView.equivalence = 'OPT'
+chordView.equivalence = 'OP'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()

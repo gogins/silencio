@@ -149,19 +149,20 @@ for arity = 2, 4 do
         print(string.format('iseOPI(I):    %s', tostring(inversion:iseOPI())))
         print(string.format('eOPI:         %s', tostring(chord:eOPI())))
         print(string.format('eOPI(I):      %s\n', tostring(inversion:eOPI())))
-         if not (inversion == opreflection) then
-            fail('Reflection in the inversion flat must be the same as inversion in the origin.')
+        if not (inversion == opreflection) then
+            fail(string.format('Reflection in the inversion flat must be the same as inversion in the origin for %d voices.', arity))
         end
         if not(reinversion == rereflection) then
-            fail('Re-inversion must be the same as re-reflection.')
+            fail(string.format('Re-inversion must be the same as re-reflection for %d voices.', arity))
         end
         if not(reinversion == chord) then
-            fail('Re-inversion and re-reflection must be the same as the original chord.')
+            fail(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voices.', arity))
         end
     end
-    pass('Reflection in the inversion flat must be the same as inversion in the origin.')
-    pass('Re-inversion must be the same as re-reflection.')
-    pass('Re-inversion and re-reflection must be the same as the original chord.')
+    pass(string.format('Reflection in the inversion flat must be the same as inversion in the origin for %d voices.', arity))
+    pass(string.format('Re-inversion must be the same as re-reflection for %d voices.', arity))
+    pass(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voices.', arity))
+    pass(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voies.', arity))
     print(string.format('All chords in inversion flat for %d voices:', arity))
     flats = ChordSpace.flatsP(3, ChordSpace.OCTAVE)
     for key, flat in pairs(flats) do
@@ -207,7 +208,7 @@ function iseOPIeOPI(arity)
     result(passes, string.format('eOPI must equate to iseOPI for %d voices.', arity))
 end
 
-for arity = 2, 5 do
+for arity = 2, 6 do
     iseOPIeOPI(arity)
 end
 
@@ -215,7 +216,7 @@ function printVoicings(chord)
     print(chord:label())
     local voicings = chord:voicings()
     for i, voicing in ipairs(voicings) do
-        print('voicing', i, voicing, 'iseV', voicing:iseV(), voicing:distanceToUnisonDiagonal())
+        print('voicing', i, voicing, 'iseV', voicing:iseV(ChordSpace.OCTAVE), voicing:distanceToUnisonDiagonal())
         print('eOP', i, voicing:eOP())
         print('et', i, voicing:et())
         print('eop', i, voicing:eop())
@@ -225,6 +226,8 @@ function printVoicings(chord)
     end
 end
 
+verbose = true
+
 local c3333 = Chord:new{3,3,3,3}
 printVoicings(c3333)
 print()
@@ -232,7 +235,7 @@ local chord = ChordSpace.chordsForNames['CM9']
 printVoicings(chord)
 print()
 
-os.exit()
+--os.exit()
 
 print('c3333', c3333:label())
 local ic3333 = c3333:I():eOP()
@@ -290,7 +293,7 @@ end
 print('areeV:', areeV)
 print()
 
-os.exit()
+--os.exit()
 
 verbose = true
 
@@ -318,7 +321,7 @@ for i = 0, math.max(#OPT, #shouldbeOPT) do
     print (i, 'OPTI U OPTI:I():eOP()', shouldbeOPT[i], 'OPT', OPT[i])
 end
 
-os.exit()
+--os.exit()
 
 local chord = Chord:new{-3,1,4,8}
 print(chord:label())
