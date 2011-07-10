@@ -388,6 +388,19 @@ ChordSpace.OCTAVE = 12
 MIDDLE_C = 60
 C4 = MIDDLE_C
 
+function ChordSpace.sortedSet(collection)
+    local set_ = {}
+    for key, value in pairs(collection) do
+        set_[value:__hash()] = value
+    end
+    local sortedSet_ = {}
+    for key, value in pairs(set_) do
+        table.insert(sortedSet_, value)
+    end
+    table.sort(sortedSet_)
+    return sortedSet_
+end
+
 function er(pitch, range)
     return pitch % range
 end
@@ -1222,10 +1235,10 @@ end
 
 function Chord:iseRPTI(range, g)
     g = g or 1
-    if not self:isePI() then
+    if not self:iseRPT(range, g) then
         return false
     end
-    if not self:iseRPT(range, g) then
+    if not self:iseI() then
         return false
     end
     return true
@@ -1376,9 +1389,14 @@ function Chord:eOPT(g)
     return self:eRPT(ChordSpace.OCTAVE, g)
 end
 
+function Chord:eRPTI(range, g)
+    g = g or 1
+    return self:eRPT(range, g):eI()
+end
+
 function Chord:eOPTI(g)
     g = g or 1
-    return self:eOPT(g):eOPI()
+    return self:eRPTI(ChordSpace.OCTAVE, g)
 end
 
 -- Move 1 voice of the chord,
@@ -1882,69 +1900,28 @@ function ChordSpace.allChordsInRange(voices, range, g)
             end
         end
     end
-    local sortedChords = {}
-    for key, chord_ in pairs(chordset) do
-        table.insert(sortedChords, chord_)
-    end
-    table.sort(sortedChords)
-    return sortedChords
+    return ChordSpace.sortedSet(chordset)
 end
 
 function ChordSpace.flatsP(voices, range, g)
     range = range or ChordSpace.OCTAVE
     g = g or 1
-    local flatsSet = {}
     local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
-    for key, rp in pairs(rps) do
-        --if rp:isFlatP(range) then
-        --    flatsSet[rp:__hash()] = rp
-        --end
-        local flat = rp:flatP(range)
-        flatsSet[flat:__hash()] = flat
-    end
-    local sortedFlats = {}
-    for key, flat in pairs(flatsSet) do
-        table.insert(sortedFlats, flat)
-    end
-    table.sort(sortedFlats)
-    return sortedFlats
+    return ChordSpace.sortedSet(rps)
 end
 
 function ChordSpace.flatsRP(voices, range, g)
     range = range or ChordSpace.OCTAVE
     g = g or 1
-    local flatsSet = {}
     local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP', g)
-    for key, rp in pairs(rps) do
-        --if rp:isFlatP(range) then
-        --    flatsSet[rp:__hash()] = rp
-        --end
-        local flat = rp:flatRP(range)
-        flatsSet[flat:__hash()] = flat
-    end
-    local sortedFlats = {}
-    for key, flat in pairs(flatsSet) do
-        table.insert(sortedFlats, flat)
-    end
-    table.sort(sortedFlats)
-    return sortedFlats
+    return ChordSpace.sortedSet(rps)
 end
 
 function ChordSpace.inversionMidpoints(voices)
     range = range or ChordSpace.OCTAVE
     g = g or 1
-    local flatsSet = {}
     local rps = ChordSpace.allOfEquivalenceClass(voices, 'OP')
-    for key, rp in pairs(rps) do
-        local flat = rp:inversionMidpoint()
-        flatsSet[flat:__hash()] = flat
-    end
-    local sortedFlats = {}
-    for key, flat in pairs(flatsSet) do
-        table.insert(sortedFlats, flat)
-    end
-    table.sort(sortedFlats)
-    return sortedFlats
+    return ChordSpace.sortedSet(rps)
 end
 
 -- Returns all the chords with the specified number of voices that exist
