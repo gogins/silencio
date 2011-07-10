@@ -93,6 +93,8 @@ end
 pass('Each chord in OPI must return iseOPI true.')
 pass('Each chord in OPI must be eOPI.')
 
+verbose = true
+
 print('All of OPT')
 local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
 for index, chord in pairs(chords) do
@@ -118,6 +120,7 @@ for index, chord in pairs(chords) do
         fail('Each chord in OPTI must return iseOPTI true.')
     end
     if chord:eOPTI() ~= chord then
+        print_(chord:eOPTI():label())
         fail('Each chord in OPTI must be eOPTI.')
     end
     print()
@@ -246,8 +249,8 @@ local areeV = 0
 for t = 0, 11 do
     local chord = Caug:T(t):eOP()
     print('C+ t', t, chord:label())
-    print(chord:iseV())
-    if chord:iseV() then
+    print(chord:iseV(ChordSpace.OCTAVE))
+    if chord:iseV(ChordSpace.OCTAVE) then
         areeV = areeV + 1
     end
 end
@@ -259,8 +262,8 @@ local areeV = 0
 for t = 0, 11 do
     local chord = CM:T(t):eOP()
     print('CM t', t, chord:label())
-    print(chord:iseV())
-    if chord:iseV() then
+    print(chord:iseV(ChordSpace.OCTAVE))
+    if chord:iseV(ChordSpace.OCTAVE) then
         areeV = areeV + 1
     end
 end
@@ -272,8 +275,8 @@ local areeV = 0
 for t = 0, 11 do
     local chord = CM7:T(t):eOP()
     print('CM7 t', t, chord:label())
-    print(chord:iseV())
-    if chord:iseV() then
+    print(chord:iseV(ChordSpace.OCTAVE))
+    if chord:iseV(ChordSpace.OCTAVE) then
         areeV = areeV + 1
     end
 end
@@ -285,43 +288,49 @@ local areeV = 0
 for t = 0, 11 do
     local chord = CM9:T(t):eOP()
     print('CM9 t', t, chord:label())
-    print(chord:iseV())
-    if chord:iseV() then
+    print(chord:iseV(ChordSpace.OCTAVE))
+    if chord:iseV(ChordSpace.OCTAVE) then
         areeV = areeV + 1
     end
 end
 print('areeV:', areeV)
 print()
 
---os.exit()
-
-verbose = true
-
-print ('Does OPTI U OPTI:I():eOP() == OPT?')
-local arity = 3
-local OPTIs = ChordSpace.allOfEquivalenceClass(arity, 'OPTI')
-local chordset = {}
-for i, OPTI in pairs(OPTIs) do
-    chordset[OPTI:__hash()] = OPTI
-    local IOPTI = OPTI:I():eOP()
-    chordset[IOPTI:__hash()] = IOPTI
-    print(i, 'OPTI', OPTI, 'OPTI:I():eOP()', IOPTI)
+for voices = 2, 6 do
+    print('Does OPTI U OPTI:I():eOPT() == OPT?')
+    local passes = true
+    local dummy, ops = ChordSpace.allOfEquivalenceClass(voices, 'OP')
+    local op = nil
+    for i = 1, #ops do
+        op = ops[i]
+        print(tostring(op))
+        -- If it is OPTI or OPTI:I:OPT it must be OPT
+        if op:iseOPTI() then
+            if op:iseOPT() == false then
+                passes = false
+                break
+            end
+            if op:I():eOPT():iseOPTI() == false then
+                passes = false
+                break
+            end
+        end
+        -- if it is OPT it must be either OPTI or OPTI:I:OPT
+        if op:iseOPT() then
+            if op:iseOPTI() == false then
+                if op:I():eOPT():iseOPTI() == false then
+                    passes = false
+                    break
+                end
+            end
+        end
+    end
+    if passes == false then
+        print_(op:label())
+        print_(op:I():eOPT():label())
+    end
+    result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
 end
-local sortedchordset = {}
-for index, chord in pairs(chordset) do
-    table.insert(sortedchordset, chord)
-end
-table.sort(sortedchordset)
-local shouldbeOPT = {}
-for index, chord in pairs(sortedchordset) do
-    table.insert(shouldbeOPT, index - 1, chord)
-end
-local OPT = ChordSpace.allOfEquivalenceClass(arity, 'OPT')
-for i = 0, math.max(#OPT, #shouldbeOPT) do
-    print (i, 'OPTI U OPTI:I():eOP()', shouldbeOPT[i], 'OPT', OPT[i])
-end
-
---os.exit()
 
 local chord = Chord:new{-3,1,4,8}
 print(chord:label())
@@ -408,13 +417,13 @@ print()
 test('c = Chord:new{0, 4, 7}; voicings = c:voicings()')
 for i = 1, #voicings do
     voicing = voicings[i]
-    print('voicing:', voicing, 'voicing:iseI():', voicing:iseI(), 'voicing:iseV()', voicing:iseV())
+    print('voicing:', voicing, 'voicing:iseI():', voicing:iseI(), 'voicing:iseV(ChordSpace.OCTAVE)', voicing:iseV(ChordSpace.OCTAVE))
 end
 print()
 test('c = Chord:new{0, 4, 7, 10, 14}; voicings = c:voicings()')
 for i = 1, #voicings do
     voicing = voicings[i]
-    print('voicing:', voicing, 'voicing:iseI():', voicing:iseI(), 'voicing:iseV()', voicing:iseV())
+    print('voicing:', voicing, 'voicing:iseI():', voicing:iseI(), 'voicing:iseV(ChordSpace.OCTAVE)', voicing:iseV(ChordSpace.OCTAVE))
 end
 print()
 test('o = Orbifold:new()')
