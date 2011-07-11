@@ -211,7 +211,7 @@ function iseOPIeOPI(arity)
     result(passes, string.format('eOPI must equate to iseOPI for %d voices.', arity))
 end
 
-for arity = 2, 6 do
+for arity = 2, 4 do
     iseOPIeOPI(arity)
 end
 
@@ -296,7 +296,7 @@ end
 print('areeV:', areeV)
 print()
 
-for voices = 2, 6 do
+for voices = 2, 4 do
     print('Does OPTI U OPTI:I():eOPT() == OPT?')
     local passes = true
     local dummy, ops = ChordSpace.allOfEquivalenceClass(voices, 'OP')
@@ -304,22 +304,22 @@ for voices = 2, 6 do
     for i = 1, #ops do
         op = ops[i]
         print(tostring(op))
-        -- If it is OPTI or OPTI:I:OPT it must be OPT
         if op:iseOPTI() then
             if op:iseOPT() == false then
                 passes = false
+                print('If it is OPTI or OPTI:I:OPT it must be OPT')
                 break
             end
-            if op:I():eOPT():iseOPTI() == false then
-                passes = false
-                break
-            end
+            --if op:I():eOPT():iseOPTI() == false then
+            --    passes = false
+            --    break
+            --end
         end
-        -- if it is OPT it must be either OPTI or OPTI:I:OPT
         if op:iseOPT() then
             if op:iseOPTI() == false then
                 if op:I():eOPT():iseOPTI() == false then
                     passes = false
+                    print('if it is OPT it must be either OPTI or OPTI:I:OPT')
                     break
                 end
             end
