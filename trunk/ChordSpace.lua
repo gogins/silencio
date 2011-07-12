@@ -292,15 +292,6 @@ Each function that implements an equivalence class has a name beginning with
 end
 
 --[[
-2011-Jul-11
-
-Inconsistent definitions of inversional equivalence.
-Look at RPTI1 vs. RPTI2.
-
-Automate tour of inversions through domains.
-
-Earlier
-
 Look at different inversion flats in OP, causes vector math to fail.
 Use inversion midpoints/translations, in both P and OP.
 
@@ -380,6 +371,20 @@ back into RP reduces them to single lines.
 
 What I need to do is identify and create inversional equivalence only in P.
 The chord, the flat, the inversion, etc., will then all be reflected by R.
+
+2011-Jul-11
+
+Inconsistent definitions of inversional equivalence.
+Look at RPTI1 vs. RPTI2.
+
+Automate tour of inversions through domains.
+
+2011-Jul-12
+
+I think I am getting confused between eXI and iseXI,
+and between eI and eXI. I am more certain of ePI than
+I am of isePI.
+
 ]]
 
 local Silencio = require("Silencio")
@@ -818,12 +823,13 @@ function Chord:distanceToUnisonDiagonal()
     return distanceToUnisonDiagonal
 end
 
+-- Transposes the chord by the indicated interval (may be a fraction).
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function Chord:T(transposition)
+function Chord:T(semitones)
     local chord = self:clone()
     for voice = 1, #self do
-        chord[voice] = T(self[voice], transposition)
+        chord[voice] = T(self[voice], semitones)
     end
     return chord
 end
@@ -841,7 +847,7 @@ function Chord:I(center)
     return inverse
 end
 
--- Sends the chord to its equivalent in the zero-based fundamental domain of 
+-- Sends the chord to its equivalent in the zero-based fundamental domain of
 -- range equivalence.
 
 function Chord:er(range)
@@ -853,7 +859,7 @@ function Chord:er(range)
     return chord
 end
 
--- Sends the chord to its equivalent in the representative fundamental domain 
+-- Sends the chord to its equivalent in the representative fundamental domain
 -- of range equivalence.
 
 function Chord:eR(range)
@@ -877,7 +883,7 @@ function Chord:eR(range)
     return chord
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range equivalence.
 
 function Chord:iseR(range)
@@ -894,36 +900,37 @@ function Chord:iseR(range)
     return true
 end
 
--- Sends the chord to its equivalent within the zero-based fundamental domain 
+-- Sends the chord to its equivalent within the zero-based fundamental domain
 -- of octave equivalence.
 
 function Chord:eo()
     return self:er(ChordSpace.OCTAVE)
 end
 
--- Sends the chord to its equivalence within the representative fundamental 
+-- Sends the chord to its equivalence within the representative fundamental
 -- domain of octave equivalence.
 
 function Chord:eO()
     return self:eR(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the zero-based fundamental domain of 
+-- Returns whether the chord is within the zero-based fundamental domain of
 -- octave equivalence.
 
 function Chord:iseo()
     return self:iser(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave equivalence.
 
 function Chord:iseO()
     return self:iseR(ChordSpace.OCTAVE)
 end
 
--- Sends the chord to its equivalent within the representative fundamental 
--- domain of order equivalence.
+-- Sends the chord to its equivalent within the representative fundamental
+-- domain of order equivalence. I.e., returns the chord sorted by the pitches
+-- of its voices.
 
 function Chord:eP()
     local chord = self:clone()
@@ -933,8 +940,9 @@ end
 
 Chord.ep = Chord.eP
 
--- Returns whether the chord is within the representative fundamental domain 
--- of order equivalence.
+-- Returns whether the chord is within the representative fundamental domain
+-- of order equivalence. I.e., returns the chord sorted by the pitches of its
+-- voices.
 
 function Chord:iseP()
     for voice = 2, #self do
@@ -947,20 +955,20 @@ end
 
 Chord.isep = Chord.iseP
 
--- Sends the chord to its equivalent within the zero-based fundamental domain 
--- of transpositional equivalence. Returns the chord transposed such that its
--- lowest pitch is 0.
+-- Sends the chord to its equivalent within the zero-based fundamental domain
+-- of transpositional equivalence. I.e., returns the chord transposed such
+-- that its lowest pitch is 0.
 
 function Chord:et()
     local min_ = self:min()
     return self:T(-min_)
 end
 
--- Sends the chord to its equivalent within the representative fundamental 
--- domain of transpositional equivalence. Returns the chord transposed such 
--- that its layer is 0 or, under transposition, the positive layer closest to 
--- 0. g is the generator of transposition. NOTE: Does NOT return the result 
--- under any other equivalence class.
+-- Sends the chord to its equivalent within the representative fundamental
+-- domain of transpositional equivalence. I.e., returns the chord transposed
+-- such that its layer is 0 or, under transposition, the positive layer
+-- closest to 0. g is the generator of transposition. NOTE: Does NOT return
+-- the result under any other equivalence class.
 
 function Chord:eT(g)
     g = g or 1
@@ -976,7 +984,7 @@ function Chord:eT(g)
     return iterator
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of translational equivalence.
 
 function Chord:iseT(g)
@@ -1022,9 +1030,8 @@ function Chord:iseITymoczko()
 end
 
 function Chord:iseIGogins()
-    p = self:ep()
-    pi = p:I():ep()
-    if p <= pi then
+    inverse = self:I()
+    if self <= inverse then
         return true
     end
     return false
@@ -1039,7 +1046,7 @@ function Chord:erp(range)
     return self:er(range):ep()
 end
 
--- Sends the chord to its equivalent within the representative fundamental 
+-- Sends the chord to its equivalent within the representative fundamental
 -- domain of range and order equivalence.
 
 function Chord:eRPGogins(range)
@@ -1059,7 +1066,7 @@ end
 
 Chord.eRP = Chord.eRPTymoczko
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range and order equivalence.
 
 function Chord:iseRP(range)
@@ -1086,14 +1093,15 @@ function Chord:eOP()
     return self:eRP(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave and order equivalence.
 
 function Chord:iseOP()
     return self:iseRP(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+--[[
+-- Returns whether the chord is within the representative fundamental domain
 -- of range and transpositional equivalence.
 
 function Chord:iseRT(range, g)
@@ -1108,9 +1116,7 @@ function Chord:iseRT(range, g)
     return true
 end
 
--- eOT
-
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of order and transpositional equivalence.
 
 function Chord:iseOT()
@@ -1119,7 +1125,7 @@ end
 
 -- eRI
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range and inversional equivalence.
 
 function Chord:iseRI(range)
@@ -1135,7 +1141,7 @@ end
 
 -- eOI
 -- iseOI
-
+]]
 -- Sends the chord to its equivalent within the representative fundamental
 -- domain of order and inversional equivalence.
 
@@ -1147,7 +1153,7 @@ function Chord:ePI()
 end
 
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of order and inversional equivalence.
 
 function Chord:isePITymoczko()
@@ -1194,6 +1200,9 @@ function Chord:isePIVector(range)
 end
 
 function Chord:isePISimple()
+    if not self:iseP() then
+        return false
+    end
     if self <= self:I():eP() then
         return true
     end
@@ -1202,7 +1211,7 @@ end
 
 Chord.isePI = Chord.isePISimple
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range, order, and transpositional equivalence.
 
 function Chord:iseRPT(range, g)
@@ -1215,14 +1224,14 @@ function Chord:iseRPT(range, g)
     return true
 end
 
--- Sends the chord to its equivalent within the zero-based fundamental domain 
+-- Sends the chord to its equivalent within the zero-based fundamental domain
 -- of octave, order, and transpositional equivalence.
 
 function Chord:eopt()
     return self:et():eop()
 end
 
--- Sends the chord to its equivalent within the representative fundamental 
+-- Sends the chord to its equivalent within the representative fundamental
 -- domain of octave, order, and transpositional equivalence.
 
 function Chord:eOPT(g)
@@ -1238,7 +1247,7 @@ function Chord:iseOPT(g)
     return self:iseRPT(ChordSpace.OCTAVE, g)
 end
 
--- Sends the chord to its equivalent within the representative fundamental 
+-- Sends the chord to its equivalent within the representative fundamental
 -- domain of range, order, and inversional equivalence.
 
 function Chord:eRPI(range)
@@ -1248,7 +1257,7 @@ function Chord:eRPI(range)
     return self:I():eRP(range)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range, order, and inversional equivalence.
 
 function Chord:iseRPI1(range)
@@ -1272,16 +1281,16 @@ end
 
 Chord.iseRPI = Chord.iseRPI2
 
--- Sends the chord to its equivalent within the representative fundamental 
+-- Sends the chord to its equivalent within the representative fundamental
 -- domain of octave, order, and inversional equivalence.
 
 function Chord:eOPI()
     return self:eRPI(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave, order, and inversional equivalence.
- 
+
 function Chord:iseOPITymoczko()
     for voice = 1, #self - 1 do
         if not (self[voice] <= self[voice + 1]) then
@@ -1324,8 +1333,8 @@ end
 
 Chord.iseRPTI = Chord.iseRPTI1
 
--- Sends the chord to its equivalent within the representative fundamental 
--- domain of octave, order, transpositional, and inversional equivalence 
+-- Sends the chord to its equivalent within the representative fundamental
+-- domain of octave, order, transpositional, and inversional equivalence
 -- (set-class). g is the generator of transposition.
 
 function Chord:eOPTI(g)
@@ -1333,7 +1342,7 @@ function Chord:eOPTI(g)
     return self:eRPTI(ChordSpace.OCTAVE, g)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave, order, transpositional, and inversional equivalence (set-class).
 
 function Chord:iseOPTI(g)
