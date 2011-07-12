@@ -1,98 +1,5 @@
 ChordSpace = {}
 
---[[
-
-2011-Jul-11
-
-Inconsistent definitions of inversional equivalence.
-Look at RPTI1 vs. RPTI2.
-
-Automate tour of inversions through domains.
-
-Earlier
-
-Look at different inversion flats in OP, causes vector math to fail.
-Use inversion midpoints/translations, in both P and OP.
-
-Inversion flat now a single line extending the part within OP.
-
-chord   160:  {  -3.0000   7.0000   7.0000}
-inversion:    {  -7.0000   3.0000   5.0000}
-reinversion:  {  -3.0000   7.0000   7.0000}
-flat:         { -10.0000   0.0000  10.0000}
-
-NOTE: reflection is not the same as opreflection.
-
-reflection:   {  -7.0000  -7.0000   3.0000}
-opreflection: {  -7.0000   3.0000   5.0000}
-
-NOTE: rereflection is from reflection, not opreflection.
-
-rereflection: {  -3.0000   7.0000   7.0000}
-is flat:      false
-iseOPI:       false
-iseOPI(I):    false
-eOPI:         {  -7.0000   3.0000   5.0000}
-eOPI(I):      {  -3.0000   7.0000   7.0000}
-
-So, I now suspect that CQT erred in extending their equation to identify the
-representative fundamental domain for PI from PI to OPI.
-
-This means that neither CQT's equation, nor my linear algebra which turns out
-to assume that equation, can be used to identify the representative
-fundamental domain of OPI.
-
-I can try some 'RP flat' which will fold up inside RP. I would think that then
-there will be voices - 1 RP flats for each RP, and then depending on which flat
-a chord reflects in to invert, that flat can be used in the linear algebra to
-identify the domain.
-
-Or I can try to find some equivalent shortcut.
-
-PROBLEMS
-
-Inverting any chord in the quotient space PI sends that chord to itself. This
-can be visualized in P by folding the upper half prism along the inversion
-flat back down over the lower half prism (which is the representative
-fundamental domain for PI). The hopping of chords up and down the
-translational columns in RP is thus explained -- they are hopping in P, but
-fixed in PI.
-
-CQT state that any half space bounded by a hyperplane that contains the
-inversion flat is a fundamental domain of inversion, and that identifying
-this hyperplane with its reflection in the inversion flat defines the
-quotient space PI.
-
-Moving from P to RP complicates matters by the octave / voices twist. CQT do
-not completely account for this. In RPI, there is only one such hyperplane --
-the one defined by CQT's equation. This is CQT's representative fundamental
-domain for RPI.
-
-CQT define the inversion flat for permutational equivalence only (P). If one
-defines the inversion flat of all chords in OP, there are two lines. The
-line closer to the origin consists of chords in the flat that also are in OP.
-The line farther from the origin is the first line with an octave added, which
-permutes the voices, e.g. {-6, 0, 6} is in the inversion flat, but so is
-{-6, 6, 12}. Of course {-6, 6, 12} in P is {-6, 0, 6} in OP. But these two
-flats do not produce the same reflection in OP. Only the two lines actually
-work.
-
-CQT's representative fundamental domain for RPI does, at least for trichords,
-appear to define a fundamental domain for inversion w.r.t the octave / N.
-Prove or disprove this. If this holds for all arities, perhaps I can use this
-and be done with it. But it does not hold even for trichords, because some
-chords in OP reflect in the one line of the flat, and other chords reflect in
-the other line.
-
-The midpoints of inversions w.r.t. the origin also define two lines with the
-same orientation as the flat. In both cases, reflecting the flats or midpoints
-back into RP reduces them to single lines.
-
-What I need to do is identify and create inversional equivalence only in P.
-The chord, the flat, the inversion, etc., will then all be reflected by R.
-
-]]
-
 function ChordSpace.help()
 print [[
 '''
@@ -229,14 +136,14 @@ OP      Octave equivalence with permutational equivalence. Tymoczko's orbifold
         form the 3 sides, and the one-pitch chords form the 3 edges that join
         the sides.
 
-OPI     The OP prism modulo inversion, i.e. 1/2 of the OP prism. The
-        representative fundamental consits of those chords less than or equal
-        to their inversions modulo OP.
-
 OPT     The layer of the OP prism as close as possible to the origin, modulo
         the number of voices. Chord type. Note that CM and Cm are different
         OPT. Because the OP prism is canted down from the origin, at least one
         pitch in each OPT chord (excepting the origin itself) is negative.
+
+OPI     The OP prism modulo inversion, i.e. 1/2 of the OP prism. The
+        representative fundamental consits of those chords less than or equal
+        to their inversions modulo OP.
 
 OPTI    The OPT layer modulo inversion, i.e. 1/2 of the OPT layer.
         Set-class. Note that CM and Cm are the same OPTI.
@@ -383,6 +290,97 @@ Each function that implements an equivalence class has a name beginning with
 'e', e.g. 'eOP' for pitch class set or 'eOPTI' for set class.
 ]]
 end
+
+--[[
+2011-Jul-11
+
+Inconsistent definitions of inversional equivalence.
+Look at RPTI1 vs. RPTI2.
+
+Automate tour of inversions through domains.
+
+Earlier
+
+Look at different inversion flats in OP, causes vector math to fail.
+Use inversion midpoints/translations, in both P and OP.
+
+Inversion flat now a single line extending the part within OP.
+
+chord   160:  {  -3.0000   7.0000   7.0000}
+inversion:    {  -7.0000   3.0000   5.0000}
+reinversion:  {  -3.0000   7.0000   7.0000}
+flat:         { -10.0000   0.0000  10.0000}
+
+NOTE: reflection is not the same as opreflection.
+
+reflection:   {  -7.0000  -7.0000   3.0000}
+opreflection: {  -7.0000   3.0000   5.0000}
+
+NOTE: rereflection is from reflection, not opreflection.
+
+rereflection: {  -3.0000   7.0000   7.0000}
+is flat:      false
+iseOPI:       false
+iseOPI(I):    false
+eOPI:         {  -7.0000   3.0000   5.0000}
+eOPI(I):      {  -3.0000   7.0000   7.0000}
+
+So, I now suspect that CQT erred in extending their equation to identify the
+representative fundamental domain for PI from PI to OPI.
+
+This means that neither CQT's equation, nor my linear algebra which turns out
+to assume that equation, can be used to identify the representative
+fundamental domain of OPI.
+
+I can try some 'RP flat' which will fold up inside RP. I would think that then
+there will be voices - 1 RP flats for each RP, and then depending on which flat
+a chord reflects in to invert, that flat can be used in the linear algebra to
+identify the domain.
+
+Or I can try to find some equivalent shortcut.
+
+PROBLEMS
+
+Inverting any chord in the quotient space PI sends that chord to itself. This
+can be visualized in P by folding the upper half prism along the inversion
+flat back down over the lower half prism (which is the representative
+fundamental domain for PI). The hopping of chords up and down the
+translational columns in RP is thus explained -- they are hopping in P, but
+fixed in PI.
+
+CQT state that any half space bounded by a hyperplane that contains the
+inversion flat is a fundamental domain of inversion, and that identifying
+this hyperplane with its reflection in the inversion flat defines the
+quotient space PI.
+
+Moving from P to RP complicates matters by the octave / voices twist. CQT do
+not completely account for this. In RPI, there is only one such hyperplane --
+the one defined by CQT's equation. This is CQT's representative fundamental
+domain for RPI.
+
+CQT define the inversion flat for permutational equivalence only (P). If one
+defines the inversion flat of all chords in OP, there are two lines. The
+line closer to the origin consists of chords in the flat that also are in OP.
+The line farther from the origin is the first line with an octave added, which
+permutes the voices, e.g. {-6, 0, 6} is in the inversion flat, but so is
+{-6, 6, 12}. Of course {-6, 6, 12} in P is {-6, 0, 6} in OP. But these two
+flats do not produce the same reflection in OP. Only the two lines actually
+work.
+
+CQT's representative fundamental domain for RPI does, at least for trichords,
+appear to define a fundamental domain for inversion w.r.t the octave / N.
+Prove or disprove this. If this holds for all arities, perhaps I can use this
+and be done with it. But it does not hold even for trichords, because some
+chords in OP reflect in the one line of the flat, and other chords reflect in
+the other line.
+
+The midpoints of inversions w.r.t. the origin also define two lines with the
+same orientation as the flat. In both cases, reflecting the flats or midpoints
+back into RP reduces them to single lines.
+
+What I need to do is identify and create inversional equivalence only in P.
+The chord, the flat, the inversion, etc., will then all be reflected by R.
+]]
 
 local Silencio = require("Silencio")
 local matrix = require("matrix")
@@ -843,42 +841,44 @@ function Chord:I(center)
     return inverse
 end
 
--- Inverts the chord by another chord that is not necessarily on the unison
--- diagonal. NOTE: Does NOT return the result under any equivalence class.
+-- Sends the chord to its equivalent in the zero-based fundamental domain of 
+-- range equivalence.
 
-function Chord:reflect(other)
-    local reflection = self:clone()
-    for voice = 1, #self do
-        reflection[voice] = other[voice] - self[voice]
+function Chord:er(range)
+    range = range or ChordSpace.OCTAVE
+    local chord = self:clone()
+    for voice, pitch in ipairs(chord) do
+        chord[voice] = pitch % range
     end
-    return reflection
+    return chord
 end
 
-function Chord:eI()
-    if self:iseI() then
-        return self:clone()
+-- Sends the chord to its equivalent in the representative fundamental domain 
+-- of range equivalence.
+
+function Chord:eR(range)
+    local chord = self:clone()
+    -- The clue here is that at least one voice must be >= 0,
+    -- but no voice can be > range.
+    -- Move all pitches inside the interval [0, range]
+    -- (which is not the same as the fundamental domain).
+    for voice = 1, #chord do
+        chord[voice] = chord[voice] % range
     end
-    return self:I()
-end
-
-function Chord:ePI()
-    if self:isePI() then
-        return self:clone()
+    -- Reflect voices that are outside of the fundamental domain
+    -- back into it, which will revoice the chord, i.e.
+    -- the sum of pitches is in [0, range).
+    while chord:sum() >= range do
+        local maximumPitch, maximumVoice = chord:max()
+        -- Because no voice is above the range,
+        -- any voices that need to be revoiced will now be negative.
+        chord[maximumVoice] = maximumPitch - range
     end
-    return self:I():eP()
+    return chord
 end
 
-function Chord:eRPI(range)
-    --return self:ePI():eRP(range)
-    if self:iseRPI(range) then
-        return self:clone()
-    end
-    return self:I():eRP(range)
-end
-
-function Chord:eOPI()
-    return self:eRPI(ChordSpace.OCTAVE)
-end
+-- Returns whether the chord is within the representative fundamental domain 
+-- of range equivalence.
 
 function Chord:iseR(range)
     if not (self:max() <= (self:min() + range)) then
@@ -894,9 +894,47 @@ function Chord:iseR(range)
     return true
 end
 
+-- Sends the chord to its equivalent within the zero-based fundamental domain 
+-- of octave equivalence.
+
+function Chord:eo()
+    return self:er(ChordSpace.OCTAVE)
+end
+
+-- Sends the chord to its equivalence within the representative fundamental 
+-- domain of octave equivalence.
+
+function Chord:eO()
+    return self:eR(ChordSpace.OCTAVE)
+end
+
+-- Returns whether the chord is within the zero-based fundamental domain of 
+-- octave equivalence.
+
+function Chord:iseo()
+    return self:iser(ChordSpace.OCTAVE)
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of octave equivalence.
+
 function Chord:iseO()
     return self:iseR(ChordSpace.OCTAVE)
 end
+
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of order equivalence.
+
+function Chord:eP()
+    local chord = self:clone()
+    table.sort(chord)
+    return chord
+end
+
+Chord.ep = Chord.eP
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of order equivalence.
 
 function Chord:iseP()
     for voice = 2, #self do
@@ -907,6 +945,40 @@ function Chord:iseP()
     return true
 end
 
+Chord.isep = Chord.iseP
+
+-- Sends the chord to its equivalent within the zero-based fundamental domain 
+-- of transpositional equivalence. Returns the chord transposed such that its
+-- lowest pitch is 0.
+
+function Chord:et()
+    local min_ = self:min()
+    return self:T(-min_)
+end
+
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of transpositional equivalence. Returns the chord transposed such 
+-- that its layer is 0 or, under transposition, the positive layer closest to 
+-- 0. g is the generator of transposition. NOTE: Does NOT return the result 
+-- under any other equivalence class.
+
+function Chord:eT(g)
+    g = g or 1
+    local iterator = self:clone()
+    -- Transpose down to layer 0 or just below.
+    while iterator:sum() > 0 do
+        iterator = iterator:T(-g)
+    end
+    -- Transpose up to layer 0 or just above.
+    while iterator:sum() < 0 do
+        iterator = iterator:T(g)
+    end
+    return iterator
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of translational equivalence.
+
 function Chord:iseT(g)
     g = g or 1
     local ep = self:eP()
@@ -916,12 +988,268 @@ function Chord:iseT(g)
     return true
 end
 
+-- Sends the chord to its equivalent within the representative fundamental
+-- domain of inversional equivalence.
+
+function Chord:eI()
+    if self:iseI() then
+        return self:clone()
+    end
+    return self:I()
+end
+
+-- Returns whether the chord is within the representative fundamental domain
+-- of inversional equivalence.
+
+function Chord:iseITymoczko()
+    chord = self:clone()
+    local lowerVoice = 2
+    local upperVoice = #chord
+    while lowerVoice < upperVoice do
+        -- x[2] - x[1] <= x[#x] - x[#x - 1]
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
+        if lowerInterval < upperInterval then
+            return true
+        end
+        if lowerInterval > upperInterval then
+            return false
+        end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
+    end
+    return true
+end
+
+function Chord:iseIGogins()
+    p = self:ep()
+    pi = p:I():ep()
+    if p <= pi then
+        return true
+    end
+    return false
+end
+
+Chord.iseI = Chord.iseIGogins
+
+-- Sends the chord to its equivalent within the zero-based fundamental domain
+-- of range and order equivalence.
+
+function Chord:erp(range)
+    return self:er(range):ep()
+end
+
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of range and order equivalence.
+
+function Chord:eRPGogins(range)
+    return self:eR(range):eP()
+end
+
+-- These two are equivalent for trichords, and presumably all others as well.
+
+function Chord:eRPTymoczko(range)
+    local chord = self:er(range):ep()
+    while chord:sum() >= range do
+        chord[#chord] = chord[#chord] - range
+        chord = chord:eP()
+    end
+    return chord
+end
+
+Chord.eRP = Chord.eRPTymoczko
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of range and order equivalence.
+
+function Chord:iseRP(range)
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:iseP(range) then
+        return false
+    end
+    return true
+end
+
+-- Sends the chord to its equivalent within the zero-based fundamental domain
+-- of octave and order equivalence.
+
+function Chord:eop()
+    return self:erp(ChordSpace.OCTAVE)
+end
+
+-- Sends the chord to its equivalent within the representative fundamental domain
+-- of octave and order equivalence.
+
+function Chord:eOP()
+    return self:eRP(ChordSpace.OCTAVE)
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of octave and order equivalence.
+
+function Chord:iseOP()
+    return self:iseRP(ChordSpace.OCTAVE)
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of range and transpositional equivalence.
+
+function Chord:iseRT(range, g)
+    range = range or ChordSpace.OCTAVE
+    g = g or 1
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:iseT(g) then
+        return false
+    end
+    return true
+end
+
+-- eOT
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of order and transpositional equivalence.
+
+function Chord:iseOT()
+    return self:iseRT(ChordSpace.OCTAVE)
+end
+
+-- eRI
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of range and inversional equivalence.
+
+function Chord:iseRI(range)
+    if not self:iseI() then
+        return false
+    end
+    if not self:iseR(range) then
+        return false
+    end
+    return true
+end
+
+
+-- eOI
+-- iseOI
+
+-- Sends the chord to its equivalent within the representative fundamental
+-- domain of order and inversional equivalence.
+
+function Chord:ePI()
+    if self:isePI() then
+        return self:clone()
+    end
+    return self:I():eP()
+end
+
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of order and inversional equivalence.
+
 function Chord:isePITymoczko()
     if not self:iseI() then
         return false
     end
     return self:iseP()
 end
+
+-- Returns whether the point-hyperplane distance from the chord to the bounding
+-- hyperplane is less than or equal to zero. The distance is computed as in A. J.
+-- Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 1996. This
+-- is the ratio of the volume of an N dimensional simplex to the volume of its
+-- N - 1 dimensional 'base.' Here the base is the simplex defining the bounding
+-- hyperplane of PI symmetry, and the full simplex adds the chord in question.
+
+function Chord:isePIVector(range)
+    range = range or ChordSpace.OCTAVE
+ 	-- Identify the plane of inversional symmetry.
+    -- We need an algorithm to identify the spanning basis
+    -- for the set of all inversion flats and their
+    -- transpositions. This could be done by reduction or
+    -- by solving the associated system of linear equations,
+    -- but we can do it more simply here.
+    if self == self:flatRP(range) then
+        return true
+    end
+	local simplex = {}
+    local a = self:origin()
+    local c = a:T(1)
+    local b = self:flatRP(range)
+    table.insert(simplex, a)
+    table.insert(simplex, b)
+    table.insert(simplex, c)
+    local hyperplaneVolume, b = ChordSpace.volume(simplex)
+    -- Then the volume of the simplex with the chord divided by
+    -- the volume of the simplex without the chord is the distance.
+    -- This is a signed quantity because one of these simplexes will
+    -- be a square matrix with a plain (signed) determinant.
+    table.insert(simplex, self)
+	local chordVolume, s = ChordSpace.volume(simplex)
+    local chordHyperplaneDistance = chordVolume / hyperplaneVolume
+    return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
+end
+
+function Chord:isePISimple()
+    if self <= self:I():eP() then
+        return true
+    end
+    return false
+end
+
+Chord.isePI = Chord.isePISimple
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of range, order, and transpositional equivalence.
+
+function Chord:iseRPT(range, g)
+    range = range or ChordSpace.OCTAVE
+    g = g or 1
+    local eRPT = self:eRPT(range, g)
+    if not (self == eRPT) then
+        return false
+    end
+    return true
+end
+
+-- Sends the chord to its equivalent within the zero-based fundamental domain 
+-- of octave, order, and transpositional equivalence.
+
+function Chord:eopt()
+    return self:et():eop()
+end
+
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of octave, order, and transpositional equivalence.
+
+function Chord:eOPT(g)
+    g = g or 1
+    return self:eRPT(ChordSpace.OCTAVE, g)
+end
+
+-- Returns whether the chord is within the representative fundamental domain
+-- of octave, order, and transpositional equivalence (chord type).
+
+function Chord:iseOPT(g)
+    g = g or 1
+    return self:iseRPT(ChordSpace.OCTAVE, g)
+end
+
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of range, order, and inversional equivalence.
+
+function Chord:eRPI(range)
+    if self:iseRPI(range) then
+        return self:clone()
+    end
+    return self:I():eRP(range)
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of range, order, and inversional equivalence.
 
 function Chord:iseRPI1(range)
     if not self:isePI(range) then
@@ -944,8 +1272,90 @@ end
 
 Chord.iseRPI = Chord.iseRPI2
 
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of octave, order, and inversional equivalence.
+
+function Chord:eOPI()
+    return self:eRPI(ChordSpace.OCTAVE)
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of octave, order, and inversional equivalence.
+ 
+function Chord:iseOPITymoczko()
+    for voice = 1, #self - 1 do
+        if not (self[voice] <= self[voice + 1]) then
+            return false
+        end
+    end
+    if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
+        return false
+    end
+    local layer = self:sum()
+    if not (0 <= layer and layer <= ChordSpace.OCTAVE) then
+        return false
+    end
+    if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+        return false
+    end
+    return true
+end
+
 function Chord:iseOPI()
     return self:iseRPI(ChordSpace.OCTAVE)
+end
+
+-- Returns whether the chord is within the representative fundamental domain
+-- of range, order, transpositional, and inversional equivalence.
+
+function Chord:iseRPTI1(range, g)
+    g = g or 1
+    if not self:iseRPT(range, g) then
+        return false
+    end
+    if not self:iseI() then
+        return false
+    end
+    return true
+end
+
+function Chord:iseRPTI2(range, g)
+end
+
+Chord.iseRPTI = Chord.iseRPTI1
+
+-- Sends the chord to its equivalent within the representative fundamental 
+-- domain of octave, order, transpositional, and inversional equivalence 
+-- (set-class). g is the generator of transposition.
+
+function Chord:eOPTI(g)
+    g = g or 1
+    return self:eRPTI(ChordSpace.OCTAVE, g)
+end
+
+-- Returns whether the chord is within the representative fundamental domain 
+-- of octave, order, transpositional, and inversional equivalence (set-class).
+
+function Chord:iseOPTI(g)
+    g = g or 1
+    if not self:iseOPI() then
+        return false
+    end
+    if not self:iseOPT(range, g) then
+        return false
+    end
+    return true
+end
+
+-- Inverts the chord by another chord that is not necessarily on the unison
+-- diagonal. NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:reflect(other)
+    local reflection = self:clone()
+    for voice = 1, #self do
+        reflection[voice] = other[voice] - self[voice]
+    end
+    return reflection
 end
 
 -- Return n!
@@ -1001,175 +1411,6 @@ function ChordSpace.volume(chords)
         volume = factor * simplex:det()
     end
     return volume, simplex
-end
-
---[[
-
-Returns whether the point-hyperplane distance from the chord to the bounding
-hyperplane is less than or equal to zero. The distance is computed as in A. J.
-Hanson, "Geometry for N-Dimensional Graphics," Indiana University, 1996. This
-is the ratio of the volume of an N dimensional simplex to the volume of its
-N - 1 dimensional 'base.' Here the base is the simplex defining the bounding
-hyperplane of PI symmetry, and the full simplex adds the chord in question.
-
-]]
-
-function Chord:isePIVector(range)
-    range = range or ChordSpace.OCTAVE
- 	-- Identify the plane of inversional symmetry.
-    -- We need an algorithm to identify the spanning basis
-    -- for the set of all inversion flats and their
-    -- transpositions. This could be done by reduction or
-    -- by solving the associated system of linear equations,
-    -- but we can do it more simply here.
-    if self == self:flatRP(range) then
-        return true
-    end
-	local simplex = {}
-    local a = self:origin()
-    local c = a:T(1)
-    local b = self:flatRP(range)
-    table.insert(simplex, a)
-    table.insert(simplex, b)
-    table.insert(simplex, c)
-    local hyperplaneVolume, b = ChordSpace.volume(simplex)
-    -- Then the volume of the simplex with the chord divided by
-    -- the volume of the simplex without the chord is the distance.
-    -- This is a signed quantity because one of these simplexes will
-    -- be a square matrix with a plain (signed) determinant.
-    table.insert(simplex, self)
-	local chordVolume, s = ChordSpace.volume(simplex)
-    local chordHyperplaneDistance = chordVolume / hyperplaneVolume
-    return (chordHyperplaneDistance <= 0), chordHyperplaneDistance
-end
-
-function Chord:isePISimple()
-    if self <= self:I():eP() then
-        return true
-    end
-    return false
-end
-
-Chord.isePI = Chord.isePISimple
-
-function Chord:iseRP(range)
-    if not self:iseR(range) then
-        return false
-    end
-    if not self:iseP(range) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOP()
-    return self:iseRP(ChordSpace.OCTAVE)
-end
-
-function Chord:iseRT(range, g)
-    range = range or ChordSpace.OCTAVE
-    g = g or 1
-    if not self:iseR(range) then
-        return false
-    end
-    if not self:iseT(g) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOT()
-    return self:iseRT(ChordSpace.OCTAVE)
-end
-
-function Chord:iseI()
-    chord = self:clone()
-    local lowerVoice = 2
-    local upperVoice = #chord
-    while lowerVoice < upperVoice do
-        -- x[2] - x[1] <= x[#x] - x[#x - 1]
-        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
-        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
-        if lowerInterval < upperInterval then
-            return true
-        end
-        if lowerInterval > upperInterval then
-            return false
-        end
-        lowerVoice = lowerVoice + 1
-        upperVoice = upperVoice - 1
-    end
-    return true
-end
-
-function Chord:iseRI(range)
-    if not self:iseI() then
-        return false
-    end
-    if not self:iseR(range) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOI()
-    return self:isRI(ChordSpace.OCTAVE)
-end
-
-function Chord:isePT(g)
-    g = g or 1
-    if not self:iseP() then
-        return false
-    end
-    if not self:iseT(g) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseTI(g)
-    g = g or 1
-    if not self:iseI() then
-        return false
-    end
-    if not self:iseT(g) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseRPT(range, g)
-    range = range or ChordSpace.OCTAVE
-    g = g or 1
-    local eRPT = self:eRPT(range, g)
-    if not (self == eRPT) then
-        return false
-    end
-    return true
-end
-
-function Chord:iseOPT(g)
-    g = g or 1
-    return self:iseRPT(ChordSpace.OCTAVE, g)
-end
-
-function Chord:iseOPITymoczko()
-    for voice = 1, #self - 1 do
-        if not (self[voice] <= self[voice + 1]) then
-            return false
-        end
-    end
-    if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
-        return false
-    end
-    local layer = self:sum()
-    if not (0 <= layer and layer <= ChordSpace.OCTAVE) then
-        return false
-    end
-    if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
-        return false
-    end
-    return true
 end
 
 -- Returns the chord that is halfway
@@ -1242,142 +1483,8 @@ function Chord:midpoint(other)
     return midpoint
 end
 
-function Chord:iseRPTI1(range, g)
-    g = g or 1
-    if not self:iseRPT(range, g) then
-        return false
-    end
-    if not self:iseI() then
-        return false
-    end
-    return true
-end
-
-function Chord:iseRPTI2(range, g)
-end
-
-function Chord:iseOPTI(g)
-    g = g or 1
-    if not chord:iseOPI() then
-        return false
-    end
-    if not chord:iseOPT(range, g) then
-        return false
-    end
-    return true
-end
-
-Chord.iseRPTI = Chord.iseRPTI2
-
 -- Returns whether the chord is in the fundamental domain
 -- of V (voicing) equivalence.
-
-function Chord:eR(range)
-    local chord = self:clone()
-    -- The clue here is that at least one voice must be >= 0,
-    -- but no voice can be > range.
-    -- Move all pitches inside the interval [0, range]
-    -- (which is not the same as the fundamental domain).
-    for voice = 1, #chord do
-        chord[voice] = chord[voice] % range
-    end
-    -- Reflect voices that are outside of the fundamental domain
-    -- back into it, which will revoice the chord, i.e.
-    -- the sum of pitches is in [0, range).
-    while chord:sum() >= range do
-        local maximumPitch, maximumVoice = chord:max()
-        -- Because no voice is above the range,
-        -- any voices that need to be revoiced will now be negative.
-        chord[maximumVoice] = maximumPitch - range
-    end
-    return chord
-end
-
-function Chord:eO()
-    return self:eR(ChordSpace.OCTAVE)
-end
-
-function Chord:eP()
-    local chord = self:clone()
-    table.sort(chord)
-    return chord
-end
-
-Chord.ep = Chord.eP
-
--- These two are equivalent for trichords, and presumably all others as well.
-
-function Chord:eRPGogins(range)
-    return self:eR(range):eP()
-end
-
-function Chord:eRPTymoczko(range)
-    local chord = self:er(range):ep()
-    while chord:sum() >= range do
-        chord[#chord] = chord[#chord] - range
-        chord = chord:eP()
-    end
-    return chord
-end
-
-Chord.eRP = Chord.eRPTymoczko
-
-function Chord:eOP()
-    return self:eRP(ChordSpace.OCTAVE)
-end
-
--- Returns the chord transposed such that its layer is 0 or,
--- under transposition, the positive layer closest to 0.
--- g is the generator of transposition.
--- NOTE: Does NOT return the result under any other equivalence class.
-
-function Chord:eT(g)
-    g = g or 1
-    local iterator = self:clone()
-    -- Transpose down to layer 0 or just below.
-    while iterator:sum() > 0 do
-        iterator = iterator:T(-g)
-    end
-    -- Transpose up to layer 0 or just above.
-    while iterator:sum() < 0 do
-        iterator = iterator:T(g)
-    end
-    return iterator
-end
-
-function Chord:er(range)
-    range = range or ChordSpace.OCTAVE
-    local chord = self:clone()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = pitch % range
-    end
-    return chord
-end
-
-function Chord:eo()
-    return self:er(ChordSpace.OCTAVE)
-end
-
-function Chord:erp(range)
-    return self:er(range):ep()
-end
-
-function Chord:eop()
-    return self:erp(ChordSpace.OCTAVE)
-end
-
-function Chord:et()
-    local min_ = self:min()
-    return self:T(-min_)
-end
-
-function Chord:ept()
-    return self:et():ep()
-end
-
-function Chord:eopt()
-    return self:et():eop()
-end
 
 function Chord:iseV(range)
     local isev = true
@@ -1404,19 +1511,9 @@ function Chord:eRPT(range, g)
     end
  end
 
-function Chord:eOPT(g)
-    g = g or 1
-    return self:eRPT(ChordSpace.OCTAVE, g)
-end
-
 function Chord:eRPTI(range, g)
     g = g or 1
     return self:eRPT(range, g):eI()
-end
-
-function Chord:eOPTI(g)
-    g = g or 1
-    return self:eRPTI(ChordSpace.OCTAVE, g)
 end
 
 -- Move 1 voice of the chord,
@@ -1734,48 +1831,37 @@ end
 -- Returns a label with information for a chord.
 
 function Chord:label()
-    local chordName = nil
-    if self ~= nil then
-        local eOP = self:eOP()
-        if eOP ~= nil then
-            chordName = ChordSpace.namesForChords[eOP:__hash()]
-        end
-    end
+    local eOP = self:eOP()
+    local chordName = ChordSpace.namesForChords[eOP:__hash()]
     if chordName == nil then
-        chordName = 'Chord'
+        chordName = ''
     end
-    local discard, chordToHyperplane = self:isePIVector()
-    chordToHyperplane = chordToHyperplane or 0
-    return string.format([[%s:
-pitches:            %s
-I:                  %s
-eP:                 %s  iseP:    %s
-eOP:                %s  iseOP:   %s
-inversion flat:     %s  is flat: %s
-eOP(I):             %s
-eopt(eOP):          %s
-eopt(eOP(I)):       %s
-eOPI:               %s  iseOPI:  %s
-eOPT:               %s  iseOPT:  %s
-eOPTI:              %s  iseOPTI: %s
-layer:                  %-5.2f
-to origin:              %-5.2f
-to inversion plane:     %-5.2f]],
+    return string.format([[Chord:    %s
+Pitches:  %s
+I:        %s
+eO:       %s  iseO:    %s
+eP:       %s  iseP:    %s
+eT:       %s  iseT:    %s
+eI:       %s  iseI:    %s
+eOP:      %s  iseOP:   %s
+eOPI:     %s  iseOPI:  %s
+eOPT:     %s  iseOPT:  %s
+eOPTI:    %s  iseOPTI: %s
+Sum:        %6.2f
+To origin:  %6.2f]],
 chordName,
 tostring(self),
 tostring(self:I()),
-tostring(self:eP()), tostring(self:iseP()),
-tostring(self:eOP()), tostring(self:iseOP()),
-tostring(self:flatP()), tostring(self:isFlatP()),
-tostring(self:I():eOP()),
-tostring(self:eOP():eopt()),
-tostring(self:I():eOP():eopt()),
-tostring(self:eOPI()), tostring(self:iseOPI()),
-tostring(self:eOPT()), tostring(self:iseOPT()),
+tostring(self:eO()),    tostring(self:iseO()),
+tostring(self:eP()),    tostring(self:iseP()),
+tostring(self:eT()),    tostring(self:iseT()),
+tostring(self:eI()),    tostring(self:iseI()),
+tostring(self:eOP()),   tostring(self:iseOP()),
+tostring(self:eOPT()),  tostring(self:iseOPT()),
+tostring(self:eOPI()),  tostring(self:iseOPI()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
 self:sum(),
-self:distanceToOrigin(),
-chordToHyperplane)
+self:distanceToOrigin())
 end
 
 -- Creates a complete Silencio "note on" event for the
