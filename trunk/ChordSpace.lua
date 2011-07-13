@@ -385,6 +385,12 @@ I think I am getting confused between eXI and iseXI,
 and between eI and eXI. I am more certain of ePI than
 I am of isePI.
 
+2011-Jul-13
+
+Perhaps I need to use CQT's intervallic method of identifying inversional domain
+but use it w.r.t. to chords reflected, not only self/I but also self/IP and
+self/IPT.
+
 ]]
 
 local Silencio = require("Silencio")
@@ -1012,7 +1018,7 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of inversional equivalence.
 
-function Chord:iseI()--Tymoczko()
+function Chord:iseIx() --Tymoczko()
     local chord = self:clone()
     local lowerVoice = 2
     local upperVoice = #chord
@@ -1032,7 +1038,7 @@ function Chord:iseI()--Tymoczko()
     return true
 end
 
-function Chord:iseIGOgins()
+function Chord:iseI() --Gogins()
     local inverse = self:I()
     if self <= inverse then
         return true
@@ -1166,7 +1172,7 @@ function Chord:isePI()
 end
 
 -- Sends the chord to its equivalent in the representative fundamental domain
--- of range, order, and transpositional equivalence. g is the generator of 
+-- of range, order, and transpositional equivalence. g is the generator of
 -- transposition.
 
 function Chord:eRPT(range, g)
@@ -1271,7 +1277,7 @@ function Chord:iseOPI()
 end
 
 -- Sends the chord to its equivalent within the representative fundamental
--- domain of range, order, transpositional, and inversional equivalence. g 
+-- domain of range, order, transpositional, and inversional equivalence. g
 -- is the generator of transposition.
 
 function Chord:eRPTI(range, g)
@@ -1279,8 +1285,8 @@ function Chord:eRPTI(range, g)
     return self:eRPT(range, g):eI()
 end
 
--- Returns whether the chord is within the representative fundamental domain 
--- of range, order, transpositional, and inversional equivalence. g is the 
+-- Returns whether the chord is within the representative fundamental domain
+-- of range, order, transpositional, and inversional equivalence. g is the
 -- generator of transposition.
 
 function Chord:iseRPTI(range, g)
