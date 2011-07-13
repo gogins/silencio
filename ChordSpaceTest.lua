@@ -116,7 +116,7 @@ function printVoicings(chord)
     end
 end
 
-for voiceCount = 2, 6 do
+for voiceCount = 3, 4 do
     print('All of OP')
     local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OP')
     for index, chord in pairs(chords) do
@@ -219,10 +219,32 @@ for voiceCount = 2, 6 do
     for key, flat in pairs(flats) do
         print(string.format('flat: %s', tostring(flat)))
     end
-    iseOPIeOPI(voiceCount)    
+    iseOPIeOPI(voiceCount)
+    passes = true
+    local chord
+    local inverseop
+    for i = 1, #ops do
+        chord = ops[i]
+        inverseop = chord:I():eOP()
+        if chord:iseOPI() == true and inverseop:iseOPI() == true then
+            if chord ~= inverseop then
+                passes = false
+                break
+            end
+        end
+        if chord:iseOPI() == false and inverseop:iseOPI() == false then
+            passes = false
+            break
+        end
+    end
+    if not passes then
+        print_(chord)
+        print_(inverseop)
+    end
+    result(passes, string.format('Chord/Inverse must be, if not a fixed point, one inside/one outside the representative fundamental domain of inversional equivalence for %d voices.', voiceCount))
 end
 
-verbose = true
+os.exit()
 
 local c3333 = Chord:new{3,3,3,3}
 printVoicings(c3333)
