@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -64,118 +64,9 @@ volume2 = ChordSpace.volume(chords)
 print('volume:', volume2)
 result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
 
-voiceCount = 3
-print('All of OP')
-local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OP')
-for index, chord in pairs(chords) do
-    print(string.format('OP: %5d', index))
-    print(chord:label())
-    if chord:iseOP() == false then
-        fail('Each chord in OP must return iseOP true.')
-    end
-    print()
-end
-pass('Each chord in OP must return iseOP true.')
-
-print('All of OPI')
-local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPI')
-for index, chord in pairs(chords) do
-    print(string.format('OPI: %5d', index))
-    print(chord:label())
-    if chord:iseOPI() == false then
-        fail('Each chord in OPI must return iseOPI true.')
-    end
-    if chord:eOPI() ~= chord then
-        fail('Each chord in OPI must be eOPI.')
-    end
-    print()
-end
-pass('Each chord in OPI must return iseOPI true.')
-pass('Each chord in OPI must be eOPI.')
-
-verbose = true
-
-print('All of OPT')
-local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
-for index, chord in pairs(chords) do
-    print(string.format('OPT: %5d', index))
-    print(chord:label())
-    if chord:iseOPT() == false then
-        fail('Each chord in OPT must return iseOPT true.')
-    end
-    if chord:eOPT() ~= chord then
-        fail('Each chord in OPT must be eOPT.')
-    end
-    print()
-end
-pass('Each chord in OPT must return iseOPT true.')
-pass('Each chord in OPT must be eOPT.')
-
-print('All of OPTI')
-local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPTI')
-for index, chord in pairs(chords) do
-    print(string.format('OPTI: %5d', index))
-    print(chord:label())
-    if chord:iseOPTI() == false then
-        fail('Each chord in OPTI must return iseOPTI true.')
-    end
-    if chord:eOPTI() ~= chord then
-        print_(chord:eOPTI():label())
-        fail('Each chord in OPTI must be eOPTI.')
-    end
-    print()
-end
-pass('Each chord in OPTI must return iseOPTI true.')
-pass('Each chord in OPTI must be eOPTI.')
-
-verbose = false
-
-for arity = 2, 4 do
-    local ops = ChordSpace.allOfEquivalenceClass(arity, 'OP')
-    local flatset ={}
-    for key, chord in pairs(ops) do
-        local inversion = chord:I():eOP()
-        local reinversion = inversion:I():eOP()
-        local flat = chord:flatP()
-        local reflection = chord:reflect(flat)
-        local opreflection = reflection:eOP()
-        local rereflection = reflection:reflect(flat):eOP()
-        print(string.format('chord %5d:  %s', key, tostring(chord)))
-        print(string.format('inversion:    %s', tostring(inversion)))
-        print(string.format('reinversion:  %s', tostring(reinversion)))
-        print(string.format('flat:         %s', tostring(flat)))
-        print(string.format('reflection:   %s', tostring(reflection)))
-        print(string.format('opreflection: %s', tostring(opreflection)))
-        print(string.format('rereflection: %s', tostring(rereflection)))
-        print(string.format('is flat:      %s', tostring(chord:isFlatP())))
-        print(string.format('iseOPI:       %s', tostring(chord:iseOPI())))
-        print(string.format('iseOPI(I):    %s', tostring(inversion:iseOPI())))
-        print(string.format('eOPI:         %s', tostring(chord:eOPI())))
-        print(string.format('eOPI(I):      %s\n', tostring(inversion:eOPI())))
-        if not (inversion == opreflection) then
-            fail(string.format('Reflection in the inversion flat must be the same as inversion in the origin for %d voices.', arity))
-        end
-        if not(reinversion == rereflection) then
-            fail(string.format('Re-inversion must be the same as re-reflection for %d voices.', arity))
-        end
-        if not(reinversion == chord) then
-            fail(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voices.', arity))
-        end
-    end
-    pass(string.format('Reflection in the inversion flat must be the same as inversion in the origin for %d voices.', arity))
-    pass(string.format('Re-inversion must be the same as re-reflection for %d voices.', arity))
-    pass(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voices.', arity))
-    pass(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voies.', arity))
-    print(string.format('All chords in inversion flat for %d voices:', arity))
-    flats = ChordSpace.flatsP(3, ChordSpace.OCTAVE)
-    for key, flat in pairs(flats) do
-        print(string.format('flat: %s', tostring(flat)))
-    end
-end
-
-function iseOPIeOPI(arity)
+function iseOPIeOPI(voiceCount)
     dump = dump or false
-    local chords = ChordSpace.allChordsInRange(arity, ChordSpace.OCTAVE)
+    local chords = ChordSpace.allChordsInRange(voiceCount, ChordSpace.OCTAVE)
     local passes = true
     local chord = nil
     local opi = nil
@@ -208,18 +99,14 @@ function iseOPIeOPI(arity)
         print_(chord:label())
         print_(opi:label())
     end
-    result(passes, string.format('eOPI must equate to iseOPI for %d voices.', arity))
-end
-
-for arity = 2, 4 do
-    iseOPIeOPI(arity)
+    result(passes, string.format('eOPI must equate to iseOPI for %d voices.', voiceCount))
 end
 
 function printVoicings(chord)
     print(chord:label())
     local voicings = chord:voicings()
     for i, voicing in ipairs(voicings) do
-        print('voicing', i, voicing, 'iseV', voicing:iseV(ChordSpace.OCTAVE), voicing:distanceToUnisonDiagonal())
+        print('voicing:', i, voicing, 'iseV', voicing:iseV(ChordSpace.OCTAVE), voicing:distanceToUnisonDiagonal())
         print('eOP', i, voicing:eOP())
         print('et', i, voicing:et())
         print('eop', i, voicing:eop())
@@ -227,6 +114,112 @@ function printVoicings(chord)
         print('eOPI', i, voicing:eOPI())
         print('eOPT', i, voicing:eOPT(),'iseOPT', voicing:iseOPT())
     end
+end
+
+for voiceCount = 2, 6 do
+    print('All of OP')
+    local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OP')
+    for index, chord in pairs(chords) do
+        print(string.format('OP: %5d', index))
+        print(chord:label())
+        if chord:iseOP() == false then
+            fail(string.format('Each chord in OP must return iseOP true for %d voices.', voiceCount))
+        end
+        print()
+    end
+    pass(string.format('Each chord in OP must return iseOP true for %d voices.', voiceCount))
+
+    print('All of OPT')
+    local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
+    for index, chord in pairs(chords) do
+        print(string.format('OPT: %5d', index))
+        print(chord:label())
+        if chord:iseOPT() == false then
+            fail(string.format('Each chord in OPT must return iseOPT true for %d voices.', voiceCount))
+        end
+        if chord:eOPT() ~= chord then
+            fail(string.format('Each chord in OPT must be eOPT for %d voices.', voiceCount))
+        end
+        print()
+    end
+    pass(string.format('Each chord in OPT must return iseOPT true for %d voices.', voiceCount))
+    pass(string.format('Each chord in OPT must be eOPT for %d voices.', voiceCount))
+
+    print('All of OPI')
+    local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPI')
+    for index, chord in pairs(chords) do
+        print(string.format('OPI: %5d', index))
+        print(chord:label())
+        if chord:iseOPI() == false then
+            fail(string.format('Each chord in OPI must return iseOPI true for %d voices.', voiceCount))
+        end
+        if chord:eOPI() ~= chord then
+            fail(string.format('Each chord in OPI must be eOPI for %d voices.', voiceCount))
+        end
+        print()
+    end
+    pass(string.format('Each chord in OPI must return iseOPI true for %d voices.', voiceCount))
+    pass(string.format('Each chord in OPI must be eOPI for %d voices.', voiceCount))
+
+    print('All of OPTI')
+    local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPTI')
+    for index, chord in pairs(chords) do
+        print(string.format('OPTI: %5d', index))
+        print(chord:label())
+        if chord:iseOPTI() == false then
+            fail(string.format('Each chord in OPTI must return iseOPTI true for %d voices.', voiceCount))
+        end
+        if chord:eOPTI() ~= chord then
+            print_('Normal:' .. chord:label())
+            print_('eOPTI: ' .. chord:eOPTI():label())
+            fail(string.format('Each chord in OPTI must be eOPTI for %d voices.', voiceCount))
+        end
+        print()
+    end
+    pass(string.format('Each chord in OPTI must return iseOPTI true for %d voices.', voiceCount))
+    pass(string.format('Each chord in OPTI must be eOPTI for %d voices.', voiceCount))
+
+    local ops = ChordSpace.allOfEquivalenceClass(voiceCount, 'OP')
+    local flatset ={}
+    for key, chord in pairs(ops) do
+        local inversion = chord:I():eOP()
+        local reinversion = inversion:I():eOP()
+        local flat = chord:flatP()
+        local reflection = chord:reflect(flat)
+        local opreflection = reflection:eOP()
+        local rereflection = reflection:reflect(flat):eOP()
+        print(string.format('chord %5d:  %s', key, tostring(chord)))
+        print(string.format('inversion:    %s', tostring(inversion)))
+        print(string.format('reinversion:  %s', tostring(reinversion)))
+        print(string.format('flat:         %s', tostring(flat)))
+        print(string.format('reflection:   %s', tostring(reflection)))
+        print(string.format('opreflection: %s', tostring(opreflection)))
+        print(string.format('rereflection: %s', tostring(rereflection)))
+        print(string.format('is flat:      %s', tostring(chord:isFlatP())))
+        print(string.format('iseOPI:       %s', tostring(chord:iseOPI())))
+        print(string.format('iseOPI(I):    %s', tostring(inversion:iseOPI())))
+        print(string.format('eOPI:         %s', tostring(chord:eOPI())))
+        print(string.format('eOPI(I):      %s\n', tostring(inversion:eOPI())))
+        if not (inversion == opreflection) then
+            fail(string.format('Reflection in the inversion flat must be the same as inversion in the origin for %d voices.', voiceCount))
+        end
+        if not(reinversion == rereflection) then
+            fail(string.format('Re-inversion must be the same as re-reflection for %d voices.', voiceCount))
+        end
+        if not(reinversion == chord) then
+            fail(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voices.', voiceCount))
+        end
+    end
+    pass(string.format('Reflection in the inversion flat must be the same as inversion in the origin for %d voices.', voiceCount))
+    pass(string.format('Re-inversion must be the same as re-reflection for %d voices.', voiceCount))
+    pass(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voices.', voiceCount))
+    pass(string.format('Re-inversion and re-reflection must be the same as the original chord for %d voies.', voiceCount))
+    print(string.format('All chords in inversion flat for %d voices:', voiceCount))
+    flats = ChordSpace.flatsP(3, ChordSpace.OCTAVE)
+    for key, flat in pairs(flats) do
+        print(string.format('flat: %s', tostring(flat)))
+    end
+    iseOPIeOPI(voiceCount)    
 end
 
 verbose = true
