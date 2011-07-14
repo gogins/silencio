@@ -391,8 +391,8 @@ Perhaps I need to use CQT's intervallic method of identifying inversional domain
 but use it w.r.t. to chords reflected, not only self/I but also self/IP and
 self/IPT.
 
-The relationship between CGT's flat and my sort is straightforward. The flat and the 
-sort are the origin on a line, the origin for the first dimension of a plane and then 
+The relationship between CGT's flat and my sort is straightforward. The flat and the
+sort are the origin on a line, the origin for the first dimension of a plane and then
 again the origin for the second dimension which creates a diagonal, and so on.
 
 ]]
@@ -2165,9 +2165,9 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     print(string.format('opti: %s', tostring(opti)))
     local ei = nil
     if I == 0 then
-        opt = opti:eOP()
+        opt = opti
     else
-        opt = opti:I():eOP()
+        opt = opti:eOPI()
     end
     print('opt:', opt)
     local op = opt:T(T):eOP()
@@ -2189,10 +2189,8 @@ function ChordSpaceGroup:fromChord(chord)
     local opti = chord:eOPTI()
     print(string.format('opti: %s  hash: %s', tostring(opti), opti:__hash()))
     local P = self.indexesForOptis[opti:__hash()]
-    local I = nil
-    if chord:iseI() then
-        I = 0
-    else
+    local I = 0
+    if chord:iseOPI() then
         I = 1
     end
     local T = 0
@@ -2211,7 +2209,7 @@ function ChordSpaceGroup:fromChord(chord)
         voicing[voice] = r[voice] - o[voice]
     end
     local V = self.indexesForVoicings[voicing:__hash()]
-    print(string.format('P: %s I: %s  T: %s  V: %s', P, I, T, V))
+    print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
     return P, I, T, V
 end
 
