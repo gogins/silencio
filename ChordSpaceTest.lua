@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = false
+verbose = true
 
 function print(message)
     if verbose then
@@ -115,6 +115,46 @@ function printVoicings(chord)
         print('eOPT', i, voicing:eOPT(),'iseOPT', voicing:iseOPT())
     end
 end
+
+local chord = Chord:new{-3,1,4,8}
+print(chord:label())
+local chord = Chord:new{-2,1,5,6}
+print(chord:label())
+
+-- os.exit()
+
+print(chord:label())
+print('ChordSpaceGroup')
+local chordSpaceGroup = ChordSpaceGroup:new()
+chordSpaceGroup:initialize(4, 60)
+chordSpaceGroup:list()
+local GM7 = ChordSpace.chordsForNames['GM7']
+GM7[2] = GM7[2] + 12
+GM7[4] = GM7[4] + 24
+print(GM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(GM7)
+print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
+print(string.format('toChord: shouldBeGM7: %s', shouldBeGM7:label()))
+local P, I, T, V = chordSpaceGroup:fromChord(shouldBeGM7)
+print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+local IofGM7 = ChordSpace.chordsForNames['GM7']:I():eOP()
+print('IofGM7')
+print(IofGM7:label())
+IofGM7[2] = IofGM7[2] + 12
+IofGM7[4] = IofGM7[4] + 24
+print('IofGM7')
+print(IofGM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
+print('fromChord:            P', P, 'I', I, 'T', T, 'V', V)
+local shouldBeIofGM7 = chordSpaceGroup:toChord(P, I, T, V)
+print('toChord: shouldBeIofGM7:')
+print(shouldBeIofGM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGM7)
+print('fromChord again:      P', P, 'I', I, 'T', T, 'V', V)
+print()
+
+os.exit()
 
 for voiceCount = 3, 4 do
     print('All of OP')
@@ -348,46 +388,6 @@ for voices = 2, 6 do
     end
     result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
 end
-
-local chord = Chord:new{-3,1,4,8}
-print(chord:label())
-local chord = Chord:new{-2,1,5,6}
-print(chord:label())
-
--- os.exit()
-
-print(chord:label())
-print('ChordSpaceGroup')
-local chordSpaceGroup = ChordSpaceGroup:new()
-chordSpaceGroup:initialize(4, 60)
-chordSpaceGroup:list()
-local GM7 = ChordSpace.chordsForNames['GM7']
-GM7[2] = GM7[2] + 12
-GM7[4] = GM7[4] + 24
-print(GM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(GM7)
-print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print(srting.format('toChord: shouldBeGM7: %s', shouldBeGM7:label()))
-local P, I, T, V = chordSpaceGroup:fromChord(shouldBeGM7)
-print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-local IofGM7 = ChordSpace.chordsForNames['GM7']:I():eOP()
-print('IofGM7')
-print(IofGM7:label())
-IofGM7[2] = IofGM7[2] + 12
-IofGM7[4] = IofGM7[4] + 24
-print('IofGM7')
-print(IofGM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
-print('fromChord:            P', P, 'I', I, 'T', T, 'V', V)
-local shouldBeIofGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('toChord: shouldBeIofGM7:')
-print(shouldBeIofGM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGM7)
-print('fromChord again:      P', P, 'I', I, 'T', T, 'V', V)
-print()
-
-os.exit()
 
 test('a = Chord:new()')
 result('a', a)
