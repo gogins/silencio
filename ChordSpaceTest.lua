@@ -244,7 +244,7 @@ for voiceCount = 3, 4 do
     result(passes, string.format('Chord/Inverse must be, if not a fixed point, one inside/one outside the representative fundamental domain of inversional equivalence for %d voices.', voiceCount))
 end
 
-os.exit()
+--os.exit()
 
 local c3333 = Chord:new{3,3,3,3}
 printVoicings(c3333)
@@ -311,14 +311,16 @@ end
 print('areeV:', areeV)
 print()
 
-for voices = 2, 4 do
+verbose = true
+
+for voices = 2, 6 do
     print('Does OPTI U OPTI:I():eOPT() == OPT?')
     local passes = true
     local dummy, ops = ChordSpace.allOfEquivalenceClass(voices, 'OP')
     local op = nil
     for i = 1, #ops do
         op = ops[i]
-        print(tostring(op))
+        --print(tostring(op))
         if op:iseOPTI() then
             if op:iseOPT() == false then
                 passes = false
@@ -352,7 +354,7 @@ print(chord:label())
 local chord = Chord:new{-2,1,5,6}
 print(chord:label())
 
-os.exit()
+-- os.exit()
 
 print(chord:label())
 print('ChordSpaceGroup')
@@ -362,15 +364,13 @@ chordSpaceGroup:list()
 local GM7 = ChordSpace.chordsForNames['GM7']
 GM7[2] = GM7[2] + 12
 GM7[4] = GM7[4] + 24
-print('GM7')
 print(GM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(GM7)
-print('fromChord:            P', P, 'I', I, 'T', T, 'V', V)
+print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('toChord: shouldBeGM7:', shouldBeGM7)
+print(srting.format('toChord: shouldBeGM7: %s', shouldBeGM7:label()))
 local P, I, T, V = chordSpaceGroup:fromChord(shouldBeGM7)
-print('fromChord again:      P', P, 'I', I, 'T', T, 'V', V)
-print()
+print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 local IofGM7 = ChordSpace.chordsForNames['GM7']:I():eOP()
 print('IofGM7')
 print(IofGM7:label())
