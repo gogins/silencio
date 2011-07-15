@@ -2162,16 +2162,16 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     V = V % #self.voicingsForIndexes
     print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
     local opti = self.optisForIndexes[P]
-    print(string.format('opti: %s', tostring(opti)))
+    print(string.format('opti:    %s', tostring(opti)))
     local ei = nil
     if I == 0 then
         opt = opti
     else
         opt = opti:eOPI()
     end
-    print(string.format('opt: %s', tostring(opt)))
+    print(string.format('opt:     %s', tostring(opt)))
     local op = opt:T(T):eOP()
-    print(string.format('op: %s:', tostring(op)))
+    print(string.format('op:      %s:', tostring(op)))
     local voicing = self.voicingsForIndexes[V]
     print(string.format('voicing: %s:', tostring(voicing)))
     for voice = 1, #voicing do
@@ -2208,6 +2208,7 @@ function ChordSpaceGroup:fromChord(chord)
     for voice = 1, #r do
         voicing[voice] = r[voice] - o[voice]
     end
+    print(voicing)
     local V = self.indexesForVoicings[voicing:__hash()]
     print(V)
     print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
