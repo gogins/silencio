@@ -804,15 +804,29 @@ function ChordView:display()
                         index = 1
                     end
                     self.pickedChord = self.chords[index]
-                    print(index, 'chord:   ', tostring(self.pickedChord))
-                    print(index, 'flatP:   ', tostring(self.pickedChord:flatP()))
-                    print(index, 'flatRP:  ', tostring(self.pickedChord:flatRP()))
-                    print(index, 'midpoint:', tostring(self.pickedChord:inversionMidpoint()))
+                    print(string.format('%4d chord:    %s  iseOPI: %s', index, tostring(self.pickedChord), tostring(self.pickedChord:iseOPI())))
+                    print(string.format('     flatP:    %s', tostring(self.pickedChord:flatP())))
+                    print(string.format('     flatRP:   %s', tostring(self.pickedChord:flatRP())))
+                    print(string.format('     midpoint: %s', tostring(self.pickedChord:inversionMidpoint())))
                     self:draw(false)
                     self.drawInverse = true
                 else
-                    self.pickedChord = self.chords[index]:I():eOP()
-                    print(index, 'inverse: ', tostring(self.pickedChord))
+                    local inverse = self.chords[index]:I():eOP()
+                    print(string.format('     inverse:  %s  iseOPI: %s', tostring(inverse), tostring(inverse:iseOPI())))
+                    if inverse == self.pickedChord then
+                        if not (inverse:iseOPI() and self.pickedChord:iseOPI()) then
+                            print("Error: a fixed point that is not in OPI.")
+                            os.exit()
+                        end
+                    else
+                        if inverse:iseOPI() == self.pickedChord:iseOPI() then
+                            print("Error: chord and inverse are either both in or both out of OPI.")
+                            os.exit()
+                        end
+                    end
+                    
+                    -- If it is not a fixed point one must be iseOPI and the other not.
+                    self.pickedChord = inverse
                     print()
                     self:draw(false)
                     self.drawInverse = false

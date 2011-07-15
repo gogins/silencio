@@ -2160,7 +2160,7 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % #self.voicingsForIndexes
-    print(string.format('P: %s I: %s  T: %s  V: %s', P, I, T, V))
+    print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
     local opti = self.optisForIndexes[P]
     print(string.format('opti: %s', tostring(opti)))
     local ei = nil
@@ -2169,11 +2169,11 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     else
         opt = opti:eOPI()
     end
-    print('opt:', opt)
+    print(string.format('opt: %s', tostring(opt)))
     local op = opt:T(T):eOP()
-    print('op:', op)
+    print(string.format('op: %s:', tostring(op)))
     local voicing = self.voicingsForIndexes[V]
-    print('voicing:', voicing)
+    print(string.format('voicing: %s:', tostring(voicing)))
     for voice = 1, #voicing do
         voicing[voice] = voicing[voice] + op[voice]
     end
@@ -2209,19 +2209,20 @@ function ChordSpaceGroup:fromChord(chord)
         voicing[voice] = r[voice] - o[voice]
     end
     local V = self.indexesForVoicings[voicing:__hash()]
+    print(V)
     print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
     return P, I, T, V
 end
 
 function ChordSpaceGroup:list()
     for index, opti in pairs(self.optisForIndexes) do
-        print('index:', index, 'opti:', opti, self.indexesForOptis[opti:__hash()])
+        print(string.format('index: %5d  opti: %s  index from opti: %s', index, tostring(opti), self.indexesForOptis[opti:__hash()]))
     end
     for index = 0, #self.optisForIndexes - 1 do
-        print('opti:', self.optisForIndexes[index], 'index:', index)
+        print(string.format('opti from index: %s  index:  %5d', tostring(self.optisForIndexes[index]), index))
     end
     for index, voicing in pairs(self.voicingsForIndexes) do
-        print('voicing:', index, voicing, self.indexesForVoicings[voicing:__hash()])
+        print(string.format('voicing index: %5d  voicing: %s  index from voicing: %5d', index, tostring(voicing), self.indexesForVoicings[voicing:__hash()]))
     end
 end
 
