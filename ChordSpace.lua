@@ -2160,20 +2160,20 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % #self.voicingsForIndexes
-    print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
+    print(string.format('ChordSpaceGroup:toChord(P: %f I: %f  T: %f  V: %f)', P, I, T, V))
     local opti = self.optisForIndexes[P]
-    print(string.format('opti:    %s', tostring(opti)))
+    print(string.format('opti:     %s', tostring(opti)))
     local ei = nil
     if I == 0 then
         opt = opti
     else
-        opt = opti:eOPI()
+        opt = opti:I():eOP()
     end
-    print(string.format('opt:     %s', tostring(opt)))
+    print(string.format('opt:      %s', tostring(opt)))
     local op = opt:T(T):eOP()
-    print(string.format('op:      %s:', tostring(op)))
+    print(string.format('op:       %s', tostring(op)))
     local voicing = self.voicingsForIndexes[V]
-    print(string.format('voicing: %s:', tostring(voicing)))
+    print(string.format('voicing:  %s', tostring(voicing)))
     for voice = 1, #voicing do
         voicing[voice] = voicing[voice] + op[voice]
     end
@@ -2187,12 +2187,8 @@ end
 
 function ChordSpaceGroup:fromChord(chord)
     local opti = chord:eOPTI()
-    print(string.format('opti: %s  hash: %s', tostring(opti), opti:__hash()))
+    print(string.format('opti:     %s  hash: %s', tostring(opti), opti:__hash()))
     local P = self.indexesForOptis[opti:__hash()]
-    local I = 0
-    if chord:iseOPI() then
-        I = 1
-    end
     local T = 0
     local opt = chord:eOPT()
     local op = chord:eOP()
@@ -2202,16 +2198,19 @@ function ChordSpaceGroup:fromChord(chord)
             break
         end
     end
+    local I = 0
+    if opt:iseOPI() then
+        I = 1
+    end
     local r = chord:eR(self.range)
     local voicing = r:clone()
     local o = r:eO()
     for voice = 1, #r do
         voicing[voice] = r[voice] - o[voice]
     end
-    print(voicing)
+    print(string.format('voicing:  %s', tostring(voicing)))
     local V = self.indexesForVoicings[voicing:__hash()]
-    print(V)
-    print(string.format('P: %f I: %f  T: %f  V: %f', P, I, T, V))
+    print(string.format('ChordSpaceGroup:fromChord(chord): P: %f I: %f  T: %f  V: %f', P, I, T, V))
     return P, I, T, V
 end
 

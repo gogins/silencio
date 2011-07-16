@@ -128,29 +128,40 @@ print('ChordSpaceGroup')
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 chordSpaceGroup:list()
+
 local GM7 = ChordSpace.chordsForNames['GM7']
-GM7[2] = GM7[2] + 12
-GM7[4] = GM7[4] + 24
+print('GM7:')
 print(GM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(GM7)
-print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+GM7[2] = GM7[2] + 12
+GM7[4] = GM7[4] + 24
+print('GM7 revoiced:')
+print(GM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(GM7)
+
+--print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print(string.format('toChord: shouldBeGM7: %s', shouldBeGM7:label()))
+print('shouldBeGM7:')
+print(shouldBeGM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(shouldBeGM7)
-print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+
+--print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 local IofGM7 = ChordSpace.chordsForNames['GM7']:I():eOP()
-print('IofGM7')
-print(IofGM7:label())
-IofGM7[2] = IofGM7[2] + 12
-IofGM7[4] = IofGM7[4] + 24
-print('IofGM7')
+print('IofGM7:')
 print(IofGM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
-print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+IofGM7[2] = IofGM7[2] + 12
+IofGM7[4] = IofGM7[4] + 24
+print('IofGM7 revoiced:')
+print(IofGM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
+
+--print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 local shouldBeIofGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print(string.format('toChord: shouldBeIofGM7: %s', shouldBeIofGM7:label()))
+print('shouldBeIofGM7:')
+print(shouldBeIofGM7:label())
 local P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGM7)
-print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+--print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 print()
 
 os.exit()
