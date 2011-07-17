@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -129,44 +129,88 @@ local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 chordSpaceGroup:list()
 
-local GM7 = ChordSpace.chordsForNames['GM7']
-print('GM7:')
-print(GM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(GM7)
-GM7[2] = GM7[2] + 12
-GM7[4] = GM7[4] + 24
-print('GM7 revoiced:')
-print(GM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(GM7)
+local GbM7 = ChordSpace.chordsForNames['GbM7']
+print('GbM7:')
+print(GbM7:label())
+local P, I, T, V = chordSpaceGroup:fromChord(GbM7)
+print(string.format('GbM7:             P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+GbM7[2] = GbM7[2] + 12
+GbM7[4] = GbM7[4] + 24
+print('GbM7 revoiced:')
+print(GbM7:label())
+P, I, T, V = chordSpaceGroup:fromChord(GbM7)
+print(string.format('GbM7 revoiced:    P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 
---print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-local shouldBeGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('shouldBeGM7:')
-print(shouldBeGM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(shouldBeGM7)
+local shouldBeGbM7 = chordSpaceGroup:toChord(P, I, T, V)
+print('shouldBeGbM7:')
+print(shouldBeGbM7:label())
+P, I, T, V = chordSpaceGroup:fromChord(shouldBeGbM7)
+print(string.format('shouldBeGbM7:     P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: GbM7 must be the same from and to PITV')
 
---print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-local IofGM7 = ChordSpace.chordsForNames['GM7']:I():eOP()
-print('IofGM7:')
-print(IofGM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
-IofGM7[2] = IofGM7[2] + 12
-IofGM7[4] = IofGM7[4] + 24
-print('IofGM7 revoiced:')
-print(IofGM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(IofGM7)
+local IofGbM7 = ChordSpace.chordsForNames['GbM7']:I():eOP()
+print('IofGbM7:')
+print(IofGbM7:label())
+P, I, T, V = chordSpaceGroup:fromChord(IofGbM7)
+print(string.format('IofGbM7:          P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+IofGbM7[2] = IofGbM7[2] + 12
+IofGbM7[4] = IofGbM7[4] + 24
+print('IofGbM7 revoiced:')
+print(IofGbM7:label())
+P, I, T, V = chordSpaceGroup:fromChord(IofGbM7)
+print(string.format('IofGbM7 revoiced: P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 
---print(string.format('fromChord:         P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-local shouldBeIofGM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('shouldBeIofGM7:')
-print(shouldBeIofGM7:label())
-local P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGM7)
---print(string.format('fromChord again:   P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-print()
+local shouldBeIofGbM7 = chordSpaceGroup:toChord(P, I, T, V)
+print('shouldBeIofGbM7:')
+print(shouldBeIofGbM7:label())
+P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGbM7)
+print(string.format('shouldBeIofGbM7:  P: %d  I: %s  T: %s  V: %s', P, I, T, V))
+result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: IofGbM7 must be the same from and to PITV')
+print('')
 
-os.exit()
+G7 = ChordSpace.chordsForNames['G7']
+P, I, T, V = chordSpaceGroup:fromChord(G7)
+for T = 0, 11 do
+    chord = chordSpaceGroup:toChord(P, I, T, V)
+    print_(chord:label())
+    chord = chordSpaceGroup:toChord(P, I+1, T, V)
+    print_(chord:label())
+end
+
+--os.exit()
 
 for voiceCount = 3, 4 do
+    passes = true
+    chordSpaceGroup = ChordSpaceGroup:new()
+    chordSpaceGroup:initialize(voiceCount, 48)
+    for P, opti in pairs(chordSpaceGroup.optisForIndexes) do
+        for I = 0, 1 do
+            for T = 0, ChordSpace.OCTAVE - 1 do
+                for V, voicing in pairs(chordSpaceGroup.voicingsForIndexes) do
+                    local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
+                    local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
+                    local frompitv = chordSpaceGroup:toChord(p, i, t, v)
+                        print_(tostring(fromPITV) .. tostring(frompitv))
+                    if p ~= P or i ~= I or t ~= T or v ~= V then
+                        print_(P)
+                        print_(I)
+                        print_(T)
+                        print_(V)
+                        print_(p)
+                        print_(i)
+                        print_(t)
+                        print_(v)
+                        result(false, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+                    end
+                    if fromPITV ~= frompitv then
+                        print_(tostring(fromPITV) .. '~=' .. tostring(frompitv))
+                        result(false, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+                    end
+                end
+            end
+        end
+    end
+    result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
     print('All of OP')
     local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OP')
     for index, chord in pairs(chords) do
