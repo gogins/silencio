@@ -985,7 +985,7 @@ end
 
 function Chord:eT(g)
     g = g or 1
-    local iterator = self:clone()
+    local iterator = self
     -- Transpose down to layer 0 or just below.
     while iterator:sum() > 0 do
         iterator = iterator:T(-g)
@@ -1185,6 +1185,7 @@ function Chord:eRPT(range, g)
     local voicings = chord:voicings()
     for key, voicing in pairs(voicings) do
         if voicing:iseV(range) then
+            --TODO: Fix this.
             return voicing:eT(g)
         end
     end
@@ -2160,24 +2161,19 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % #self.voicingsForIndexes
-    print(string.format('ChordSpaceGroup:toChord(P: %f I: %f  T: %f  V: %f)', P, I, T, V))
     local opti = self.optisForIndexes[P]
-    print(string.format('opti:     %s', tostring(opti)))
-    local ei = nil
     if I == 0 then
         opt = opti
     else
         opt = opti:I():eOP()
     end
-    print(string.format('opt:      %s', tostring(opt)))
     local op = opt:T(T):eOP()
-    print(string.format('op:       %s', tostring(op)))
     local voicing = self.voicingsForIndexes[V]
-    print(string.format('voicing:  %s', tostring(voicing)))
+    local revoicing = op:origin()
     for voice = 1, #voicing do
-        voicing[voice] = voicing[voice] + op[voice]
+        revoicing[voice] = op[voice] + voicing[voice]
     end
-    return voicing:eR(self.range), opti, op, voicing
+    return revoicing, opti, op, voicing
 end
 
 -- Returns the indices of prime form, inversion, transposition,
@@ -2186,31 +2182,42 @@ end
 -- zero or more octaves added to it.
 
 function ChordSpaceGroup:fromChord(chord)
-    local opti = chord:eOPTI()
-    print(string.format('opti:     %s  hash: %s', tostring(opti), opti:__hash()))
-    local P = self.indexesForOptis[opti:__hash()]
-    local T = 0
-    local opt = chord:eOPT()
+    chord = chord:eR(self.range)
+    local permutations = chord:cyclicalPermutations()
+    for key, chord in pairs(permutations) do
+        local o = chord:eO()
+        --  Select the permutation that is in OP order, and use that as the chord.
+        if o:iseP() then
+            break
+        end
+    end
     local op = chord:eOP()
+    local voicing = chord:origin()
+    for voice = 1, #chord do
+        voicing[voice] = chord[voice] - op[voice]
+    end
+    local V = self.indexesForVoicings[voicing:__hash()]
+    local opt = op:eOPT()
+    -- T is the transposition of OPT that equals OP.
+    local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         if opt:T(t):eOP() == op then
             T = t
             break
         end
     end
+    local opti = op:eOPTI()
+    local P = self.indexesForOptis[opti:__hash()]
+    -- If OPT is OPTI, then I is 0; otherwise I is 1. In that case, OP(I(OPTI))
+    -- must equal OPT.
     local I = 0
-    if opt:iseOPI() then
+    if opti ~= opt then
         I = 1
+        if opti:I():eOP() ~= opt then
+            print("Error: OP(I(OPTI)) must equal OPT.")
+            os.exit()
+        end
     end
-    local r = chord:eR(self.range)
-    local voicing = r:clone()
-    local o = r:eO()
-    for voice = 1, #r do
-        voicing[voice] = r[voice] - o[voice]
-    end
-    print(string.format('voicing:  %s', tostring(voicing)))
-    local V = self.indexesForVoicings[voicing:__hash()]
-    print(string.format('ChordSpaceGroup:fromChord(chord): P: %f I: %f  T: %f  V: %f', P, I, T, V))
     return P, I, T, V
 end
 
