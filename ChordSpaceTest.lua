@@ -190,21 +190,11 @@ for voiceCount = 3, 4 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
                     local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                        print_(tostring(fromPITV) .. tostring(frompitv))
-                    if p ~= P or i ~= I or t ~= T or v ~= V then
-                        print_(P)
-                        print_(I)
-                        print_(T)
-                        print_(V)
-                        print_(p)
-                        print_(i)
-                        print_(t)
-                        print_(v)
-                        result(false, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
-                    end
-                    if fromPITV ~= frompitv then
-                        print_(tostring(fromPITV) .. '~=' .. tostring(frompitv))
-                        result(false, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+                    if (fromPITV ~= frompitv) or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
+                        print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
+                        print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
+                        passes = false
+                        result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
                     end
                 end
             end
