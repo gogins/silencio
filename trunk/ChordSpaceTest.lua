@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = false
+verbose = true
 
 function print(message)
     if verbose then
@@ -183,16 +183,19 @@ for voiceCount = 3, 4 do
     passes = true
     chordSpaceGroup = ChordSpaceGroup:new()
     chordSpaceGroup:initialize(voiceCount, 48)
-    for P, opti in pairs(chordSpaceGroup.optisForIndexes) do
+    chordSpaceGroup:list()
+    for P = 0, chordSpaceGroup.countP - 1 do
         for I = 0, 1 do
             for T = 0, ChordSpace.OCTAVE - 1 do
-                for V, voicing in pairs(chordSpaceGroup.voicingsForIndexes) do
+                for V = 0, chordSpaceGroup.countV - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
                     local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
+                    print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
+                    print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                     if (fromPITV ~= frompitv) or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
-                        print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
-                        print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
+                        --print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
+                        --print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                         passes = false
                         result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
                     end
