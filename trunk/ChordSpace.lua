@@ -2128,7 +2128,7 @@ function ChordSpace.octavewisePermutations(voices, range)
                 odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
             end
         end
-        if odometer[1] > range then 
+        if odometer[1] > range then
             break
         end
         voicing = voicing + 1
@@ -2159,7 +2159,7 @@ function ChordSpaceGroup:initialize(voices, range, g)
 end
 
 -- Returns the chord for the indices of prime form, inversion,
--- transposition, and voicing. The chord is not in RP; rather, each voice of 
+-- transposition, and voicing. The chord is not in RP; rather, each voice of
 -- the chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
@@ -2188,7 +2188,7 @@ function ChordSpaceGroup:toChord(P, I, T, V)
 end
 
 -- Returns the indices of prime form, inversion, transposition,
--- and voicing for a chord. The chord is not in RP; rather, each voice of the 
+-- and voicing for a chord. The chord is not in RP; rather, each voice of the
 -- chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:fromChord(chord)
@@ -2208,6 +2208,13 @@ function ChordSpaceGroup:fromChord(chord)
     print_('fromChord opt:  ' .. tostring(opt))
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
+        -- The permutational twist can change the
+        -- OPTI, i.e. a low unison can go to a high unison.
+        -- Either this approach is wrong,
+        -- or that has to be taken into account.
+        -- Perhaps this also is due to a difference as to
+        -- which of inversionally equivalent chords are
+        -- in what domain?
         if opt:T(t):eOP() == op then
             T = t
             break
