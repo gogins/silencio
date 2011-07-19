@@ -2118,7 +2118,7 @@ function ChordSpace.octavewisePermutations(voices, range)
     -- iterator[1] is the most significant voice, and
     -- iterator[N] is the least significant voice.
     voicing = 0
-    while odometer[1] <= range do
+    while true do
         voicings[voicing] = odometer:clone()
         odometer[voices] = odometer[voices] + ChordSpace.OCTAVE
          -- "Carry" octaves.
@@ -2127,6 +2127,9 @@ function ChordSpace.octavewisePermutations(voices, range)
                 odometer[voice] = zero[voice]
                 odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
             end
+        end
+        if odometer[1] > range then 
+            break
         end
         voicing = voicing + 1
     end
@@ -2137,30 +2140,33 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.voices = voices or 3
     self.range = range or 60
     self.g = g or 1
+    self.countP = 0
+    self.countV = 0
     if #self.optisForIndexes == 0 then
         self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OPTI', self.g)
         for index, opti in pairs(self.optisForIndexes) do
             self.indexesForOptis[opti:__hash()] = index
+            self.countP = self.countP + 1
         end
     end
     if #self.voicingsForIndexes == 0 then
         self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
         for index, voicing in pairs(self.voicingsForIndexes) do
             self.indexesForVoicings[voicing:__hash()] = index
+            self.countV = self.countV + 1
         end
     end
 end
 
 -- Returns the chord for the indices of prime form, inversion,
--- transposition, and voicing. The chord is not in rp; rather, the
--- chord is considered to be in op, but then each voice may have
--- zero or more octaves added to it.
+-- transposition, and voicing. The chord is not in RP; rather, each voice of 
+-- the chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
-    P = P % #self.optisForIndexes
+    P = P % self.countP
     I = I % 2
     T = T % ChordSpace.OCTAVE
-    V = V % #self.voicingsForIndexes
+    V = V % self.countV
     local opti = self.optisForIndexes[P]
     if I == 0 then
         opt = opti
@@ -2177,17 +2183,12 @@ function ChordSpaceGroup:toChord(P, I, T, V)
 end
 
 -- Returns the indices of prime form, inversion, transposition,
--- and voicing for a chord. The chord is not in RP; rather, the
--- chord is considered to be in OP, but then each voice may have
--- zero or more octaves added to it.
+-- and voicing for a chord. The chord is not in RP; rather, each voice of the 
+-- chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:fromChord(chord)
-    chord = chord:eR(self.range)
-    local permutations = chord:cyclicalPermutations()
-    for key, chord in pairs(permutations) do
-        local o = chord:eO()
-        --  Select the permutation that is in OP order, and use that as the chord.
-        if o:iseP() then
+    for key, chord in pairs(chord:cyclicalPermutations()) do
+        if chord:eO():iseV(self.range) then
             break
         end
     end
@@ -2198,7 +2199,6 @@ function ChordSpaceGroup:fromChord(chord)
     end
     local V = self.indexesForVoicings[voicing:__hash()]
     local opt = op:eOPT()
-    -- T is the transposition of OPT that equals OP.
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         if opt:T(t):eOP() == op then
@@ -2207,9 +2207,8 @@ function ChordSpaceGroup:fromChord(chord)
         end
     end
     local opti = op:eOPTI()
+    print_('opti:' .. tostring(opti))
     local P = self.indexesForOptis[opti:__hash()]
-    -- If OPT is OPTI, then I is 0; otherwise I is 1. In that case, OP(I(OPTI))
-    -- must equal OPT.
     local I = 0
     if opti ~= opt then
         I = 1
