@@ -824,7 +824,7 @@ function ChordView:display()
                             os.exit()
                         end
                     end
-                    
+
                     -- If it is not a fixed point one must be iseOPI and the other not.
                     self.pickedChord = inverse
                     print()
@@ -842,7 +842,7 @@ end
 chordView = ChordView:new()
 chordView.iterateInversions = false
 chordView.octaves = 1
-chordView.equivalence = 'OP'
+chordView.equivalence = 'OPTI'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
