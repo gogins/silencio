@@ -2,13 +2,13 @@ require "Silencio"
 require("ChordSpace")
 
 print("CHORDSPACE UNIT TESTS")
-print()
+print('')
 print('package.path:', package.path)
 print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -54,14 +54,14 @@ table.insert(chords, Chord:new{0, 0, 0})
 table.insert(chords, Chord:new{0, -3, 0})
 table.insert(chords, Chord:new{0, 0, -3})
 volume1 = ChordSpace.volume(chords)
-print('volume:', volume1)
+print('volume: ' .. tostring(volume1))
 chords = {}
 table.insert(chords, Chord:new{-3, 0, 0, 0})
 table.insert(chords, Chord:new{0, 0, 0, 0})
 table.insert(chords, Chord:new{3, -3, 0, 0})
 table.insert(chords, Chord:new{0, 0, -3, 0})
 volume2 = ChordSpace.volume(chords)
-print('volume:', volume2)
+print('volume: ' .. tostring(volume2))
 result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
 
 function iseOPIeOPI(voiceCount)
@@ -180,6 +180,9 @@ end
 --os.exit()
 
 for voiceCount = 3, 4 do
+
+    if true then
+    
     passes = true
     chordSpaceGroup = ChordSpaceGroup:new()
     chordSpaceGroup:initialize(voiceCount, 48)
@@ -189,9 +192,9 @@ for voiceCount = 3, 4 do
             for T = 0, ChordSpace.OCTAVE - 1 do
                 for V = 0, chordSpaceGroup.countV - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
+                    print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                     local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                     print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                     if (fromPITV ~= frompitv) or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         --print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
@@ -199,6 +202,7 @@ for voiceCount = 3, 4 do
                         passes = false
                         result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
                     end
+                    print_('')
                 end
             end
         end
@@ -212,10 +216,12 @@ for voiceCount = 3, 4 do
         if chord:iseOP() == false then
             fail(string.format('Each chord in OP must return iseOP true for %d voices.', voiceCount))
         end
-        print()
+        print('')
     end
     pass(string.format('Each chord in OP must return iseOP true for %d voices.', voiceCount))
 
+    end
+    
     print('All of OPT')
     local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
     for index, chord in pairs(chords) do
@@ -227,7 +233,7 @@ for voiceCount = 3, 4 do
         if chord:eOPT() ~= chord then
             fail(string.format('Each chord in OPT must be eOPT for %d voices.', voiceCount))
         end
-        print()
+        print('')
     end
     pass(string.format('Each chord in OPT must return iseOPT true for %d voices.', voiceCount))
     pass(string.format('Each chord in OPT must be eOPT for %d voices.', voiceCount))
@@ -243,7 +249,7 @@ for voiceCount = 3, 4 do
         if chord:eOPI() ~= chord then
             fail(string.format('Each chord in OPI must be eOPI for %d voices.', voiceCount))
         end
-        print()
+        print('')
     end
     pass(string.format('Each chord in OPI must return iseOPI true for %d voices.', voiceCount))
     pass(string.format('Each chord in OPI must be eOPI for %d voices.', voiceCount))
@@ -261,7 +267,7 @@ for voiceCount = 3, 4 do
             print_('eOPTI: ' .. chord:eOPTI():label())
             fail(string.format('Each chord in OPTI must be eOPTI for %d voices.', voiceCount))
         end
-        print()
+        print('')
     end
     pass(string.format('Each chord in OPTI must return iseOPTI true for %d voices.', voiceCount))
     pass(string.format('Each chord in OPTI must be eOPTI for %d voices.', voiceCount))
@@ -335,10 +341,10 @@ end
 
 local c3333 = Chord:new{3,3,3,3}
 printVoicings(c3333)
-print()
+print('')
 local chord = ChordSpace.chordsForNames['CM9']
 printVoicings(chord)
-print()
+print('')
 
 --os.exit()
 
@@ -357,7 +363,7 @@ for t = 0, 11 do
     end
 end
 print('areeV:', areeV)
-print()
+print('')
 
 local CM = ChordSpace.chordsForNames['CM']
 local areeV = 0
@@ -370,7 +376,7 @@ for t = 0, 11 do
     end
 end
 print('areeV:', areeV)
-print()
+print('')
 
 local CM7 = ChordSpace.chordsForNames['CM7']
 local areeV = 0
@@ -383,7 +389,7 @@ for t = 0, 11 do
     end
 end
 print('areeV:', areeV)
-print()
+print('')
 
 local CM9 = ChordSpace.chordsForNames['CM9']
 local areeV = 0
@@ -396,7 +402,7 @@ for t = 0, 11 do
     end
 end
 print('areeV:', areeV)
-print()
+print('')
 
 verbose = true
 
@@ -475,19 +481,19 @@ result('c', c, 'n', n)
 test('n = a:sum()')
 result('a', a, 'n', n)
 test('s = a:eP()')result('a', a, 's', s)
-print()
+print('')
 test('c = Chord:new{0, 4, 7}; voicings = c:voicings()')
 for i = 1, #voicings do
     voicing = voicings[i]
     print('voicing:', voicing, 'voicing:iseI():', voicing:iseI(), 'voicing:iseV(ChordSpace.OCTAVE)', voicing:iseV(ChordSpace.OCTAVE))
 end
-print()
+print('')
 test('c = Chord:new{0, 4, 7, 10, 14}; voicings = c:voicings()')
 for i = 1, #voicings do
     voicing = voicings[i]
     print('voicing:', voicing, 'voicing:iseI():', voicing:iseI(), 'voicing:iseV(ChordSpace.OCTAVE)', voicing:iseV(ChordSpace.OCTAVE))
 end
-print()
+print('')
 test('o = Orbifold:new()')
 result('o', o, 'o.N', o.N, 'o.R', o.R, 'o.octaves', o.octaves, 'o.NR', o.NR)
 test('v = o:voiceleading(c, a)')
@@ -544,13 +550,13 @@ vs = o:voicings(d)
 for i = 1, #vs do
     result('i', i, 'vs[i]', vs[i])
 end
-print()
+print('')
 for i = 1, 12 do
     snippet = string.format('cn = Chord:new{0, 4, 7}; cnt = cn:T(%d); copt = o:eOPT(cnt); copti = o:eOPTI(cnt);', i)
     test(snippet)
     result('cn', cn, 'cnt', cnt, 'copt', copt, 'copti', copti)
 end
-print()
+print('')
 test('o:setOctaves(2)')
 test('vs = o:voicings(d)')
 vs = o:voicings(d)
@@ -590,24 +596,24 @@ test('m = o:nrP(z); q = o:Q(z, 1, z, 1)')
 result('z', z, 'm', m, 'q', q)
 test('q = o:Q(z, -1, z, 1)')
 result('z', z, 'q', q)
-print()
+print('')
 test('k = o:K(z)')
 result('z', z, 'k', k)
 test('r = o:nrR(z)')
 result('z', z, 'r', r)
 test('m7 = Chord:new{0, 3, 7, 10}; k7 = o:K(m7)')
 result('m7', m7, 'k7', k7)
-print()
+print('')
 test('p = o:nrP(z)')
 result('z', z, 'p', p)
 test('l = o:nrL(z)')
 result('z', z, 'l', l)
 test('d = o:nrD(z)')
 result('z', z, 'd', d)
-print()
+print('')
 test('m = Chord:new{0, 3, 7}; m1 = o:nrR(c):eOP()')
 result('m', m, 'm1', m1)
-print()
+print('')
 for i = 0, 12 do
     test(string.format('q = o:Q(z,  %s, z, 1)', i))
     result('z', z, 'q', q)
@@ -618,13 +624,13 @@ for i = 0, 12 do
     test(string.format('q = o:Q(z, -%s, m, 1)', i))
     result('z', z, 'q', q)
 end
-print()
+print('')
 test('voicings = o:voicings(c)')
 result('c', c)
 for i, voicing in ipairs(voicings) do
     result('voicing', voicing, 'voicing:eO()', voicing:eO())
 end
-print()
+print('')
 
 
 

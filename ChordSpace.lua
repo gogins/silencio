@@ -2163,17 +2163,22 @@ end
 -- the chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
+    print_(string.format('toChord:        %f, %f, %f, %f', P, I, T, V))
     P = P % self.countP
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % self.countV
+    print_(string.format('toChord:        %f, %f, %f, %f', P, I, T, V))
     local opti = self.optisForIndexes[P]
+    print_('toChord   opti: ' .. tostring(opti))
     if I == 0 then
         opt = opti
     else
         opt = opti:I():eOP()
     end
+    print_('toChord   opt:  ' .. tostring(opt))
     local op = opt:T(T):eOP()
+    print_('toChord   op:   ' .. tostring(op))
     local voicing = self.voicingsForIndexes[V]
     local revoicing = op:origin()
     for voice = 1, #voicing do
@@ -2193,12 +2198,14 @@ function ChordSpaceGroup:fromChord(chord)
         end
     end
     local op = chord:eOP()
+    print_('fromChord op:   ' .. tostring(op))
     local voicing = chord:origin()
     for voice = 1, #chord do
         voicing[voice] = chord[voice] - op[voice]
     end
     local V = self.indexesForVoicings[voicing:__hash()]
     local opt = op:eOPT()
+    print_('fromChord opt:  ' .. tostring(opt))
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         if opt:T(t):eOP() == op then
@@ -2207,7 +2214,7 @@ function ChordSpaceGroup:fromChord(chord)
         end
     end
     local opti = op:eOPTI()
-    print_('opti:' .. tostring(opti))
+    print_('fromChord opti: ' .. tostring(opti))
     local P = self.indexesForOptis[opti:__hash()]
     local I = 0
     if opti ~= opt then
