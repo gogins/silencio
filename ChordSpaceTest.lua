@@ -106,13 +106,13 @@ function printVoicings(chord)
     print(chord:label())
     local voicings = chord:voicings()
     for i, voicing in ipairs(voicings) do
-        print('voicing:', i, voicing, 'iseV', voicing:iseV(ChordSpace.OCTAVE), voicing:distanceToUnisonDiagonal())
-        print('eOP', i, voicing:eOP())
-        print('et', i, voicing:et())
-        print('eop', i, voicing:eop())
-        print('eopt', i, voicing:eopt())
-        print('eOPI', i, voicing:eOPI())
-        print('eOPT', i, voicing:eOPT(),'iseOPT', voicing:iseOPT())
+        print(string.format('voicing: %d %s iseV %s %f', i, tostring(voicing), tostring(voicing:iseV(ChordSpace.OCTAVE)), voicing:distanceToUnisonDiagonal()))
+        print(string.format('eOP:     %d %s', i, tostring(voicing:eOP())))
+        print(string.format('et:      %d %s', i, tostring(voicing:et())))
+        print(string.format('eop:     %d $s', i, tostring(voicing:eop())))
+        print(string.format('eopt:    %d %s', i, tostring(voicing:eopt())))
+        print(string.format('eOPI:    %d %s', i, tostring(voicing:eOPI())))
+        print(string.format('eOPT:    %d %s iseOPT %s', i, tostring(voicing:eOPT()), tostring(voicing:iseOPT())))
     end
 end
 
