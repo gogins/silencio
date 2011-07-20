@@ -1042,7 +1042,15 @@ function Chord:iseI() --Tymoczko()
     return true
 end
 
-function Chord:iseIx() --Gogins()
+function Chord:iseI2() --Gogins()
+    local inverse = self:I()
+    if self <= inverse then
+        return true
+    end
+    return false
+end
+
+function Chord:iseI3() --Gogins()
     local inverse = self:I()
     if self <= inverse then
         return true
@@ -1240,12 +1248,22 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of range, order, and inversional equivalence.
 
-function Chord:iseRPI(range)
+function Chord:iseRPI1(range)
     local inverse = self:I():eRP(range)
     if self <= inverse then
         return true
     end
     return false
+end
+
+function Chord:iseRPI(range)
+    if not self:iseRP(range) then
+        return false
+    end
+    if not self:iseI() then
+        return false
+    end
+    return true
 end
 
 -- Sends the chord to its equivalent within the representative fundamental
@@ -1299,7 +1317,7 @@ function Chord:iseRPTI(range, g)
     if not self:iseRPT(range, g) then
         return false
     end
-    if not self:iseI(range) then
+    if not self:iseRPI(range) then
         return false
     end
     return true
@@ -2190,7 +2208,7 @@ function ChordSpaceGroup:toChord(P, I, T, V)
 end
 
 -- Returns the indices of prime form, inversion, transposition,
--- and voicing for a chord. 
+-- and voicing for a chord.
 
 function ChordSpaceGroup:fromChord(chord)
     for key, chord in pairs(chord:cyclicalPermutations()) do
