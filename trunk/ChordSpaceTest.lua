@@ -175,8 +175,6 @@ for T = 0, 11 do
     print_(chord:label())
 end
 
---os.exit()
-
 for voiceCount = 3, 4 do
 
     if true then
