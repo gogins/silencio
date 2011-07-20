@@ -121,8 +121,6 @@ print(chord:label())
 local chord = Chord:new{-2,1,5,6}
 print(chord:label())
 
--- os.exit()
-
 print(chord:label())
 print('ChordSpaceGroup')
 local chordSpaceGroup = ChordSpaceGroup:new()
