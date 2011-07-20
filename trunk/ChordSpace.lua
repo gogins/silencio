@@ -875,7 +875,7 @@ function Chord:eR(range)
     local chord = self:clone()
     -- The clue here is that at least one voice must be >= 0,
     -- but no voice can be > range.
-    -- Move all pitches inside the interval [0, range]
+    -- Move all pitches inside the interval [0, range)
     -- (which is not the same as the fundamental domain).
     for voice = 1, #chord do
         chord[voice] = chord[voice] % range
@@ -1022,7 +1022,7 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of inversional equivalence.
 
-function Chord:iseIx() --Tymoczko()
+function Chord:iseI() --Tymoczko()
     local chord = self:clone()
     local lowerVoice = 2
     local upperVoice = #chord
@@ -1042,7 +1042,7 @@ function Chord:iseIx() --Tymoczko()
     return true
 end
 
-function Chord:iseI() --Gogins()
+function Chord:iseIx() --Gogins()
     local inverse = self:I()
     if self <= inverse then
         return true
@@ -1287,7 +1287,7 @@ end
 
 function Chord:eRPTI(range, g)
     g = g or 1
-    return self:eRPT(range, g):eI()
+    return self:eRPT(range, g):ePI()
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1799,9 +1799,9 @@ eO:       %s  iseO:    %s
 eP:       %s  iseP:    %s
 eT:       %s  iseT:    %s
 eI:       %s  iseI:    %s
-eOP:      %s  iseOP:   %s
-eOPI:     %s  iseOPI:  %s
+eOP:      %s  iseOP:   %s   iseV: %s
 eOPT:     %s  iseOPT:  %s
+eOPI:     %s  iseOPI:  %s
 eOPTI:    %s  iseOPTI: %s
 Sum:        %6.2f
 To origin:  %6.2f]],
@@ -1812,7 +1812,7 @@ tostring(self:eO()),    tostring(self:iseO()),
 tostring(self:eP()),    tostring(self:iseP()),
 tostring(self:eT()),    tostring(self:iseT()),
 tostring(self:eI()),    tostring(self:iseI()),
-tostring(self:eOP()),   tostring(self:iseOP()),
+tostring(self:eOP()),   tostring(self:iseOP()), tostring(self:iseV(ChordSpace.OCTAVE)),
 tostring(self:eOPT()),  tostring(self:iseOPT()),
 tostring(self:eOPI()),  tostring(self:iseOPI()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
@@ -2163,12 +2163,12 @@ end
 -- the chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
-    print_(string.format('toChord:        %f, %f, %f, %f', P, I, T, V))
+    print_(string.format('toChord args:   %f, %f, %f, %f', P, I, T, V))
     P = P % self.countP
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % self.countV
-    print_(string.format('toChord:        %f, %f, %f, %f', P, I, T, V))
+    print_(string.format('toChord modulo: %f, %f, %f, %f', P, I, T, V))
     local opti = self.optisForIndexes[P]
     print_('toChord   opti: ' .. tostring(opti))
     if I == 0 then
@@ -2177,7 +2177,9 @@ function ChordSpaceGroup:toChord(P, I, T, V)
         opt = opti:I():eOP()
     end
     print_('toChord   opt:  ' .. tostring(opt))
-    local op = opt:T(T):eOP()
+    local op_t = opt:T(T)
+    print_('toChord   op_t: ' .. tostring(op_t))
+    local op = op_t:eOP()
     print_('toChord   op:   ' .. tostring(op))
     local voicing = self.voicingsForIndexes[V]
     local revoicing = op:origin()
@@ -2188,8 +2190,7 @@ function ChordSpaceGroup:toChord(P, I, T, V)
 end
 
 -- Returns the indices of prime form, inversion, transposition,
--- and voicing for a chord. The chord is not in RP; rather, each voice of the
--- chord's OP may have zero or more octaves added to it.
+-- and voicing for a chord. 
 
 function ChordSpaceGroup:fromChord(chord)
     for key, chord in pairs(chord:cyclicalPermutations()) do
@@ -2204,25 +2205,23 @@ function ChordSpaceGroup:fromChord(chord)
         voicing[voice] = chord[voice] - op[voice]
     end
     local V = self.indexesForVoicings[voicing:__hash()]
+    print_(V)
     local opt = op:eOPT()
     print_('fromChord opt:  ' .. tostring(opt))
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
-        -- The permutational twist can change the
-        -- OPTI, i.e. a low unison can go to a high unison.
-        -- Either this approach is wrong,
-        -- or that has to be taken into account.
-        -- Perhaps this also is due to a difference as to
-        -- which of inversionally equivalent chords are
-        -- in what domain?
-        if opt:T(t):eOP() == op then
+        local opt_t = opt:T(t)
+        print_('fromChord opt_t:' .. tostring(opt_t))
+        if opt_t == op then
             T = t
             break
         end
     end
+    print_(T)
     local opti = op:eOPTI()
-    print_('fromChord opti: ' .. tostring(opti))
+    print_('fromChord opti: ' .. tostring(opti) .. ' ' .. opti:__hash())
     local P = self.indexesForOptis[opti:__hash()]
+    print_(P)
     local I = 0
     if opti ~= opt then
         I = 1
@@ -2231,6 +2230,7 @@ function ChordSpaceGroup:fromChord(chord)
             os.exit()
         end
     end
+    print_(I)
     return P, I, T, V
 end
 

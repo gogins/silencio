@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = false
+verbose = true
 
 function print(message)
     if verbose then
@@ -166,7 +166,9 @@ print(string.format('shouldBeIofGbM7:  P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: IofGbM7 must be the same from and to PITV')
 print('')
 
+--[[
 G7 = ChordSpace.chordsForNames['G7']
+print_(G7:label())
 P, I, T, V = chordSpaceGroup:fromChord(G7)
 for T = 0, 11 do
     chord = chordSpaceGroup:toChord(P, I, T, V)
@@ -174,10 +176,10 @@ for T = 0, 11 do
     chord = chordSpaceGroup:toChord(P, I+1, T, V)
     print_(chord:label())
 end
-
+]]
 for voiceCount = 3, 4 do
 
-    if true then
+    if false then
     
     passes = true
     chordSpaceGroup = ChordSpaceGroup:new()
