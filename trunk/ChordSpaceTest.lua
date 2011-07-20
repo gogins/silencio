@@ -8,7 +8,7 @@ print('package.cpath:', package.cpath)
 
 print_ = print
 
-verbose = true
+verbose = false
 
 function print(message)
     if verbose then
@@ -180,7 +180,7 @@ end
 for voiceCount = 3, 4 do
 
     if false then
-    
+
     passes = true
     chordSpaceGroup = ChordSpaceGroup:new()
     chordSpaceGroup:initialize(voiceCount, 48)
@@ -219,7 +219,7 @@ for voiceCount = 3, 4 do
     pass(string.format('Each chord in OP must return iseOP true for %d voices.', voiceCount))
 
     end
-    
+
     print('All of OPT')
     local chords = ChordSpace.allOfEquivalenceClass(voiceCount, 'OPT')
     for index, chord in pairs(chords) do
