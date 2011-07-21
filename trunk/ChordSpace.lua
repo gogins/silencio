@@ -1,5 +1,12 @@
 ChordSpace = {}
 
+
+I think what I need to do is use Tymoczko's definition
+for inversion but comparing chord and inverse, 
+chord and inverse:eP,
+chord and inverse:eOP,
+and chord and inverse:eOPT.
+
 function ChordSpace.help()
 print [[
 '''
@@ -1022,7 +1029,7 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of inversional equivalence.
 
-function Chord:iseI() --Tymoczko()
+function Chord:iseI1() --Tymoczko()
     local chord = self:clone()
     local lowerVoice = 2
     local upperVoice = #chord
@@ -1050,12 +1057,12 @@ function Chord:iseI2() --Gogins()
     return false
 end
 
-function Chord:iseI3() --Gogins()
+function Chord:iseI() --Gogins()
     local inverse = self:I()
-    if self <= inverse then
-        return true
+    if self > inverse then
+        return false
     end
-    return false
+    return true
 end
 
 -- Sends the chord to its equivalent within the zero-based fundamental domain
@@ -1177,10 +1184,11 @@ function Chord:isePI()
     if not self:iseP() then
         return false
     end
-    if self <= self:eI():eP() then
-        return true
+    local inverse = self:eI():eP()
+    if self > inverse then
+        return false
     end
-    return false
+    return true
 end
 
 -- Sends the chord to its equivalent in the representative fundamental domain
@@ -1248,15 +1256,15 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of range, order, and inversional equivalence.
 
-function Chord:iseRPI1(range)
+function Chord:iseRPI(range)
     local inverse = self:I():eRP(range)
-    if self <= inverse then
-        return true
+    if self > inverse then
+        return false
     end
-    return false
+    return true
 end
 
-function Chord:iseRPI(range)
+function Chord:iseRPI2(range)
     if not self:iseRP(range) then
         return false
     end
@@ -1312,12 +1320,24 @@ end
 -- of range, order, transpositional, and inversional equivalence. g is the
 -- generator of transposition.
 
-function Chord:iseRPTI(range, g)
+function Chord:iseRPTI1(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
         return false
     end
     if not self:iseRPI(range) then
+        return false
+    end
+    return true
+end
+
+function Chord:iseRPTI(range, g)
+    g = g or 1
+    if not self:iseRPT(range, g) then
+        return false
+    end
+    local inverse = self:I():eRPT(range)
+    if self > inverse then
         return false
     end
     return true

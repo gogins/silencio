@@ -804,7 +804,7 @@ function ChordView:display()
                         index = 1
                     end
                     self.pickedChord = self.chords[index]
-                    print(string.format('%4d chord:    %s  iseOPI: %s', index, tostring(self.pickedChord), tostring(self.pickedChord:iseOPI())))
+                    print(string.format('%4d chord:    %s  iseOPI: %5s  iseOPT: %s', index, tostring(self.pickedChord), tostring(self.pickedChord:iseOPI()), tostring(self.pickedChord:iseOPT())))
                     print(string.format('     flatP:    %s', tostring(self.pickedChord:flatP())))
                     print(string.format('     flatRP:   %s', tostring(self.pickedChord:flatRP())))
                     print(string.format('     midpoint: %s', tostring(self.pickedChord:inversionMidpoint())))
@@ -812,7 +812,7 @@ function ChordView:display()
                     self.drawInverse = true
                 else
                     local inverse = self.chords[index]:I():eOP()
-                    print(string.format('     inverse:  %s  iseOPI: %s', tostring(inverse), tostring(inverse:iseOPI())))
+                    print(string.format('     inverse:  %s  iseOPI: %5s  iseOPT: %s', tostring(inverse), tostring(inverse:iseOPI()), tostring(self.pickedChord:iseOPT())))
                     if inverse == self.pickedChord then
                         if not (inverse:iseOPI() and self.pickedChord:iseOPI()) then
                             print("Error: a fixed point that is not in OPI.")
@@ -842,7 +842,7 @@ end
 chordView = ChordView:new()
 chordView.iterateInversions = false
 chordView.octaves = 1
-chordView.equivalence = 'OP'
+chordView.equivalence = 'OPTI'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
