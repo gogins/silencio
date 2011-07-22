@@ -1087,7 +1087,7 @@ end
 
 function Chord:iseI(inverse)
     inverse = inverse or self:I()
-    if self > inverse then 
+    if self > inverse then
         return false
     end
     return true
@@ -1339,7 +1339,7 @@ function Chord:iseRPI(range)
         return false
     end
     local inverse = self:I():eRP(range)
-    if self:iseI(inverse) then
+    if not self:iseI(inverse) then
         return false
     end
     return true
