@@ -1064,9 +1064,36 @@ for inversion but comparing chord and inverse,
 chord and inverse:eP,
 chord and inverse:eOP,
 and chord and inverse:eOPT.
-]]
+]]function Chord:iseI4(inverse)
+    inverse = inverse or self:I()
+    local chord = self:clone()
+    local lowerVoice = 2
+    local upperVoice = 2
+    while lowerVoice < #chord do
+        -- x[2] - x[1] <= x[#x] - x[#x - 1]
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = inverse[lowerVoice] - inverse[lowerVoice - 1]
+        if lowerInterval < upperInterval then
+            return true
+        end
+        if lowerInterval > upperInterval then
+            return false
+        end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice + 1
+    end
+    return true
+end
 
 function Chord:iseI(inverse)
+    inverse = inverse or self:I()
+    if self > inverse then 
+        return false
+    end
+    return true
+end
+
+function Chord:iseI4(inverse)
     inverse = inverse or self:I()
     local chord = self:clone()
     local lowerVoice = 2
