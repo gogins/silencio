@@ -395,6 +395,11 @@ The relationship between CGT's flat and my sort is straightforward. The flat and
 sort are the origin on a line, the origin for the first dimension of a plane and then
 again the origin for the second dimension which creates a diagonal, and so on.
 
+2011-Jul-22
+
+With CQT's eI, I could go down to OPT before
+determing OPI.
+
 ]]
 
 local Silencio = require("Silencio")
@@ -1022,11 +1027,31 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of inversional equivalence.
 
-function Chord:iseI1() --Tymoczko()
+function Chord:iseI0() --Tymoczko()
     local chord = self:clone()
     local lowerVoice = 2
     local upperVoice = #chord
     while lowerVoice < upperVoice do
+        -- x[2] - x[1] <= x[#x] - x[#x - 1]
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
+        if lowerInterval < upperInterval then
+            return true
+        end
+        if lowerInterval > upperInterval then
+            return false
+        end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
+    end
+    return true
+end
+
+function Chord:iseI1() --Tymoczko()
+    local chord = self:clone()
+    local lowerVoice = 2
+    local upperVoice = #chord
+    while lowerVoice <= #chord do
         -- x[2] - x[1] <= x[#x] - x[#x - 1]
         local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
         local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
@@ -1093,7 +1118,7 @@ function Chord:iseI(inverse)
     return true
 end
 
-function Chord:iseI4(inverse)
+function Chord:iseI6(inverse)
     inverse = inverse or self:I()
     local chord = self:clone()
     local lowerVoice = 2
@@ -1391,7 +1416,7 @@ end
 -- of range, order, transpositional, and inversional equivalence. g is the
 -- generator of transposition.
 
-function Chord:iseRPTI1(range, g)
+function Chord:iseRPTI(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
         return false
@@ -1414,7 +1439,7 @@ function Chord:iseRPTI2(range, g)
     return true
 end
 
-function Chord:iseRPTI(range, g)
+function Chord:iseRPTI3(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
         return false
