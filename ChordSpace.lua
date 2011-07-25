@@ -1069,14 +1069,6 @@ end
 
 function Chord:iseI2() --Gogins()
     local inverse = self:I()
-    if self <= inverse then
-        return true
-    end
-    return false
-end
-
-function Chord:iseI3() --Gogins()
-    local inverse = self:I()
     if self > inverse then
         return false
     end
@@ -1089,7 +1081,8 @@ for inversion but comparing chord and inverse,
 chord and inverse:eP,
 chord and inverse:eOP,
 and chord and inverse:eOPT.
-]]function Chord:iseI4(inverse)
+]]
+function Chord:iseI3(inverse)
     inverse = inverse or self:I()
     local chord = self:clone()
     local lowerVoice = 2
@@ -1118,7 +1111,7 @@ function Chord:iseI(inverse)
     return true
 end
 
-function Chord:iseI6(inverse)
+function Chord:iseI5(inverse)
     inverse = inverse or self:I()
     local chord = self:clone()
     local lowerVoice = 2
@@ -1269,7 +1262,7 @@ function Chord:isePI()
     if not self:iseP() then
         return false
     end
-    local inverse = self:eI():eP()
+    local inverse = self:I():eP()
     if not self:iseI(inverse) then
         return false
     end
@@ -1407,16 +1400,25 @@ end
 -- domain of range, order, transpositional, and inversional equivalence. g
 -- is the generator of transposition.
 
-function Chord:eRPTI(range, g)
+function Chord:eRPTI1(range, g)
     g = g or 1
     return self:eRPT(range, g):ePI()
+end
+
+function Chord:eRPTI(range, g)
+    g = g or 1
+    local rpt = self:eRPT(range, g)
+    if rpt:iseRPTI(range, g) then
+        return rpt
+    end
+    return rpt:I():eRPT(range)
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of range, order, transpositional, and inversional equivalence. g is the
 -- generator of transposition.
 
-function Chord:iseRPTI(range, g)
+function Chord:iseRPTI1(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
         return false
@@ -1439,7 +1441,7 @@ function Chord:iseRPTI2(range, g)
     return true
 end
 
-function Chord:iseRPTI3(range, g)
+function Chord:iseRPTI(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
         return false

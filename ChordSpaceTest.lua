@@ -116,12 +116,7 @@ function printVoicings(chord)
     end
 end
 
-local chord = Chord:new{-3,1,4,8}
-print(chord:label())
-local chord = Chord:new{-2,1,5,6}
-print(chord:label())
-
-print(chord:label())
+--[[
 print('ChordSpaceGroup')
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
@@ -166,7 +161,6 @@ print(string.format('shouldBeIofGbM7:  P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: IofGbM7 must be the same from and to PITV')
 print('')
 
---[[
 G7 = ChordSpace.chordsForNames['G7']
 print_(G7:label())
 P, I, T, V = chordSpaceGroup:fromChord(G7)
@@ -405,37 +399,37 @@ print('')
 verbose = true
 
 for voices = 2, 6 do
-    print('Does OPTI U OPTI:I():eOPT() == OPT?')
     local passes = true
     local dummy, ops = ChordSpace.allOfEquivalenceClass(voices, 'OP')
     local op = nil
+    local opt = nil
+    local opti = nil
+    local opti_i = nil
     for i = 1, #ops do
         op = ops[i]
-        --print(tostring(op))
-        if op:iseOPTI() then
-            if op:iseOPT() == false then
+        opt = op:eOPT()
+        opti = op:eOPTI()
+        opti_i = opti:I():eOPT()
+        if (op == opti) or (op == opti_i) then
+            if op ~= opt then
                 passes = false
-                print('If it is OPTI or OPTI:I:OPT it must be OPT')
+                print_('If it is OPTI or OPTI:I:OPT it must be OPT')
                 break
             end
-            --if op:I():eOPT():iseOPTI() == false then
-            --    passes = false
-            --    break
-            --end
         end
-        if op:iseOPT() then
-            if op:iseOPTI() == false then
-                if op:I():eOPT():iseOPTI() == false then
-                    passes = false
-                    print('if it is OPT it must be either OPTI or OPTI:I:OPT')
-                    break
-                end
+        if op == opt then
+            if not ((op == opti) or (op == opti_i)) then
+                passes = false
+                print_('if it is OPT it must be either OPTI or OPTI:I:OPT')
+                break
             end
         end
     end
     if passes == false then
-        print_(op:label())
-        print_(op:I():eOPT():label())
+        print_('op:    ' .. tostring(op))
+        print_('opt:   ' .. tostring(opt))
+        print_('opti:  ' .. tostring(opti))
+        print_('opti_i:' .. tostring(opti))
     end
     result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
 end
