@@ -408,8 +408,12 @@ for voices = 2, 6 do
     for i = 1, #ops do
         op = ops[i]
         opt = op:eOPT()
+        opt_i = opt:I()
+        opt_i_op = opt_i:eOP()
+        opt_i_opt = opt_i:eOPT()
         opti = op:eOPTI()
-        opti_i = opti:I():eOPT()
+        opti_i = opti:I()
+        opti_i_opt = opti_i:eOPT()
         if (op == opti) or (op == opti_i) then
             if op ~= opt then
                 passes = false
@@ -418,7 +422,7 @@ for voices = 2, 6 do
             end
         end
         if op == opt then
-            if not ((op == opti) or (op == opti_i)) then
+            if not ((op == opti) or (op == opti_i_opt)) then
                 passes = false
                 print_('if it is OPT it must be either OPTI or OPTI:I:OPT')
                 break
@@ -426,10 +430,14 @@ for voices = 2, 6 do
         end
     end
     if passes == false then
-        print_('op:    ' .. tostring(op))
-        print_('opt:   ' .. tostring(opt))
-        print_('opti:  ' .. tostring(opti))
-        print_('opti_i:' .. tostring(opti))
+        print_('op:        ' .. tostring(op))
+        print_('opt:       ' .. tostring(opt))
+        print_('opt_i:     ' .. tostring(opt_i))
+        print_('opt_i_op:  ' .. tostring(opt_i_op))
+        print_('opt_i_opt: ' .. tostring(opt_i_opt))
+        print_('opti:      ' .. tostring(opti))
+        print_('opti_i:    ' .. tostring(opti_i))
+        print_('opti_i_opt:' .. tostring(opti_i_opt))
     end
     result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
 end
