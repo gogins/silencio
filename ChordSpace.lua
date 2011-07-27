@@ -1441,13 +1441,26 @@ function Chord:iseRPTI2(range, g)
     return true
 end
 
-function Chord:iseRPTI(range, g)
+function Chord:iseRPTI3(range, g)
     g = g or 1
     if not self:iseRPT(range, g) then
         return false
     end
     local inverse = self:I():eRPT(range)
     if not self:iseI(inverse) then
+        return false
+    end
+    return true
+end
+
+function Chord:iseRPTI(range, g)
+    g = g or 1
+    local opt = self:eOPT()
+    if self ~= opt then
+        return false
+    end
+    local inverse = opt:I():eOPT()
+    if self > inverse then
         return false
     end
     return true
