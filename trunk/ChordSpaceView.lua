@@ -842,7 +842,7 @@ end
 chordView = ChordView:new()
 chordView.iterateInversions = false
 chordView.octaves = 1
-chordView.equivalence = 'OPTI'
+chordView.equivalence = 'OP'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
