@@ -408,6 +408,11 @@ simplex from the number of voices and the octave. With these vertices, if I
 recast a chord into barycentric coordinates, it is inside the simplex if all
 coordinates are positive. I should do this for all the fundamental domains.
 
+At the same time, the points in OPT are not necessarily co-planar (for 3
+voices) or co-hyperprism (for more than 3 voices), so I'm not sure if this
+is going to work. But it should work for the cyclical region, which may be all
+I need!
+
 ]]
 
 local Silencio = require("Silencio")
