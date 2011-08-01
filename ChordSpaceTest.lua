@@ -42,6 +42,13 @@ for n = 0, 12 do
 	print(string.format('%2d factorial is: %9d.', n, f))
 end
 
+print_('How does operator % behave?')
+for pitch = -24, 23, 1 do
+    local pc = pitch % ChordSpace.OCTAVE
+    print_(string.format('%9.4f = %9.4f %% ChordSpace.OCTAVE', pc, pitch))
+end
+print_('')
+
 local a = Chord:new{3, 3, 6}
 local b = Chord:new{3, 3, 6}
 print(a:__hash())
@@ -413,18 +420,24 @@ for voices = 2, 6 do
         opt_i_opt = opt_i:eOPT()
         opti = op:eOPTI()
         opti_i = opti:I()
+        opti_i_op = opti_i:eOP()
         opti_i_opt = opti_i:eOPT()
         if (op == opti) or (op == opti_i) then
             if op ~= opt then
                 passes = false
-                print_('If it is OPTI or OPTI:I:OPT it must be OPT')
+                print_('If it is OPTI or OPTI:I:OPT it must be OPT.')
                 break
             end
         end
         if op == opt then
             if not ((op == opti) or (op == opti_i_opt)) then
+                ChordSpace.bing = true
                 passes = false
-                print_('if it is OPT it must be either OPTI or OPTI:I:OPT')
+                print_('If it is OPT it must be either OPTI or OPTI:I:OPT.')
+                local voicings = op:voicings()
+                for key, voicing in pairs(voicings) do
+                    print_(tostring(voicing:et()) .. '  iseV: ' .. tostring(voicing:iseV(ChordSpace.OCTAVE)) .. ' To unisons: ' .. tostring(voicing:et():distanceToUnisonDiagonal()))
+                end
                 break
             end
         end
@@ -437,9 +450,10 @@ for voices = 2, 6 do
         print_('opt_i_opt: ' .. tostring(opt_i_opt))
         print_('opti:      ' .. tostring(opti))
         print_('opti_i:    ' .. tostring(opti_i))
+        print_('opti_i_op: ' .. tostring(opti_i_op))
         print_('opti_i_opt:' .. tostring(opti_i_opt))
+        result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
     end
-    result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
 end
 
 test('a = Chord:new()')
@@ -631,11 +645,3 @@ for i, voicing in ipairs(voicings) do
     result('voicing', voicing, 'voicing:eO()', voicing:eO())
 end
 print('')
-
-
-
-
-
-
-
-

@@ -400,6 +400,14 @@ again the origin for the second dimension which creates a diagonal, and so on.
 With CQT's eI, I could go down to OPT before
 determing OPI.
 
+2011-Jul-31
+
+The test for voicing equivalence is not correct. CQT in their draft give an
+algorithm for identifying OPTI and OPTI by generating the vertices of a
+simplex from the number of voices and the octave. With these vertices, if I
+recast a chord into barycentric coordinates, it is inside the simplex if all
+coordinates are positive. I should do this for all the fundamental domains.
+
 ]]
 
 local Silencio = require("Silencio")
@@ -428,14 +436,6 @@ function ChordSpace.sortedSet(collection)
     return sortedSet_
 end
 
-function er(pitch, range)
-    return pitch % range
-end
-
-function eo(pitch)
-    return pitch % ChordSpace.OCTAVE
-end
-
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function T(pitch, transposition)
@@ -447,6 +447,14 @@ end
 function I(pitch, center)
     center = center or 0
     return center - pitch
+end
+
+function er(pitch, range)
+    return pitch % range
+end
+
+function eo(pitch)
+    return pitch % ChordSpace.OCTAVE
 end
 
 -- Returns the Euclidean distance between chords a and b,
@@ -704,36 +712,8 @@ function Chord:distanceToOrigin()
     return euclidean(self, origin)
 end
 
--- Returns all the 'inversions' (in the musician's sense)
--- or revoicings of the chord.
-
-function Chord:voicings()
-    local chord = self:ep()
-    local voicings = {}
-    voicings[1] = chord
-    for i = 2, #self do
-        chord = chord:v()
-        voicings[i] = chord
-    end
-    return voicings
-end
-
-function Chord:minimumVoicing()
-    local voicings = self:voicings()
-    local voicing = voicings[1]
-    local minimumSum = voicing:sum()
-    for i = 2, #voicings do
-        local sum = voicings[i]:sum()
-        if sum < minimumSum then
-            minimumSum = sum
-            voicing = voicings[i]
-        end
-    end
-    return voicing
-end
-
 -- Returns the number of times the pitch occurs in the chord,
--- under an optional range equivalence (defaulting to the octave).
+-- under range equivalence (defaulting to the octave).
 
 function Chord:count(pitch, range)
     range = range or ChordSpace.OCTAVE
@@ -809,6 +789,34 @@ function Chord:v(direction)
     return chord
 end
 
+-- Returns all the 'inversions' (in the musician's sense)
+-- or revoicings of the chord.
+
+function Chord:voicings()
+    local chord = self:ep()
+    local voicings = {}
+    voicings[1] = chord
+    for i = 2, #self do
+        chord = chord:v()
+        voicings[i] = chord
+    end
+    return voicings
+end
+
+function Chord:minimumVoicing()
+    local voicings = self:voicings()
+    local voicing = voicings[1]
+    local minimumSum = voicing:sum()
+    for i = 2, #voicings do
+        local sum = voicings[i]:sum()
+        if sum < minimumSum then
+            minimumSum = sum
+            voicing = voicings[i]
+        end
+    end
+    return voicing
+end
+
 -- Returns the ith arpeggiation, current voice, and corresponding revoicing
 -- of the chord. Positive arpeggiations start with the lowest voice of the
 -- chord and revoice up; negative arpeggiations start with the highest voice
@@ -841,10 +849,10 @@ end
 -- Transposes the chord by the indicated interval (may be a fraction).
 -- NOTE: Does NOT return the result under any equivalence class.
 
-function Chord:T(semitones)
+function Chord:T(interval)
     local chord = self:clone()
     for voice = 1, #self do
-        chord[voice] = T(self[voice], semitones)
+        chord[voice] = T(self[voice], interval)
     end
     return chord
 end
@@ -867,8 +875,8 @@ end
 
 function Chord:er(range)
     local chord = self:clone()
-    for voice, pitch in ipairs(chord) do
-        chord[voice] = pitch % range
+    for voice = 1, #chord do
+        chord[voice] = chord[voice] % range
     end
     return chord
 end
@@ -877,14 +885,11 @@ end
 -- of range equivalence.
 
 function Chord:eR(range)
-    local chord = self:clone()
     -- The clue here is that at least one voice must be >= 0,
     -- but no voice can be > range.
-    -- Move all pitches inside the interval [0, range)
-    -- (which is not the same as the fundamental domain).
-    for voice = 1, #chord do
-        chord[voice] = chord[voice] % range
-    end
+    -- Move all pitches inside the interval [0, range),
+    -- which is not the same as the fundamental domain.
+    local chord = self:er(range)
     -- Reflect voices that are outside of the fundamental domain
     -- back into it, which will revoice the chord, i.e.
     -- the sum of pitches is in [0, range).
@@ -895,6 +900,19 @@ function Chord:eR(range)
         chord[maximumVoice] = maximumPitch - range
     end
     return chord
+end
+
+-- Returns whether the chord is within the zero-based fundamental domain of
+-- range equivalence.
+
+function Chord:iser(range)
+    if self:min() < 0 then
+        return false
+    end
+    if self:max() >= range then
+        return false
+    end
+    return true
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -970,6 +988,10 @@ function Chord:iseP()
     end
     return true
 end
+
+-- Returns whether the chord is within the zero-based fundamental domain
+-- of order equivalence. I.e., returns the chord sorted by the pitches of its
+-- voices.
 
 Chord.isep = Chord.iseP
 
@@ -1623,10 +1645,16 @@ end
 -- Returns whether the chord is in the fundamental domain
 -- of V (voicing) equivalence.
 
+ChordSpace.bing = false
 function Chord:iseV(range)
     local isev = true
     for voice = 1, #self - 1 do
-        if not ((self[1] + range - self[#self]) <= (self[voice + 1] - self[voice])) then
+        local outer = self[1] + range - self[#self]
+        local inner = self[voice + 1] - self[voice]
+        if ChordSpace.bing then
+            print_(string.format('voice: %4d  outer: %4d  inner: %4d', voice, outer, inner))
+        end
+        if not (outer <= inner) then
             isev = false
         end
     end
@@ -1965,6 +1993,7 @@ eOPT:     %s  iseOPT:  %s
 eOPI:     %s  iseOPI:  %s
 eOPTI:    %s  iseOPTI: %s
 Sum:        %6.2f
+To unisons: %6.2f
 To origin:  %6.2f]],
 chordName,
 tostring(self),
@@ -1978,6 +2007,7 @@ tostring(self:eOPT()),  tostring(self:iseOPT()),
 tostring(self:eOPI()),  tostring(self:iseOPI()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
 self:sum(),
+self:distanceToUnisonDiagonal(),
 self:distanceToOrigin())
 end
 
