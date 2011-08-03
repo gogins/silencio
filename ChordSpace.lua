@@ -646,11 +646,13 @@ function ChordSpace.barycentricCoordinates(chord, simplex)
             if voice == dimension then
                 voiceSimplex[dimension] = chord
             else
-                voicesimplex[dimension] = simplex[dimension]
+                voiceSimplex[dimension] = simplex[dimension]
             end
         end
-        voiceSimplexVolume = ChordSpace.volume(voiceSimplex)
-        coordinates[voice] = voiceSimplexVolume / simplexVolume
+        local voiceVolume = ChordSpace.volume(voiceSimplex)
+        local coordinate = voiceVolume / simplexVolume
+        print_(string.format('coordinate %6.2f = voice %6.2f / simplex %6.2f', coordinate, voiceVolume, simplexVolume))
+        coordinates[voice] = coordinate
     end
     return coordinates
 end
@@ -663,12 +665,13 @@ function Chord:cyclicalRegion(range)
     range = range or ChordSpace.OCTAVE
     local simplex = {}
     local chord = self:origin()
-    table.insert(simplex, chord)
+    --table.insert(simplex, chord)
     for voice = #self, 2, -1 do
         chord = chord:clone()
         chord[voice] = range
         table.insert(simplex, chord)
     end
+    return simplex
 end
 
 -- Returns the lowest pitch in the chord.
