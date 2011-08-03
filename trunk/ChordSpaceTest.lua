@@ -70,6 +70,15 @@ table.insert(chords, Chord:new{0, 0, -3, 0})
 volume2 = ChordSpace.volume(chords)
 print('volume: ' .. tostring(volume2))
 result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
+local chord = Chord:new{0, 0, 0, 0}
+print_(tostring(chord))
+local cyclicalRegion = chord:cyclicalRegion(ChordSpace.OCTAVE)
+for key, point in pairs(cyclicalRegion) do
+    print_(tostring(point))
+end
+local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
+result(passes, string.format('Barycentric coordinates of %s must be %s.', tostring(chord), tostring(coordinates)))
+os.exit(0)
 
 function iseOPIeOPI(voiceCount)
     dump = dump or false
