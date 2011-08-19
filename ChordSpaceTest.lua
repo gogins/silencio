@@ -73,11 +73,22 @@ result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space 
 local chord = Chord:new{0, 0, 0, 0}
 print_(tostring(chord))
 local cyclicalRegion = chord:cyclicalRegion(ChordSpace.OCTAVE)
-for key, point in pairs(cyclicalRegion) do
-    print_(tostring(point))
+for i = 1, #cyclicalRegion do
+    local point = cyclicalRegion[i]
+    print_(tostring(point) .. ' BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
 end
 local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
+if coordinates == Chord:new{1, 0, 0, 0} then
+    passes = true
+else
+    passes = false
+end
 result(passes, string.format('Barycentric coordinates of %s must be %s.', tostring(chord), tostring(coordinates)))
+for i = 1, #cyclicalRegion do
+    local point = cyclicalRegion[i]
+    print_(tostring(point))
+    print_(tostring(point:eOP()))
+end
 os.exit(0)
 
 function iseOPIeOPI(voiceCount)
