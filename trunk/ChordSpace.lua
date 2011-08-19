@@ -665,7 +665,25 @@ function Chord:cyclicalRegion(range)
     range = range or ChordSpace.OCTAVE
     local simplex = {}
     local chord = self:origin()
-    --table.insert(simplex, chord)
+    table.insert(simplex, chord)
+    for voice = #self, 2, -1 do
+        chord = chord:clone()
+        chord[voice] = range
+        table.insert(simplex, chord)
+    end
+    return simplex
+end
+
+-- Returns a simplex defining that portion of the cyclical hyperplane at the
+-- base of the orbifold that contains all OPT chords. This is done by pulling
+-- back vertices of the simplex that exceed the layer to the maximally even
+-- chord. All but 2 vertices must be so pulled back.
+
+function Chord:normalRegion(range)
+    range = range or ChordSpace.OCTAVE
+    local simplex = {}
+    local chord = self:origin()
+    table.insert(simplex, chord)
     for voice = #self, 2, -1 do
         chord = chord:clone()
         chord[voice] = range
