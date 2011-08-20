@@ -288,6 +288,13 @@ geometric theory.'
 
 Each function that implements an equivalence class has a name beginning with
 'e', e.g. 'eOP' for pitch class set or 'eOPTI' for set class.
+
+DIFFERENT EQUAL TEMPERAMENTS
+
+The maximumally even chord is a member of an equally tempered scale only when 
+the number of voices in a chord goes evenly into the number of tones in the 
+scale. For 12 TET this is true for 2, 3, 4, and 6 voices. For 21 TET this is 
+true for 3 and 7 voices. For 24 TET it is true for 2, 3, 4, 6, and 8 voices.
 ]]
 end
 
@@ -631,7 +638,7 @@ end
 
 -- Returns the barycentric coordinates of a chord with respect to a simplex.
 -- If no voice of the coordinates is less than 0, the chord lies within the
--- simplex, which must consist of N + 1 chords.
+-- simplex, which must consist of N + 1 chords. TODO: CHECK OR FIX.
 
 function ChordSpace.barycentricCoordinates(chord, simplex)
     -- Each coordinate element for voice v is the volume of the N-simplex
@@ -684,11 +691,12 @@ function Chord:normalRegion(range)
     local simplex = {}
     local chord = self:origin()
     table.insert(simplex, chord)
-    for voice = #self, 2, -1 do
+    for voice = #self, 3, -1 do
         chord = chord:clone()
         chord[voice] = range
         table.insert(simplex, chord)
     end
+    table.insert(simplex, chord:maximallyEven())
     return simplex
 end
 
@@ -771,6 +779,15 @@ function Chord:origin()
     local chord = self:clone()
     for voice = 1, #chord do
         chord[voice] = 0
+    end
+    return chord
+end
+
+function Chord:maximallyEven()
+    local chord = self:clone()
+    local g = ChordSpace.OCTAVE / #self
+    for i = 1, #self do
+        chord[i] = (i - 1) * g
     end
     return chord
 end
