@@ -70,24 +70,48 @@ table.insert(chords, Chord:new{0, 0, -3, 0})
 volume2 = ChordSpace.volume(chords)
 print('volume: ' .. tostring(volume2))
 result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
-local chord = Chord:new{0, 0, 0, 0}
-print_(tostring(chord))
-local cyclicalRegion = chord:cyclicalRegion(ChordSpace.OCTAVE)
-for i = 1, #cyclicalRegion do
-    local point = cyclicalRegion[i]
-    print_(tostring(point) .. ' BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
+for i = 2, 12 do
+    local chord = Chord:new()
+    chord:resize(i)
+    local maximallyEven = chord:maximallyEven()
+    print_(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
+    local cyclicalRegion = chord:cyclicalRegion(ChordSpace.OCTAVE)
+    for j = 1, #cyclicalRegion do
+        local point = cyclicalRegion[j]
+        print_(tostring(point) .. ' BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
+    end
+    local normalRegion = chord:normalRegion(ChordSpace.OCTAVE)
+    for j = 1, #normalRegion do
+        local point = normalRegion[j]
+        print_(tostring(point) .. ' BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, normalRegion)))
+    end
+    local testChord = chord:clone()
+    testChord[1] = 1
+    local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
+    if coordinates == testChord then
+        passes = true
+    else
+        passes = false
+    end
+    result(passes, string.format('Barycentric coordinates of %s must be %s.', tostring(chord), tostring(coordinates)))
 end
-local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
-if coordinates == Chord:new{1, 0, 0, 0} then
-    passes = true
-else
-    passes = false
-end
-result(passes, string.format('Barycentric coordinates of %s must be %s.', tostring(chord), tostring(coordinates)))
-for i = 1, #cyclicalRegion do
-    local point = cyclicalRegion[i]
-    print_(tostring(point))
-    print_(tostring(point:eOP()))
+-- One and only one of the cyclical permutations of a chord must be in the normal region.
+-- If the chord is equal to the cyclical permutation that is in the normal region, it is
+-- in the representative fundamental domain of voicing equivalence.
+local chordTypes = {'CM', 'Cm', 'C7', 'CM7', 'Cm7', 'Co7', 'C9', 'CM9', 'Cm9'}
+for k, chordType in pairs(chordTypes) do
+    local chord = ChordSpace.chordsForNames[chordType]
+    local normalRegion = chord:normalRegion()
+    for j = 1, #normalRegion do
+        local point = normalRegion[j]
+        print_(string.format('Normal region %2d: %s', j, tostring(point)))
+    end
+    local permutations = chord:cyclicalPermutations()
+    for i, permutation in ipairs(permutations) do
+        print_(permutation)
+        local coordinates = ChordSpace.barycentricCoordinates(permutation, normalRegion)
+        print_(string.format('%5s %d: %s', chordType, i, tostring(coordinates)))
+    end
 end
 os.exit(0)
 
