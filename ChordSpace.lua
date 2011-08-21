@@ -291,9 +291,9 @@ Each function that implements an equivalence class has a name beginning with
 
 DIFFERENT EQUAL TEMPERAMENTS
 
-The maximumally even chord is a member of an equally tempered scale only when 
-the number of voices in a chord goes evenly into the number of tones in the 
-scale. For 12 TET this is true for 2, 3, 4, and 6 voices. For 21 TET this is 
+The maximumally even chord is a member of an equally tempered scale only when
+the number of voices in a chord goes evenly into the number of tones in the
+scale. For 12 TET this is true for 2, 3, 4, and 6 voices. For 21 TET this is
 true for 3 and 7 voices. For 24 TET it is true for 2, 3, 4, 6, and 8 voices.
 ]]
 end
@@ -638,7 +638,7 @@ end
 
 -- Returns the barycentric coordinates of a chord with respect to a simplex.
 -- If no voice of the coordinates is less than 0, the chord lies within the
--- simplex, which must consist of N + 1 chords. TODO: CHECK OR FIX.
+-- simplex.
 
 function ChordSpace.barycentricCoordinates(chord, simplex)
     -- Each coordinate element for voice v is the volume of the N-simplex
@@ -658,7 +658,7 @@ function ChordSpace.barycentricCoordinates(chord, simplex)
         end
         local voiceVolume = ChordSpace.volume(voiceSimplex)
         local coordinate = voiceVolume / simplexVolume
-        print_(string.format('coordinate %6.2f = voice %6.2f / simplex %6.2f', coordinate, voiceVolume, simplexVolume))
+        print_(string.format('coordinate %2d: %6.2f = voice %6.2f / simplex %6.2f', voice, coordinate, voiceVolume, simplexVolume))
         coordinates[voice] = coordinate
     end
     return coordinates
@@ -687,16 +687,8 @@ end
 -- chord. All but 2 vertices must be so pulled back.
 
 function Chord:normalRegion(range)
-    range = range or ChordSpace.OCTAVE
-    local simplex = {}
-    local chord = self:origin()
-    table.insert(simplex, chord)
-    for voice = #self, 3, -1 do
-        chord = chord:clone()
-        chord[voice] = range
-        table.insert(simplex, chord)
-    end
-    table.insert(simplex, chord:maximallyEven())
+    local simplex = self:cyclicalRegion(range)
+    simplex[#simplex] = self:maximallyEven()
     return simplex
 end
 
@@ -1612,49 +1604,57 @@ function ChordSpace.factorial (n)
 	end
 end
 
--- Returns the volume of the simplex defined by the chords. For a simplex
--- of N dimensions, there must be exactly N + 1 non-codimensional chords.
--- For square simplexes, the volume is signed; for non-square simplexes,
--- the volume is not signed.
-
-function ChordSpace.volume(chords)
-    -- Transform each chord into a homogeneous column vector.
+function ChordSpace.homogeneousSimplex(chords)
     local list = {}
     for key, chord in pairs(chords) do
-        local c = chord:clone()
-        c[#c + 1] = 1
-        --print('chord:', c)
-        table.insert(list, c)
+        table.insert(list, chord:clone())
     end
-    local simplex = matrix:new(list):transpose()
-    --print('list:')
-    --simplex:print()
-	-- Ensure consistent sign across dimensions by using the
-    -- column-subtraction identity and placing the origin in the final column.
-    -- This also puts the simplex into homogeneous coordinates.
+    for key, chord in pairs(list) do
+        chord[#chord + 1] = 1
+    end
+    return matrix:new(list):transpose()
+end
+
+function ChordSpace.invariantSimplex(simplex)
     for row = 1, simplex:rows() do
         for column = 1, simplex:columns() - 1 do
 			simplex[row][column] = (simplex[row][column] - simplex[row][simplex:columns()])
 		end
 	end
-    --print('consistent:')
-    --simplex:print()
-    -- This factor normalizes for the volume of the simplex versus the volume
-    -- of the paralleliped defined by it taken as a basis.
-    local factor = 1 / ChordSpace.factorial(#chords)
+    return simplex:subm(1, 1, simplex:rows() - 1, simplex:columns() - 1)
+end
+
+-- Returns the volume of the simplex defined by the chords. For a simplex
+-- of K dimensions, there must be exactly K + 1 non-codimensional chords.
+-- K must be equal to or less than the number of voices in the chord space.
+
+function ChordSpace.volume(chords)
+    -- Transform each chord into a homogeneous column vector.
+    local simplex = ChordSpace.homogeneousSimplex(chords)
+	-- Ensure consistent sign across dimensions by using the
+    -- column-subtraction identity and placing the origin in the final column.
+    -- This also reduces the simplex by one dimension.
+    local invariant = ChordSpace.invariantSimplex(simplex)
     -- Non-square simplexes are handled by multiplying the simplex by its
     -- transpose on the left to produce a square matrix.
-    local volume = 0
-    if simplex:rows() ~= simplex:columns() then
-        local transpose = simplex:transpose()
-        simplex = transpose * simplex
-        --print('square:')
-        --simplex:print()
-        volume = math.sqrt(math.pow(factor, 2) * simplex:det())
+    if invariant:rows() ~= invariant:columns() then
+        local transpose = invariant:transpose()
+        squared = transpose:mul(invariant)
+        volume = math.sqrt((1 / ChordSpace.factorial(#chords))^2 * squared:det())
+        return volume, squared
     else
-        volume = factor * simplex:det()
+        volume = (1 / ChordSpace.factorial(#chords))^2 * invariant:det()
+        return volume, invariant
     end
-    return volume, simplex
+end
+
+-- Returns the volume squared of a simplex in a sub-space of chord space.
+
+function ChordSpace.volumeSquared(chords)
+    local simplex = ChordSpace.homogeneousSimplex(chords)
+    local invariant = ChordSpace.invariantSimplex(simplex)
+    local squared = invariant:transpose():mul(invariant)
+    return (1 / ChordSpace.factorial(#chords))^2 * squared:det(), squared
 end
 
 -- Returns the chord that is halfway
