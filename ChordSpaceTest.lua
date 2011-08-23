@@ -119,10 +119,9 @@ for k, chordType in pairs(chordTypes) do
         print_(string.format('Normal region %2d: %s', j, tostring(point)))
     end
     local permutations = chord:cyclicalPermutations()
-    for i, permutation in ipairs(permutations) do
-        print_(permutation)
-        local coordinates = ChordSpace.barycentricCoordinates(permutation, normalRegion)
-        print_(string.format('%5s %d: %s', chordType, i, tostring(coordinates)))
+    for i, permutation in pairs(permutations) do
+        local inside = permutation:isInSimplex(normalRegion)
+        print_(string.format('%5s %d: permutation: %s  inside: %s', chordType, i, tostring(permutation), tostring(inside)))
     end
 end
 os.exit(0)

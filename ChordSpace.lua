@@ -699,6 +699,20 @@ function Chord:normalRegion(range)
     return simplex
 end
 
+-- Returns whether or not the chord is located inside, or on the boundary of, 
+-- a simplex. The dimensions of the chord and of the vertices of the simplex 
+-- must agree, but the simplex may be in a subspace of lower dimension.
+
+function Chord:isInSimplex(simplex)
+    local coordinates = ChordSpace.barycentricCoordinates(self, simplex)
+    for i = 1, #coordinates do
+        if coordinates[i] < 0 or (coordinates[i] > 1) then
+            return false, coordinates
+        end
+    end
+    return true, coordinates
+end
+
 -- Returns the lowest pitch in the chord.
 -- and also its voice index.
 
