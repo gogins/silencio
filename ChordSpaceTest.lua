@@ -61,17 +61,18 @@ table.insert(chords, Chord:new{-3, 0, 0})
 table.insert(chords, Chord:new{0, 0, 0})
 table.insert(chords, Chord:new{0, -3, 0})
 table.insert(chords, Chord:new{0, 0, -3})
-volume1 = ChordSpace.volume(chords)
-print('volume: ' .. tostring(volume1))
+volume1 = ChordSpace.volumeSquared(chords)
+print_('volume: ' .. tostring(volume1))
 chords = {}
 table.insert(chords, Chord:new{-3, 0, 0, 0})
 table.insert(chords, Chord:new{0, 0, 0, 0})
 table.insert(chords, Chord:new{3, -3, 0, 0})
 table.insert(chords, Chord:new{0, 0, -3, 0})
-volume2 = ChordSpace.volume(chords)
-print('volume: ' .. tostring(volume2))
---result(math.abs(volume1) == math.abs(volume2), "Volume of same simplex in space and in subspace must be equal.")
+volume2 = ChordSpace.volumeSquared(chords)
+print_('volume: ' .. tostring(volume2))
+result(math.abs(volume1) == math.abs(volume2), "Volumes of same simplex in space and in subspace must be equal.")
 for i = 2, 12 do
+    print_(string.format('CHORDS OF %d VOICES...', i))
     local chord = Chord:new()
     chord:resize(i)
     local maximallyEven = chord:maximallyEven()
@@ -83,29 +84,29 @@ for i = 2, 12 do
     local invariant = ChordSpace.invariantSimplex(homogeneous)
     print_('invariant:\n' .. invariant:tostring())
     local squared = invariant:transpose():mul(invariant)
-    print_('squared:\n' .. squared:tostring())
-
+    print_('times transpose:\n' .. squared:tostring())
     for j = 1, #cyclicalRegion do
         local point = cyclicalRegion[j]
-        print_(tostring(point) .. ' BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
+        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
     end
     local normalRegion = chord:normalRegion(ChordSpace.OCTAVE)
     for j = 1, #normalRegion do
         local point = normalRegion[j]
-        print_(tostring(point) .. ' BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, normalRegion)))
+        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, normalRegion)))
     end
-    local testChord = chord:clone()
-    testChord[1] = 1
+    local targetCoordinates = chord:origin()
+    targetCoordinates[#targetCoordinates] = 1
     local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
-    if coordinates == testChord then
+    if coordinates == targetCoordinates then
         passes = true
     else
         passes = false
     end
-    result(true, string.format('Barycentric coordinates of %s must be %s.', tostring(chord), tostring(coordinates)))
-    testChord[1] = -1
-    local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
-    result(true, string.format('Barycentric coordinates of %s are %s.', tostring(testChord), tostring(coordinates)))
+    result(passes, string.format('Barycentric coordinates of %s are %s must be %s.', tostring(chord), tostring(coordinates), tostring(targetCoordinates)))
+    local outsideChord = chord:clone()
+    outsideChord[1] = -100
+    local coordinates = ChordSpace.barycentricCoordinates(outsideChord, cyclicalRegion)
+    result(true, string.format('Barycentric coordinates of %s are %s.', tostring(outsideChord), tostring(coordinates)))
 end
 -- One and only one of the cyclical permutations of a chord must be in the normal region.
 -- If the chord is equal to the cyclical permutation that is in the normal region, it is
@@ -116,13 +117,19 @@ for k, chordType in pairs(chordTypes) do
     local normalRegion = chord:normalRegion()
     for j = 1, #normalRegion do
         local point = normalRegion[j]
-        print_(string.format('Normal region %2d: %s', j, tostring(point)))
+        print_(string.format('Normal region %2d: %s  layer: %6.2f', j, tostring(point), tostring(point:sum())))
     end
-    local permutations = chord:cyclicalPermutations()
+    local permutations = chord:eopt():voicings()
+    local insideCount = 0
     for i, permutation in pairs(permutations) do
-        local inside = permutation:isInSimplex(normalRegion)
-        print_(string.format('%5s %d: permutation: %s  inside: %s', chordType, i, tostring(permutation), tostring(inside)))
+        etp = permutation
+        local inside = etp:isInSimplex(normalRegion)
+        if inside then
+            insideCount = insideCount + 1
+        end
+        print_(string.format('%5s permutation %d: %s  inside: %s', chordType, i, tostring(etp), tostring(inside)))
     end
+    result(insideCount == 1, "One and only one of the cyclical permutations of a chord must be in the normal region: actually inside: " .. tostring(insideCount))
 end
 os.exit(0)
 
