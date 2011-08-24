@@ -95,7 +95,11 @@ for i = 2, 12 do
         print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, normalRegion)))
     end
     local targetCoordinates = chord:origin()
-    targetCoordinates[#targetCoordinates] = 1
+    if ChordSpace.backwards then
+        targetCoordinates[1] = 1
+    else
+        targetCoordinates[#targetCoordinates] = 1
+    end
     local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
     if coordinates == targetCoordinates then
         passes = true
@@ -119,7 +123,7 @@ for k, chordType in pairs(chordTypes) do
         local point = normalRegion[j]
         print_(string.format('Normal region %2d: %s  layer: %6.2f', j, tostring(point), tostring(point:sum())))
     end
-    local permutations = chord:eopt():voicings()
+    local permutations = chord:voicings()
     local insideCount = 0
     for i, permutation in pairs(permutations) do
         etp = permutation
