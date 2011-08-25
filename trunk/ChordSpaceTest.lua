@@ -71,7 +71,7 @@ table.insert(chords, Chord:new{0, 0, -3, 0})
 volume2 = ChordSpace.volumeSquared(chords)
 print_('volume: ' .. tostring(volume2))
 result(math.abs(volume1) == math.abs(volume2), "Volumes of same simplex in space and in subspace must be equal.")
-for i = 2, 12 do
+for i = 3, 12 do
     print_(string.format('CHORDS OF %d VOICES...', i))
     local chord = Chord:new()
     chord:resize(i)
@@ -83,8 +83,10 @@ for i = 2, 12 do
     print_('homogeneous:\n' .. homogeneous:tostring())
     local invariant = ChordSpace.invariantSimplex(homogeneous)
     print_('invariant:\n' .. invariant:tostring())
-    local squared = invariant:transpose():mul(invariant)
-    print_('times transpose:\n' .. squared:tostring())
+    local transposed = invariant:transpose()
+    print_('transposed:\n' .. transposed:tostring())
+    local squared = matrix.mul(transposed, invariant)
+    print_('squared:\n' .. squared:tostring())
     for j = 1, #cyclicalRegion do
         local point = cyclicalRegion[j]
         print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
@@ -123,15 +125,14 @@ for k, chordType in pairs(chordTypes) do
         local point = normalRegion[j]
         print_(string.format('Normal region %2d: %s  layer: %6.2f', j, tostring(point), tostring(point:sum())))
     end
-    local permutations = chord:voicings()
+    local permutations = chord:cyclicalPermutations()
     local insideCount = 0
     for i, permutation in pairs(permutations) do
-        etp = permutation
-        local inside = etp:isInSimplex(normalRegion)
-        if inside then
+        local isInside = permutation:isInSimplex(normalRegion) 
+        if isInside then
             insideCount = insideCount + 1
         end
-        print_(string.format('%5s permutation %d: %s  inside: %s', chordType, i, tostring(etp), tostring(inside)))
+        print_(string.format('%5s permutation %d: %s  inside: %s', chordType, i, tostring(permutation), tostring(isInside)))
     end
     result(insideCount == 1, "One and only one of the cyclical permutations of a chord must be in the normal region: actually inside: " .. tostring(insideCount))
 end
