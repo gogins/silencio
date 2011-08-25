@@ -416,6 +416,13 @@ recast a chord into barycentric coordinates, it is inside the simplex if all
 coordinates are within [0, 1]. I should do this for all the fundamental
 domains.
 
+2011-Aug-24
+
+To be in the OPT simplex, a chord must be either one of the vertexes, or 
+strictly inside? 
+
+Nope.
+
 ]]
 
 local Silencio = require("Silencio")
@@ -667,8 +674,8 @@ function ChordSpace.barycentricCoordinates(chord, simplex)
         end
         local voiceVolume = ChordSpace.volume(voiceSimplex)
         local coordinate = voiceVolume / simplexVolume
-        print_(string.format('coordinate %2d: %6.2f = voice %6.2f / simplex %6.2f', voice, coordinate, voiceVolume, simplexVolume))
         coordinates[voice] = coordinate
+        print_(string.format('coordinate %2d: %6.2f = voice %6.2f / simplex %6.2f', voice, coordinate, voiceVolume, simplexVolume))
     end
     return coordinates
 end
@@ -715,9 +722,9 @@ end
 function Chord:normalRegion(range)
     local simplex = self:cyclicalRegion(range)
     if backwards then
-        simplex[2] = self:maximallyEven()
+        simplex[1] = self:maximallyEven()
     else
-        simplex[#simplex - 1] = self:maximallyEven()
+        simplex[#simplex] = self:maximallyEven()
     end
     return simplex
 end
@@ -729,14 +736,16 @@ end
 
 function Chord:isInSimplex(simplex)
     local coordinates = ChordSpace.barycentricCoordinates(self, simplex)
-    local lowerBound = 0 - (ChordSpace.EPSILON * 100)
-    local upperBound = 1 + (ChordSpace.EPSILON * 100)
+    local lowerBound = 0 --- (ChordSpace.EPSILON * 100)
+    local upperBound = 1 --+ (ChordSpace.EPSILON * 100)
+    local inside = true
     for i = 1, #coordinates do
-        if coordinates[i] < lowerBound or (coordinates[i] > upperBound) then
-            return false, coordinates
+        if (coordinates[i] < lowerBound) or (coordinates[i] > upperBound) then
+            inside = false
+            break
         end
     end
-    return true, coordinates
+    return inside, coordinates
 end
 
 -- Returns the lowest pitch in the chord.
@@ -1668,30 +1677,32 @@ function ChordSpace.invariantSimplex(simplex)
 			simplex[row][column] = (simplex[row][column] - simplex[row][simplex:columns()])
 		end
 	end
-    return simplex
-    --return simplex:subm(1, 1, simplex:rows() - 1, simplex:columns() - 1)
+    --return simplex
+    return simplex:subm(1, 1, simplex:rows() - 1, simplex:columns() - 1)
 end
 
--- Returns the volume of the simplex defined by the chords. For a simplex
+-- Returns the volume of a simplex by chords. For a simplex
 -- of K dimensions, there must be exactly K + 1 non-codimensional chords.
 -- K must be equal to or less than the number of voices in the chord space.
 
-function ChordSpace.volume(chords)
+function ChordSpace.volume(simplex)
+    local K = #chords
     -- Transform each chord into a homogeneous column vector.
     local simplex = ChordSpace.homogeneousSimplex(chords)
 	-- Ensure consistent sign across dimensions by using the
     -- column-subtraction identity and placing the origin in the final column.
-    -- This also reduces the simplex by one dimension.
+    -- This also reduces the simplex by one vertexK.
     local invariant = ChordSpace.invariantSimplex(simplex)
     -- Non-square simplexes are handled by multiplying the simplex by its
     -- transpose on the left to produce a square matrix.
     if invariant:rows() ~= invariant:columns() then
-        local transpose = invariant:transpose()
-        squared = transpose:mul(invariant)
-        volume = math.sqrt((1 / ChordSpace.factorial(#chords))^2 * squared:det())
+        local transposed = invariant:transpose()
+        local squared = matrix.mul(transposed, invariant)
+        local volumeSquared = (1 / ChordSpace.factorial(K))^2 * squared:det()
+        local volume = math.sqrt(volumeSquared)
         return volume, squared
     else
-        volume = (1 / ChordSpace.factorial(#chords))^2 * invariant:det()
+        local volume = (1 / ChordSpace.factorial(K)) * invariant:det()
         return volume, invariant
     end
 end
