@@ -119,7 +119,7 @@ end
 -- in the representative fundamental domain of voicing equivalence.
 local chordTypes = {'CM', 'Cm', 'C7', 'CM7', 'Cm7', 'Co7', 'C9', 'CM9', 'Cm9'}
 for k, chordType in pairs(chordTypes) do
-    local chord = ChordSpace.chordsForNames[chordType]
+    local chord = ChordSpace.chordsForNames[chordType]:et()
     local normalRegion = chord:normalRegion()
     for j = 1, #normalRegion do
         local point = normalRegion[j]
@@ -128,7 +128,21 @@ for k, chordType in pairs(chordTypes) do
     local permutations = chord:cyclicalPermutations()
     local insideCount = 0
     for i, permutation in pairs(permutations) do
-        local isInside = permutation:isInSimplex(normalRegion) 
+        permutation = permutation
+        chord = permutation
+        local maximallyEven = chord:maximallyEven()
+        print_(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
+        local normalRegion = chord:normalRegion(ChordSpace.OCTAVE)
+        print_('normal region:\n' .. matrix:new(normalRegion):tostring())
+        local homogeneous = ChordSpace.homogeneousSimplex(normalRegion)
+        print_('homogeneous:\n' .. homogeneous:tostring())
+        local invariant = ChordSpace.invariantSimplex(homogeneous)
+        print_('invariant:\n' .. invariant:tostring())
+        local transposed = invariant:transpose()
+        print_('transposed:\n' .. transposed:tostring())
+        local squared = matrix.mul(transposed, invariant)
+        print_('squared:\n' .. squared:tostring())
+        local isInside = permutation:isInSimplex(normalRegion)
         if isInside then
             insideCount = insideCount + 1
         end
