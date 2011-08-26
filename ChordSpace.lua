@@ -708,16 +708,21 @@ function Chord:cyclicalRegion(range)
 end
 
 -- Returns a simplex defining that portion of the cyclical hyperplane at the
--- base of the orbifold that contains all OPT chords. This is done by pulling
--- back vertices of the simplex that exceed the layer to the maximally even
--- chord. All but 2 vertices must be so pulled back.
+-- base of the orbifold which contains all OPT chords. This is done by 
+-- not replacing, but "pushing in" all but 2 vertices with the maximally even 
+-- chord. The "pushing in" creates new vertices at the half-octave points.
+-- This way, we get the dart not the isoceles.
 
 function Chord:normalRegion(range)
     local simplex = self:cyclicalRegion(range)
     if backwards then
-        simplex[1] = self:maximallyEven()
+        for voice = 1, #simplex - 2 do
+            simplex[voice] = self:maximallyEven()
+        end
     else
-        simplex[#simplex] = self:maximallyEven()
+        for voice = #simplex, 2, -1 do
+            simplex[voice] = self:maximallyEven()
+        end
     end
     return simplex
 end
