@@ -77,9 +77,9 @@ for i = 3, 12 do
     chord:resize(i)
     local maximallyEven = chord:maximallyEven()
     print_(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
-    local cyclicalRegion = chord:cyclicalRegion(ChordSpace.OCTAVE)
-    print_('cyclical region:\n' .. matrix:new(cyclicalRegion):tostring())
-    local homogeneous = ChordSpace.homogeneousSimplex(cyclicalRegion)
+    local cyclicalSimplex = chord:cyclicalSimplex(ChordSpace.OCTAVE)
+    print_('cyclical region:\n' .. matrix:new(cyclicalSimplex):tostring())
+    local homogeneous = ChordSpace.homogeneousSimplex(cyclicalSimplex)
     print_('homogeneous:\n' .. homogeneous:tostring())
     local invariant = ChordSpace.invariantSimplex(homogeneous)
     print_('invariant:\n' .. invariant:tostring())
@@ -87,14 +87,14 @@ for i = 3, 12 do
     print_('transposed:\n' .. transposed:tostring())
     local squared = matrix.mul(transposed, invariant)
     print_('squared:\n' .. squared:tostring())
-    for j = 1, #cyclicalRegion do
-        local point = cyclicalRegion[j]
-        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalRegion)))
+    for j = 1, #cyclicalSimplex do
+        local point = cyclicalSimplex[j]
+        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalSimplex)))
     end
-    local normalRegion = chord:normalRegion(ChordSpace.OCTAVE)
-    for j = 1, #normalRegion do
-        local point = normalRegion[j]
-        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, normalRegion)))
+    local epSimplex = chord:epSimplex(ChordSpace.OCTAVE)
+    for j = 1, #epSimplex do
+        local point = epSimplex[j]
+        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, epSimplex)))
     end
     local targetCoordinates = chord:origin()
     if ChordSpace.backwards then
@@ -102,7 +102,7 @@ for i = 3, 12 do
     else
         targetCoordinates[#targetCoordinates] = 1
     end
-    local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalRegion)
+    local coordinates = ChordSpace.barycentricCoordinates(chord, cyclicalSimplex)
     if coordinates == targetCoordinates then
         passes = true
     else
@@ -111,7 +111,7 @@ for i = 3, 12 do
     result(passes, string.format('Barycentric coordinates of %s are %s must be %s.', tostring(chord), tostring(coordinates), tostring(targetCoordinates)))
     local outsideChord = chord:clone()
     outsideChord[1] = -100
-    local coordinates = ChordSpace.barycentricCoordinates(outsideChord, cyclicalRegion)
+    local coordinates = ChordSpace.barycentricCoordinates(outsideChord, cyclicalSimplex)
     result(true, string.format('Barycentric coordinates of %s are %s.', tostring(outsideChord), tostring(coordinates)))
 end
 -- One and only one of the cyclical permutations of a chord must be in the normal region.
@@ -120,9 +120,9 @@ end
 local chordTypes = {'CM', 'Cm', 'C7', 'CM7', 'Cm7', 'Co7', 'C9', 'CM9', 'Cm9'}
 for k, chordType in pairs(chordTypes) do
     local chord = ChordSpace.chordsForNames[chordType]:et()
-    local normalRegion = chord:normalRegion()
-    for j = 1, #normalRegion do
-        local point = normalRegion[j]
+    local epSimplex = chord:epSimplex()
+    for j = 1, #epSimplex do
+        local point = epSimplex[j]
         print_(string.format('Normal region %2d: %s  layer: %6.2f', j, tostring(point), tostring(point:sum())))
     end
     local permutations = chord:cyclicalPermutations()
@@ -132,9 +132,9 @@ for k, chordType in pairs(chordTypes) do
         chord = permutation
         local maximallyEven = chord:maximallyEven()
         print_(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
-        local normalRegion = chord:normalRegion(ChordSpace.OCTAVE)
-        print_('normal region:\n' .. matrix:new(normalRegion):tostring())
-        local homogeneous = ChordSpace.homogeneousSimplex(normalRegion)
+        local epSimplex = chord:epSimplex(ChordSpace.OCTAVE)
+        print_('normal region:\n' .. matrix:new(epSimplex):tostring())
+        local homogeneous = ChordSpace.homogeneousSimplex(epSimplex)
         print_('homogeneous:\n' .. homogeneous:tostring())
         local invariant = ChordSpace.invariantSimplex(homogeneous)
         print_('invariant:\n' .. invariant:tostring())
@@ -142,7 +142,7 @@ for k, chordType in pairs(chordTypes) do
         print_('transposed:\n' .. transposed:tostring())
         local squared = matrix.mul(transposed, invariant)
         print_('squared:\n' .. squared:tostring())
-        local isInside = permutation:isInSimplex(normalRegion)
+        local isInside = permutation:isInSimplex(epSimplex)
         if isInside then
             insideCount = insideCount + 1
         end
