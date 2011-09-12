@@ -12,7 +12,7 @@ License.
 
 This package, part of Silencio, implements a geometric approach to some common
 operations on chords in neo-Riemannian music theory for use in score
-generating software:
+generating procedures:
 
 --  Identifying whether a chord belongs to some equivalence class of music
     theory, or moving a chord inside the representative fundamental domain of
@@ -669,17 +669,20 @@ function Chord:contains(pitch)
 end
 
 -- For any dimension, returns a pair of edges
--- that bisect v1-v2. FIXME
+-- that bisect the edge from v1 to v2.
 
 function bisectEdge(v1, v2)
-    local vm1 = matrix:new(v1)
-    local vm2 = matrix:new(v2)
-    local vm3 = matrix:new(v3)
+    local edge = {v1, v2}
+    table.sort(edge)
+    local vm1 = matrix:new(edge[1])
+    local vm3 = matrix:new(vm1)
+    local vm2 = matrix:new(edge[2])
     for i = 1, #vm1 do
-        vm3[i] = vm2[i] - vm1[i]
+        vm3[i] = vm1[i] + (vm2[i] - vm1[i]) / 2
     end
-    return {vm1, vm2, vm3}
+    return {vm1, vm3, vm2}
 end
+
 -- Returns the barycentric coordinates of a chord with respect to a simplex.
 -- If no voice of the coordinates is less than 0, the chord lies within the
 -- simplex.
@@ -1544,14 +1547,14 @@ function Chord:iseRPI(range)
 end
 
 -- Sends the chord to its equivalent within the representative fundamental
--- domain of octave, order, and inversional equivalence.
+-- domain of octave, permutational, and inversional equivalence.
 
 function Chord:eOPI()
     return self:eRPI(ChordSpace.OCTAVE)
 end
 
 -- Returns whether the chord is within the representative fundamental domain
--- of octave, order, and inversional equivalence.
+-- of octave, permutational, and inversional equivalence.
 
 function Chord:iseOPITymoczko()
     for voice = 1, #self - 1 do
@@ -2143,9 +2146,9 @@ function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidPa
     return closest
 end
 
--- Returns a label with information for a chord.
+-- Returns a information with information for a chord.
 
-function Chord:label()
+function Chord:information()
     local eOP = self:eOP()
     local chordName = ChordSpace.namesForChords[eOP:__hash()]
     if chordName == nil then
@@ -2723,6 +2726,6 @@ end
 table.sort(ChordSpace.chordsForNames)
 table.sort(ChordSpace.namesForChords)
 
-Chord:new{4,7,11}:label()
+Chord:new{4,7,11}:information()
 
 return ChordSpace
