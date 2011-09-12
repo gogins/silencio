@@ -18,7 +18,7 @@ operations on chords in neo-Riemannian music theory for use in score
 generating procedures:
 
 --  Identifying whether a chord belongs to some equivalence class of music
-    theory, or moving a chord inside the representative fundamental domain of
+    theory, or sending a chord inside the representative fundamental domain of
     some equivalence class.
 
 --  Causing chord progressions to move strictly within an orbifold that
@@ -197,6 +197,31 @@ arises from a voice-leading automorphism in the Riemannian group.
 
 TODO: Implement various scales found in 20th and 21st century harmony
 along with 'splitting' and 'merging' operations.
+
+LOG 
+
+2011-Sep-07
+
+Redoing this package from scratch using GVLS formulas.
+
+2011-Sep-09
+
+There are definite problems with side effects in these tests. The first test 
+passes, but not when in series with another test.
+
+Is there a bug in "~=" for Lua and/or LuaJIT?
+
+2011-Sep-10
+
+There is definitely one or more bugs in LuaJIT vs. Lua. Tests run to 4 or 5 
+voices in Lua that do not work in LuaJIT. There appear to be false temporaries
+or something in LuaJIT.
+
+2011-Sep-11
+
+I am going to redo the equivalence formulas in sets: vanilla GVLS, GVLS with 
+my modifies, and mine. This seems like the only way of sorting out the mess.
+
 ]]
 end
 
@@ -319,7 +344,7 @@ Chord = {}
 -- Returns a new chord object with no voices.
 
 function Chord:new(o)
-    local o = o or {duration = {}, channel = {}, velocity = {}, pan = {}}
+    o = o or {duration = {}, channel = {}, velocity = {}, pan = {}}
     if not o.duration then
         o.duration = {}
     end
@@ -418,18 +443,34 @@ end
 -- for ==, for the pitches in this only.
 
 function Chord:__eq(other)
-    if #self ~= #other then
+    if not (#self == #other) then
         return false
     end
     for voice = 1, #self do
-        if self[voice] ~= other[voice] then
+        if not (self[voice] == other[voice]) then
             return false
         end
     end
     return true
 end
 
--- THis hash function is used to give chords value semantics for sets.
+function Chord:__eqlog(other)
+    print(string.format('#self: %d  #other: %d', #self, #other))
+    if not (#self == #other) then
+        return false
+    end
+    for voice = 1, #self do
+        print(string.format('%3d: %9.4f, %9.4f', voice, self[voice], other[voice]))
+        if not (self[voice] == other[voice]) then
+            print('not equal')
+            return false
+        end
+    end
+    print('equal')
+    return true
+end
+
+-- This hash function is used to give chords value semantics for sets.
 
 function Chord:__hash()
     local buffer = ''
@@ -495,7 +536,7 @@ function Chord:minimumInterval()
     local minimumInterval = math.abs(self[1] - self[2])
     for v1 = 1, #self do
         for v2 = 1, #self do
-            if v1 ~= v2 then
+            if t (v1 == v2) then
                 local interval = math.abs(self[v1] - self[v2])
                 if interval < minimumInterval then
                     minimumInterval = interval
@@ -521,54 +562,54 @@ function Chord:max()
     return highestPitch, highestVoice
 end
 
--- Returns the range of the pitches in the chord.
+-- Returns the maximum interval in the chord.
 
-function Chord:range()
+function Chord:maximumInterval()
     return self:max() - self:min()
 end
 
 -- Returns a value copy of the chord.
 
 function Chord:clone()
-    local chord = Chord:new()
+    local clone_ = Chord:new()
     for voice, pitch in ipairs(self) do
-        chord[voice] = pitch
+        clone_[voice] = pitch
     end
     for voice, value in ipairs(self.duration) do
-        chord.duration[voice] = value
+        clone_.duration[voice] = value
     end
     for voice, value in ipairs(self.channel) do
-        chord.channel[voice] = value
+        clone_.channel[voice] = value
     end
     for voice, value in ipairs(self.velocity) do
-        chord.velocity[voice] = value
+        clone_.velocity[voice] = value
     end
     for voice, value in ipairs(self.pan) do
-        chord.pan[voice] = value
+        clone_.pan[voice] = value
     end
-    return chord
+    return clone_
 end
 
 -- Returns the origin of the chord's space.
 
 function Chord:origin()
-    local chord = self:clone()
-    for voice = 1, #chord do
-        chord[voice] = 0
+    local clone_ = self:clone()
+    for voice = 1, #clone_ do
+        clone_[voice] = 0
     end
-    return chord
+    return clone_
 end
 
 -- Returns the maximally even chord in the chord's space,
 -- e.g. the augmented triad for 3 dimensions.
 
 function Chord:maximallyEven()
-    local chord = self:clone()
-    local g = ChordSpace.OCTAVE / #self
-    for i = 1, #self do
-        chord[i] = (i - 1) * g
+    local clone_ = self:clone()
+    local g = ChordSpace.OCTAVE / #clone_
+    for i = 1, #clone_ do
+        clone_[i] = (i - 1) * g
     end
-    return chord
+    return clone_
 end
 
 -- Returns the sum of the pitches in the chord.
@@ -585,11 +626,11 @@ end
 -- NOTE: Does NOT return the result under any equivalence class.
 
 function Chord:T(interval)
-    local chord = self:clone()
-    for voice = 1, #self do
-        chord[voice] = T(chord[voice], interval)
+    local clone_ = self:clone()
+    for voice = 1, #clone_ do
+        clone_[voice] = T(clone_[voice], interval)
     end
-    return chord
+    return clone_
 end
 
 -- Inverts the chord by another chord that is on the unison diagonal, by
@@ -599,7 +640,7 @@ end
 function Chord:I(center)
     center = center or 0
     local inverse = self:clone()
-    for voice = 1, #self do
+    for voice = 1, #inverse do
         inverse[voice] = I(self[voice], center)
     end
     return inverse
@@ -623,7 +664,7 @@ end
 
 function Chord:isepcs()
     for voice = 1, #chord do
-        if self[voice] ~= ChordSpace.epc(chord[voice]) then
+        if not (self[voice] == ChordSpace.epc(chord[voice])) then
             return false
         end
     end
@@ -646,7 +687,7 @@ end
 
 function Chord:iset()
     local et = self:et()
-    if et ~= self then
+    if not (et == self) then
         return false
     end
     return true
@@ -656,23 +697,41 @@ end
 -- transposition to 0.
 
 function Chord:et()
-    return self:T(-self:min())
+    local min_ = self:min()
+    return self:T(-min_)
 end
 
 -- Returns whether the chord is within the representative fundamental domain 
 -- of the indicated range equivalence.
 
 function Chord:iseR(range)
-    local max_ = self:max()
-    local min_ = self:min()
-    if not (max_ <= min_ + range) then
-        return false
+    local gvls = true
+    local gvls_modified = false
+    local mkg = false
+    if gvls then
+        local max_ = self:max()
+        local min_ = self:min()
+        if not (max_ <= (min_ + range)) then
+            return false
+        end
+        local layer_ = self:layer()
+        if not ((0 <= layer_) and (layer_ <= range)) then
+            return false
+        end
+        return true
     end
-    local layer_ = self:layer()
-    if not (0 <= layer_ and layer_ <= range) then
-        return false
+    if gvls_modified then
+        local max_ = self:max()
+        local min_ = self:min()
+        if not (max_ < (min_ + range)) then
+            return false
+        end
+        local layer_ = self:layer()
+        if not ((0 <= layer_) and (layer_ <= range)) then
+            return false
+        end
+        return true
     end
-    return true
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -694,17 +753,17 @@ function Chord:eR(range)
     -- but no voice can be > range.
     -- First, move all pitches inside the interval [0, OCTAVE),
     -- which is not the same as the fundamental domain.
-    local epcs = self:epcs()
+    chord = self:epcs()
     -- Then, reflect voices that are outside of the fundamental domain
     -- back into it, which will revoice the chord, i.e.
     -- the sum of pitches is in [0, OCTAVE].
-    while epcs:layer() > range do
-        local maximumPitch, maximumVoice = epcs:max()
+    while chord:layer() > range do
+        local maximumPitch, maximumVoice = chord:max()
         -- Because no voice is above the range,
         -- any voices that need to be revoiced will now be negative.
-        epcs[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
+        chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
     end
-    return epcs
+    return chord
 end
 
 -- Returns the equivalent of the chord within the representative fundamental 
@@ -730,9 +789,9 @@ end
 -- domain of permutational equivalence.
 
 function Chord:eP()
-    chord = self:clone()
-    table.sort(chord)
-    return chord
+    clone_ = self:clone()
+    table.sort(clone_)
+    return clone_
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -740,7 +799,7 @@ end
 
 function Chord:iseT()
     local layer_ = self:layer()
-    if layer_ ~= 0 then
+    if not (layer_ == 0) then
         return false
     end
     return true
@@ -797,11 +856,11 @@ function Chord:iseRP(range)
             return false
         end
     end
-    if not (self[#self] <= self[1] + range) then
+    if not (self[#self] <= (self[1] + range)) then
         return false
     end
     local layer_ = self:layer()
-    if not (0 <= layer_ and layer_ <= range) then
+    if not ((0 <= layer_) and (layer_ <= range)) then
         return false
     end
     return true
@@ -834,21 +893,21 @@ end
 
 function Chord:cycle(stride)
     stride = stride or 1
-    local chord = self:clone()
+    local clone_ = self:clone()
     if stride < 0 then
         for i = 1, stride do
-            local tail = table.remove(chord)
-            table.insert(chord, 1, tail)
+            local tail = table.remove(clone_)
+            table.insert(clone_, 1, tail)
         end
         return chord
     end
     if stride > 0 then
         for i = 1, math.abs(stride) do
-            local head = table.remove(chord, 1)
-            table.insert(chord, head)
+            local head = table.remove(clone_, 1)
+            table.insert(clone_, head)
         end
     end
-    return chord
+    return clone_
 end
 
 function Chord:permutations()
@@ -867,6 +926,7 @@ end
 
 function Chord:iseV()
     local eV = self:eV()
+    --print(string.format('chord: %s  eV: %s', tostring(self), tostring(eV)))
     if not (self == eV) then
         return false
     end
@@ -874,27 +934,20 @@ function Chord:iseV()
 end
 
 -- Returns the equivalent of the chord within the representative fundamental 
--- domain of voicing equivalence. I.e., returns the first permutation of the 
--- chord that has the maximum  wraparound interval, that interval, and the 
--- index of the permutation.
+-- domain of voicing equivalence. 
 
 function Chord:eV()
-    local wraparounds = {}
-    local permutations = self:permutations()
-    local permutation = permutations[1]
-    local maximumWraparound_ = permutation[1] + ChordSpace.OCTAVE - permutation[#permutation]
-    wraparounds[1] = maximumWraparound_
-    for i = 2, #permutations do
-        permutation = permutations[i]
-        local wraparound = permutation[1] + ChordSpace.OCTAVE - permutation[#permutation]
-        wraparounds[i] = wraparound
-        if wraparound > maximumWraparound_ then
-            maximumWraparound_ = wraparound
+    for index, voicing in ipairs(self:voicings()) do
+        local wraparound = voicing[1] + ChordSpace.OCTAVE - voicing[#voicing]
+        local iseV_ = true
+        for voice = 1, #voicing - 1 do
+            local inner = voicing[voice + 1] - voicing[voice]
+            if inner > wraparound then
+                iseV_ = false
+            end
         end
-    end
-    for i = 1, #wraparounds do
-        if wraparounds[i] == maximumWraparound_ then
-            return permutations[i], maximumWraparound, i
+        if iseV_ then
+            return voicing
         end
     end
 end
@@ -904,7 +957,8 @@ end
 
 function Chord:iseRPT(range)
     -- GVLS: failed to test for the origin.
-    if self:origin() == self then
+    local origin_= self:origin()
+    if origin_ == self then
         return true
     end
     -- GVLS: Failed to test for (range) and permutational equivalence.
@@ -980,17 +1034,14 @@ end
 -- as set-class type, or chord type.
 
 function Chord:eRPT(range)
-    local voicings_ = self:eRP(range):eT():voicings()
-    for index, voicing in ipairs(voicings_) do
-        local eT = voicing:eT()
-        ----[[
-        print('chord:   ' .. tostring(self))
-        print(' voicing:' .. tostring(voicing))
-        print(' eT :    ' .. tostring(eT))
-        print(' iseRPT: ' .. tostring(eT:iseRPT(range)))
-        --]]
-        if eT:iseRPT(range) then
-            return eT
+    if self:iseRPT(range) then
+        return self:clone()
+    end
+    local permutations_ = self:eRP(range):permutations()
+    for index, permutation in ipairs(permutations_) do
+        et = permutation:et()
+        if et:iseV() then
+            return et:eT():eP()
         end
     end
     print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
@@ -1017,7 +1068,11 @@ function Chord:iseRPI(range)
     if not ((0 <= layer_) and (layer_ <= range)) then
         return false
     end
-    if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+    -- GVLS: tests only the outer intervals:
+    --if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+    --    return false
+    --end
+    if not self:iseI() then
         return false
     end
     return true
@@ -1034,11 +1089,10 @@ end
 -- domain of range, permutational, and inversional equivalence.
 
 function Chord:eRPI(range)
-    local chord = self:clone()
-    if chord:iseRPI(range) then
-        return chord
+    if self:iseRPI(range) then
+        return self:clone()
     end
-    return chord:I():eRP(range)
+    return self:I():eRP(range)
 end
 
 -- Returns the equivalent of the chord within the representative fundamental 
@@ -1052,21 +1106,35 @@ end
 -- of range, permutational, transpositional, and inversional equivalence.
 
 function Chord:iseRPTI(range)
-    if not (self[#self] <= (self[1] + range)) then
+    -- GVLS: failed to test for the origin.
+    local origin_= self:origin()
+    if origin_ == self then
+        return true
+    end
+    -- GVLS: Failed to test for (range) and permutational equivalence.
+    if not self:iseRP(range) then
+        return false
+    end
+    -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
+    if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
         return false
     end
     local layer_ = self:layer()
-    if not (layer_ == 0) then
+    -- GVLS: if not (layer_ == 0) then
+    if not ChordSpace.eq_epsilon(layer_, 0) then
         return false
+    end
+    if #self <= 2 then
+        return true
     end
     local wraparound = self[1] + range - self[#self]
     for voice = 1, #self - 1  do
         local inner = self[voice + 1] - self[voice]
-        if not (wraparound <= inner) then
+        if not (ChordSpace.lte_epsilon(wraparound, inner)) then
             return false
         end
     end
-    if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
+    if not self:iseI() then
         return false
     end
     return true
@@ -1084,7 +1152,7 @@ end
 -- equivalence.
 
 function Chord:eRPTI(range)
-   local rpt = self:eRPT(range)
+    local rpt = self:eRPT(range)
     if rpt:iseRPTI(range) then
         return rpt
     end
@@ -1102,11 +1170,11 @@ end
 -- Returns a formatted string with information about the chord.
 
 function Chord:information()
-    local t = self:eT():et()
-    local opt = self:eOPT():et()
-    local eOP = self:eOP()
+    local et = self:eT():et()
+    local eopt = self:eOPT():et()
     local epcs = self:epcs():eP()
-    local opti = self:eOPTI():et()
+    local eopti = self:eOPTI():et()
+    local eOP = self:eOP()
     local chordName = ChordSpace.namesForChords[eOP:__hash()]
     if chordName == nil then
         chordName = ''
@@ -1131,15 +1199,15 @@ tostring(self:I()),
 tostring(self:eO()),    tostring(self:iseO()),
 tostring(self:eP()),    tostring(self:iseP()),
 tostring(self:eT()),    tostring(self:iseT()),
-tostring(t),
+tostring(et),
 tostring(self:eI()),    tostring(self:iseI()),
 tostring(self:eOP()),   tostring(self:iseOP()), 
 tostring(epcs),
 tostring(self:eOPT()),  tostring(self:iseOPT()),
-tostring(opt),
+tostring(eopt),
 tostring(self:eOPI()),  tostring(self:iseOPI()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
-tostring(opti),
+tostring(eopti),
 self:layer())
 end
 
@@ -1175,11 +1243,11 @@ function ChordSpace.setInsert(setA, x)
 end
 
 function ChordSpace.sortedEquals(sortedA, sortedB)
-    if #sortedA ~= #sortedB then
+    if not (#sortedA == #sortedB) then
         return false
     end
     for i = 1, #sortedA do
-        if sortedA[i] ~= sortedB[i] then
+        if not (sortedA[i] == sortedB[i]) then
             return false
         end
     end
@@ -1335,46 +1403,30 @@ identifying (iseE) and generating (eE) each of the equivalence classes (E)
 O, P, T, I, OP, OPT, OPI, and OPTI with respect to their representative or
 "normal" fundamental domains.
 
-Consistency is tested as follows for a set of chords in R for 2 through 12
-voices:
-
-The intersection of iseE(R) and not iseE(R) is empty.
-The union of iseE(R) and not iseE(R) is R.
-iseE(R) is eE(R).
-not iseE(R) is not eE(R).
-The union of OPI and I(OPI) is OP with all inversions in the origin.
-The union of OPTI and I(OPTI) is OPT with all inversions in the origin.
+If the formulas for the fundamental domains identify or produce duplicates, 
+then the duplicates must be removed or accounted for in the tests. This 
+could happen e.g. if Chord:iseE() identifies more than one chord as the 
+equivalent, but Chord:eE() sends all equivalent chords to one element of that 
+class.
 
 In addition, 3-dimensional graphics of iseE(R) and eE(R) for trichords must 
 look correct for OP, OPI, OPT, and OPTI.
 
-If the formulas for the fundamental domains identify or produce duplicates, 
-then the duplicates must be removed or accounted for in the tests. Is it 
-possible to do this by filtering the set by OP in [0, 12) not the [0, 12] 
-used to generate the set?
-
 ]])
 
-local chord = Chord:new{4,7,11}
+local chord = Chord:new{4, 7, 11}
+local chord = Chord:new{0, 4, 7, 10}
 for index, permutation in ipairs(chord:permutations()) do
     print(string.format('permutation: %s', tostring(permutation)))
 end
 for index, voicing in ipairs(chord:voicings()) do
-    print(string.format('voicing: %s', tostring(voicing)))
+    local et = voicing:et()
+    print(string.format('voicing: %s  et: %s  span: %9.4f  iseV: %s', tostring(voicing), tostring(et), et:maximumInterval(), tostring(et:iseV())))
 end
 print(chord:information())
 
-local chord = Chord:new{0, 4, 7}
-for index, permutation in ipairs(chord:permutations()) do
-    print(string.format('permutation: %s', tostring(permutation)))
-end
-for index, voicing in ipairs(chord:voicings()) do
-    print(string.format('voicing: %s', tostring(voicing)))
-end
-print(chord:information())
-os.exit()
--- Returns a chord with the specified number of voices all set to first,
--- useful as an iterator.
+-- Returns a chord with the specified number of voices all set to a first
+-- pitch, useful as an iterator.
 
 function ChordSpace.iterator(voices, first)
     local odometer = Chord:new()
@@ -1446,74 +1498,93 @@ end
 
 local range = ChordSpace.OCTAVE + 1
 
-local function testChords(V)
-    for voices = 2, 12 do
-        local chord = ChordSpace.iterator(voices, -range)
-        while ChordSpace.next(chord, -range, range, 1) do
-            --print(string.format('Chord %9d:\n%s\n', index, chord:information()))
-            local eO = chord:eO()
-            if chord:iseO() then
-                if eO ~= chord then
-                    fail('chord:iseO() and (chord:eO() == chord}' .. '\n' .. chord:information())
-                end
-            else
-                if eO == chord then
-                    fail('(not chord:iseO()) and (chord:eO() ~= chord)' .. '\n' .. chord:information())
-                end
-            end
-            if chord:iseP() then
-                if chord:eP() ~= chord then
-                    fail('chord:iseP() and (chord:eP() == chord}' .. '\n' .. chord:information())
-                end
-            else
-                if chord:eP() == chord then
-                    fail('(not chord:iseP()) and (chord:eP() ~= chord)' .. '\n' .. chord:information())
-                end
-            end
-            if chord:iseT() then
-                if chord:eT() ~= chord then
-                    fail('chord:iseT() and (chord:eT() == chord}' .. '\n' .. chord:information())
-                end
-            else
-                if chord:eT() == chord then
-                    fail('(not chord:iseT()) and (chord:eT() ~= chord)' .. '\n' .. chord:information())
-                end
-            end
-            if chord:iseI() then
-                if chord:eI() ~= chord then
-                    fail('chord:iseI() and (chord:eI() == chord}' .. '\n' .. chord:information())
-                end
-            else
-                if chord:eI() == chord then
-                    fail('(not chord:iseI()) and (chord:eI() ~= chord)' .. '\n' .. chord:information())
-                end
-            end
-            if chord:iseOP() then
-                if chord:eOP() ~= chord then
-                    fail('chord:iseOP() and (chord:eOP() == chord}' .. '\n' .. chord:information())
-                end
-            else
-                if chord:eOP() == chord then
-                    fail('(not chord:iseOP()) and (chord:eOP() ~= chord)' .. '\n' .. chord:information())
-                end
-            end
-            local eOPT = chord:eOPT()
-            if chord:iseOPT() then
-                if eOPT ~= chord then
-                    fail('chord:iseOPT() and (chord:eOPT() == chord}' .. '\n' .. chord:information() .. '\n' .. eOPT:information())
-                end
-            else
-                if eOPT == chord then
-                    fail('(not chord:iseOPT()) and (chord:eOPT() ~= chord)' .. '\n' .. chord:information())
-                end
-            end
+--[[
+Consistency is tested as follows for a set of chords in R for 2 through 12
+voices, for each equivalence class whether simple (O) or compound (OP):
+
+chord:eE():iseE() == true
+-- Skip if duplicate iseE(): (chord:iseE() == true) => (chord:eE() == chord) 
+not (chord:iseE() == true) => not (chord:eE() == chord)
+(chord:eE() == chord) => (chord:iseE() == true)
+not (chord:eE() == chord) => not (chord:iseE() == true)
+
+Additionally, for the compound equivalence classes, chord:isE() on the l.h.s.
+will imply AND of each chord:iseE() for the constituent simple equivalent 
+classes on the r.h.s, and the same with the sides switched.
+
+iseOP <=> iseO and iseP
+iseOPT <=> iseOP and iseO and iseP and iseT and iseV
+iseOPI <=> iseOP and iseO and iseP and iseI
+iseOPTI <=> iseOPT and iseOPI and iseOP and iseO and iseP and iseT and iseI and iseV
+]]
+function testEquivalence(equivalence, chord, iseE, eE)
+    local equivalent = eE(chord)
+    if (iseE(equivalent) == true) then
+    else
+        fail(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+    end
+    if (iseE(chord) == true) then
+        if (equivalent == chord) then
+        else
+            fail(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
+    if not (iseE(chord) == true) then
+        if not (equivalent == chord) then
+        else
+            fail(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
+    if (equivalent == chord) then
+        if (iseE(chord) == true) then
+        else
+            fail(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
+    if not (equivalent == chord) then
+        if not (iseE(chord) == true) then
+        else
+            fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
 end
 
-for V = 2, 12 do
-    print(string.format('\nTESTING CHORDS OF %2d VOICES...\n', V))
-    testChords(V)
+function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
+    if (iseE(chord) == true) then
+        for index, otherIseE in ipairs(otherIseEs) do
+            if (otherIseE(chord) == true) then
+            else
+                fail(string.format('%s: chord:ise%s => %s', equivalence, equivalence, otherIseE))
+            end
+        end
+    end
+    if (iseE(chord) == false) then
+    end
+    for index, otherIseE in ipairs(otherIseEs) do
+    end
+    for index, otherIseE in ipairs(otherIseEs) do
+    end
+end
+
+
+local function testEquivalences(voices)
+    local chord = ChordSpace.iterator(voices, -range)
+    while ChordSpace.next(chord, -range, range, 1) do
+        testEquivalence('O',    chord, Chord.iseO,    chord.eO)
+        testEquivalence('P',    chord, Chord.iseP,    chord.eP)
+        testEquivalence('T',    chord, Chord.iseT,    chord.eT)
+        testEquivalence('I',    chord, Chord.iseI,    chord.eI)
+        testEquivalence('V',    chord, Chord.iseV,    chord.eV)
+        testEquivalence('OP',   chord, Chord.iseOP,   chord.eOP)
+        testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
+        testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
+        testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
+    end
+end
+
+for voices = 2, 12 do
+    print(string.format('\nTESTING CHORDS OF %2d VOICES...\n', voices))
+    testEquivalences(voices)
 end
 
 end
