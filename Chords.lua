@@ -799,7 +799,7 @@ end
 
 function Chord:iseT()
     local layer_ = self:layer()
-    if not (layer_ == 0) then
+    if not ChordSpace.eq_epsilon(layer_, 0) then
         return false
     end
     return true
@@ -998,6 +998,8 @@ end
 -- i.e. revoiced by cyclically permuting the chord and
 -- adding (or subtracting) an octave to the highest (or lowest) voice.
 -- The revoicing will move the chord up or down in pitch.
+-- A positive direction is the same as a musician's first inversion,
+-- second inversion, etc.
 
 function Chord:v(direction)
     direction = direction or 1
@@ -1579,6 +1581,7 @@ local function testEquivalences(voices)
         testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
         testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
         testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
+        testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
     end
 end
 
