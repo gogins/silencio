@@ -18,9 +18,9 @@ operations on chords in neo-Riemannian music theory for use in score
 generating procedures:
 
 --  Identifying whether a chord belongs to some equivalence class of music
-    theory, or sending a chord to its equivalent within a representative 
-    fundamental domain of some equivalence class. The equivalence classes are 
-    octave (O), permutational (P), transpositional, (T), inversional (I), and 
+    theory, or sending a chord to its equivalent within a representative
+    fundamental domain of some equivalence class. The equivalence classes are
+    octave (O), permutational (P), transpositional, (T), inversional (I), and
     their compounds OP, OPT (set-class or chord type), and OPTI (prime form).
 
 --  Causing chord progressions to move strictly within an orbifold that
@@ -85,8 +85,8 @@ unordered sequences, out of all possible orderings, consists of all sequences
 in their ordinary sorted order. It is important, in the following, to identify
 representative fundamental domains that combine properly, e.g. such that the
 representative fundamental domain of OP / the representative fundamental
-domain of PI equals the representative fundamental domain of OPI. And this in 
-turn may require accounting for duplicate elements of the representative 
+domain of PI equals the representative fundamental domain of OPI. And this in
+turn may require accounting for duplicate elements of the representative
 fundamental domain caused by reflections or singularities in the orbifold.
 
 C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}. _Not_ assuming
@@ -97,7 +97,7 @@ C       Cardinality equivalence, e.g. {1, 1, 2} == {1, 2}. _Not_ assuming
         not as {60}, but as {60, 60, ..., 60}.
 
 O       Octave equivalence. The fundamental domain is defined by the pitches
-        in a chord spanning the range of an octave or less, and summing to 
+        in a chord spanning the range of an octave or less, and summing to
         an octave or less.
 
 P       Permutational equivalence. The fundamental domain is defined by a
@@ -200,7 +200,7 @@ arises from a voice-leading automorphism in the Riemannian group.
 TODO: Implement various scales found in 20th and 21st century harmony
 along with 'splitting' and 'merging' operations.
 
-LOG 
+LOG
 
 2011-Sep-07
 
@@ -208,20 +208,20 @@ Redoing this package from scratch using GVLS formulas.
 
 2011-Sep-09
 
-There are definite problems with side effects in these tests. The first test 
+There are definite problems with side effects in these tests. The first test
 passes, but not when in series with another test.
 
 Is there a bug in "~=" for Lua and/or LuaJIT?
 
 2011-Sep-10
 
-There is definitely one or more bugs in LuaJIT vs. Lua. Tests run to 4 or 5 
+There is definitely one or more bugs in LuaJIT vs. Lua. Tests run to 4 or 5
 voices in Lua that do not work in LuaJIT. There appear to be false temporaries
 or something in LuaJIT.
 
 2011-Sep-11
 
-I am going to redo the equivalence formulas in sets: vanilla GVLS, GVLS with 
+I am going to redo the equivalence formulas in sets: vanilla GVLS, GVLS with
 my modifies, and mine. This seems like the only way of sorting out the mess.
 
 ]]
@@ -661,7 +661,7 @@ function ChordSpace.epc(pitch)
     return pitch
 end
 
--- Returns whether the chord is within the fundamental domain of 
+-- Returns whether the chord is within the fundamental domain of
 -- pitch-class equivalence, i.e. is a pitch-class set.
 
 function Chord:isepcs()
@@ -684,7 +684,7 @@ function Chord:epcs()
     return chord
 end
 
--- Returns whether the chord is within the fundamental domain of 
+-- Returns whether the chord is within the fundamental domain of
 -- transposition to 0.
 
 function Chord:iset()
@@ -703,7 +703,7 @@ function Chord:et()
     return self:T(-min_)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of the indicated range equivalence.
 
 function Chord:iseR(range)
@@ -743,7 +743,7 @@ function Chord:iseO()
     return self:iseR(ChordSpace.OCTAVE)
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of a range equivalence.
 
 function Chord:eR(range)
@@ -768,14 +768,14 @@ function Chord:eR(range)
     return chord
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave equivalence.
 
 function Chord:eO()
     return self:eR(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of permutational equivalence.
 
 function Chord:iseP()
@@ -787,7 +787,7 @@ function Chord:iseP()
     return true
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of permutational equivalence.
 
 function Chord:eP()
@@ -807,7 +807,7 @@ function Chord:iseT()
     return true
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of transpositonal equivalence.
 
 function Chord:eT()
@@ -839,7 +839,7 @@ function Chord:iseI()
     return true
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of inversional equivalence.
 
 function Chord:eI()
@@ -875,14 +875,14 @@ function Chord:iseOP()
     return self:iseRP(ChordSpace.OCTAVE)
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of range and permutational equivalence.
 
 function Chord:eRP(range)
     return self:eR(range):eP()
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave and permutational equivalence.
 
 function Chord:eOP()
@@ -935,8 +935,8 @@ function Chord:iseV()
     return true
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
--- domain of voicing equivalence. 
+-- Returns the equivalent of the chord within the representative fundamental
+-- domain of voicing equivalence.
 
 function Chord:eV()
     for index, voicing in ipairs(self:voicings()) do
@@ -954,7 +954,7 @@ function Chord:eV()
     end
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range, permutational, and transpositional equivalence.
 
 function Chord:iseRPT(range)
@@ -989,7 +989,7 @@ function Chord:iseRPT(range)
     return true
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, and transpositional equivalence.
 
 function Chord:iseOPT()
@@ -1033,7 +1033,7 @@ function Chord:voicings()
     return voicings
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, and transpositional equivalence; the same
 -- as set-class type, or chord type.
 
@@ -1051,14 +1051,14 @@ function Chord:eRPT(range)
     print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave, permutational, and transpositional equivalence.
 
 function Chord:eOPT()
     return self:eRPT(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range, permutational, and inversional equivalence.
 
 function Chord:iseRPI(range)
@@ -1082,14 +1082,14 @@ function Chord:iseRPI(range)
     return true
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, and inversional equivalence.
 
 function Chord:iseOPI()
     return self:iseRPI(ChordSpace.OCTAVE)
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, and inversional equivalence.
 
 function Chord:eRPI(range)
@@ -1099,14 +1099,14 @@ function Chord:eRPI(range)
     return self:I():eRP(range)
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
+-- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave, permutational, and inversional equivalence.
 
 function Chord:eOPI()
     return self:eRPI(ChordSpace.OCTAVE)
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of range, permutational, transpositional, and inversional equivalence.
 
 function Chord:iseRPTI(range)
@@ -1144,15 +1144,15 @@ function Chord:iseRPTI(range)
     return true
 end
 
--- Returns whether the chord is within the representative fundamental domain 
+-- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, transpositional, and inversional equivalence.
 
 function Chord:iseOPTI()
     return self:iseRPTI(ChordSpace.OCTAVE)
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
--- domain of range, permutational, transpositional, and inversional 
+-- Returns the equivalent of the chord within the representative fundamental
+-- domain of range, permutational, transpositional, and inversional
 -- equivalence.
 
 function Chord:eRPTI(range)
@@ -1163,8 +1163,8 @@ function Chord:eRPTI(range)
     return rpt:I():eRPT(range)
 end
 
--- Returns the equivalent of the chord within the representative fundamental 
--- domain of range, permutational, transpositional, and inversional 
+-- Returns the equivalent of the chord within the representative fundamental
+-- domain of range, permutational, transpositional, and inversional
 -- equivalence.
 
 function Chord:eOPTI()
@@ -1205,7 +1205,7 @@ tostring(self:eP()),    tostring(self:iseP()),
 tostring(self:eT()),    tostring(self:iseT()),
 tostring(et),
 tostring(self:eI()),    tostring(self:iseI()),
-tostring(self:eOP()),   tostring(self:iseOP()), 
+tostring(self:eOP()),   tostring(self:iseOP()),
 tostring(epcs),
 tostring(self:eOPT()),  tostring(self:iseOPT()),
 tostring(eopt),
@@ -1402,18 +1402,18 @@ print([[
 
 U N I T   T E S T S   F O R   C H O R D S P A C E
 
-We generate all chords in R and test the consistency of the formulas for 
+We generate all chords in R and test the consistency of the formulas for
 identifying (iseE) and generating (eE) each of the equivalence classes (E)
 O, P, T, I, OP, OPT, OPI, and OPTI with respect to their representative or
 "normal" fundamental domains.
 
-If the formulas for the fundamental domains identify or produce duplicates, 
-then the duplicates must be removed or accounted for in the tests. This 
-could happen e.g. if Chord:iseE() identifies more than one chord as the 
-equivalent, but Chord:eE() sends all equivalent chords to one element of that 
+If the formulas for the fundamental domains identify or produce duplicates,
+then the duplicates must be removed or accounted for in the tests. This
+could happen e.g. if Chord:iseE() identifies more than one chord as the
+equivalent, but Chord:eE() sends all equivalent chords to one element of that
 class.
 
-In addition, 3-dimensional graphics of iseE(R) and eE(R) for trichords must 
+In addition, 3-dimensional graphics of iseE(R) and eE(R) for trichords must
 look correct for OP, OPI, OPT, and OPTI.
 
 ]])
@@ -1461,8 +1461,8 @@ function ChordSpace.next(odometer, first, last, g)
     return false
 end
 
--- Returns a collection of all chords for the specified number of voices in a 
--- range, by default the octave. g is the generator of transposition, by default the 
+-- Returns a collection of all chords for the specified number of voices in a
+-- range, by default the octave. g is the generator of transposition, by default the
 -- semitone.
 
 function ChordSpace.allChordsInRange(voices, first, last, g)
@@ -1507,13 +1507,13 @@ Consistency is tested as follows for a set of chords in R for 2 through 12
 voices, for each equivalence class whether simple (O) or compound (OP):
 
 chord:eE():iseE() == true
--- Skip if duplicate iseE(): (chord:iseE() == true) => (chord:eE() == chord) 
+-- Skip if duplicate iseE(): (chord:iseE() == true) => (chord:eE() == chord)
 not (chord:iseE() == true) => not (chord:eE() == chord)
 (chord:eE() == chord) => (chord:iseE() == true)
 not (chord:eE() == chord) => not (chord:iseE() == true)
 
 Additionally, for the compound equivalence classes, chord:isE() on the l.h.s.
-will imply AND of each chord:iseE() for the constituent simple equivalent 
+will imply AND of each chord:iseE() for the constituent simple equivalent
 classes on the r.h.s, and the same with the sides switched.
 
 iseOP <=> iseO and iseP
@@ -1524,29 +1524,34 @@ iseOPTI <=> iseOPT and iseOPI and iseOP and iseO and iseP and iseT and iseI and 
 function testEquivalence(equivalence, chord, iseE, eE)
     local equivalent = eE(chord)
     if (iseE(equivalent) == true) then
+        pass(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
     else
         fail(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
     end
     if (iseE(chord) == true) then
         if (equivalent == chord) then
+            pass(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
             fail(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
     if not (iseE(chord) == true) then
         if not (equivalent == chord) then
+            pass(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
             fail(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
     if (equivalent == chord) then
         if (iseE(chord) == true) then
+            pass(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
             fail(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
     if not (equivalent == chord) then
         if not (iseE(chord) == true) then
+            pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
             fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
@@ -1554,44 +1559,24 @@ function testEquivalence(equivalence, chord, iseE, eE)
 end
 
 function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
-    if (iseE(chord) == true) then
-        for index, otherIseE in ipairs(otherIseEs) do
-            if (otherIseE(chord) == true) then
-            else
-                fail(string.format('%s: chord:ise%s => %s for:\n%s', equivalence, equivalence, tostring(otherIseE), chord:information()))
-            end
-        end
-    end
-    if not (iseE(chord) == true) then
-        for index, otherIseE in ipairs(otherIseEs) do
-            if not (otherIseE(chord) == true) then
-            else
-                fail(string.format('%s: chord:ise%s => %s for:\n%s', equivalence, equivalence, tostring(otherIseE), chord:information()))
-            end
-        end
-    end
     local otherIseEsN = 0
     for index, otherIseE in ipairs(otherIseEs) do
         if (otherIseE(chord) == true) then
             otherIseEsN = otherIseEsN + 1
-        end        
+        end
     end
-    if otherIseEsN == #otherIseEs then
-        if (iseE(chord) == true) then
+    if (iseE(chord) == true) then
+        if otherIseEsN == #otherIseEs then
+            pass(string.format('%s: compound equivalence for:\n%s', equivalence, tostring(chord)))
         else
             fail(string.format('%s: missing component equivalence for:\n%s', equivalence, chord:information()))
         end
     end
-    local otherIseEsN = 0
-    for index, otherIseE in ipairs(otherIseEs) do
-        if (otherIseE(chord) == false) then
-            otherIseEsN = otherIseEsN + 1
-        end        
-    end
-    if otherIseEsN > 0 then
-        if (iseE(chord) == true) then
-        else
+    if not (iseE(chord) == true) then
+        if otherIseEsN == #otherIseEs then
             fail(string.format('%s: false compound equivalence for:\n%s', equivalence, chord:information()))
+        else
+            pass(string.format('%s: compound equivalence for:\n%s', equivalence, tostring(chord)))
         end
     end
 end
@@ -1603,12 +1588,12 @@ local function testEquivalences(voices)
         testEquivalence('P',    chord, Chord.iseP,    chord.eP)
         testEquivalence('T',    chord, Chord.iseT,    chord.eT)
         testEquivalence('I',    chord, Chord.iseI,    chord.eI)
-        --testEquivalence('V',    chord, Chord.iseV,    chord.eV)
+        testEquivalence('V',    chord, Chord.iseV,    chord.eV)
         testEquivalence('OP',   chord, Chord.iseOP,   chord.eOP)
         --testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
-        testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
+        --testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
         --testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
-        --testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
+        testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
     end
 end
 
