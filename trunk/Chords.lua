@@ -18,8 +18,10 @@ operations on chords in neo-Riemannian music theory for use in score
 generating procedures:
 
 --  Identifying whether a chord belongs to some equivalence class of music
-    theory, or sending a chord inside the representative fundamental domain of
-    some equivalence class.
+    theory, or sending a chord to its equivalent within a representative 
+    fundamental domain of some equivalence class. The equivalence classes are 
+    octave (O), permutational (P), transpositional, (T), inversional (I), and 
+    their compounds OP, OPT (set-class or chord type), and OPTI (prime form).
 
 --  Causing chord progressions to move strictly within an orbifold that
     generates some equivalence class.
@@ -1556,18 +1558,43 @@ function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
         for index, otherIseE in ipairs(otherIseEs) do
             if (otherIseE(chord) == true) then
             else
-                fail(string.format('%s: chord:ise%s => %s', equivalence, equivalence, otherIseE))
+                fail(string.format('%s: chord:ise%s => %s for:\n%s', equivalence, equivalence, tostring(otherIseE), chord:information()))
             end
         end
     end
-    if (iseE(chord) == false) then
+    if not (iseE(chord) == true) then
+        for index, otherIseE in ipairs(otherIseEs) do
+            if not (otherIseE(chord) == true) then
+            else
+                fail(string.format('%s: chord:ise%s => %s for:\n%s', equivalence, equivalence, tostring(otherIseE), chord:information()))
+            end
+        end
     end
+    local otherIseEsN = 0
     for index, otherIseE in ipairs(otherIseEs) do
+        if (otherIseE(chord) == true) then
+            otherIseEsN = otherIseEsN + 1
+        end        
     end
+    if otherIseEsN == #otherIseEs then
+        if (iseE(chord) == true) then
+        else
+            fail(string.format('%s: missing component equivalence for:\n%s', equivalence, chord:information()))
+        end
+    end
+    local otherIseEsN = 0
     for index, otherIseE in ipairs(otherIseEs) do
+        if (otherIseE(chord) == false) then
+            otherIseEsN = otherIseEsN + 1
+        end        
+    end
+    if otherIseEsN > 0 then
+        if (iseE(chord) == true) then
+        else
+            fail(string.format('%s: false compound equivalence for:\n%s', equivalence, chord:information()))
+        end
     end
 end
-
 
 local function testEquivalences(voices)
     local chord = ChordSpace.iterator(voices, -range)
@@ -1576,12 +1603,12 @@ local function testEquivalences(voices)
         testEquivalence('P',    chord, Chord.iseP,    chord.eP)
         testEquivalence('T',    chord, Chord.iseT,    chord.eT)
         testEquivalence('I',    chord, Chord.iseI,    chord.eI)
-        testEquivalence('V',    chord, Chord.iseV,    chord.eV)
+        --testEquivalence('V',    chord, Chord.iseV,    chord.eV)
         testEquivalence('OP',   chord, Chord.iseOP,   chord.eOP)
-        testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
+        --testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
         testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
-        testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
-        testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
+        --testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
+        --testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
     end
 end
 
