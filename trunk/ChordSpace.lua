@@ -1678,7 +1678,7 @@ function Chord:reflect(other)
     return reflection
 end
 
--- Return n!
+-- Returns n!
 
 function ChordSpace.factorial (n)
 	if n == 0 then

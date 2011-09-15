@@ -22,7 +22,8 @@ local gl =          require("gl")
 local glu =         require("glu")
 local glfw =        require("glfw")
 local Silencio =    require("Silencio")
-local ChordSpace =  require("ChordSpace")
+local ChordSpace =  require("Chords")
+--local ChordSpace =  require("ChordSpace")
 
 tx = 0
 ty = 0
