@@ -854,15 +854,30 @@ end
 
 function Chord:iseRP(range)
     for voice = 2, #self do
+        --[[ GVLS:
         if self[voice - 1] > self[voice] then
             return false
         end
+        ]]
+        if ChordSpace.gt_epsilon(self[voice - 1], self[voice]) then
+            return false
+        end
     end
+    --[[ GVLS:
     if not (self[#self] <= (self[1] + range)) then
         return false
     end
+    ]]
+    if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
+        return false
+    end
     local layer_ = self:layer()
+    --[[ GVLS:
     if not ((0 <= layer_) and (layer_ <= range)) then
+        return false
+    end
+    ]]
+    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
         return false
     end
     return true
@@ -979,12 +994,17 @@ function Chord:iseRPT(range)
     if #self <= 2 then
         return true
     end
+    --[[
     local wraparound = self[1] + range - self[#self]
     for voice = 1, #self - 1  do
         local inner = self[voice + 1] - self[voice]
         if not (ChordSpace.lte_epsilon(wraparound, inner)) then
             return false
         end
+    end
+    ]]
+    if not self:iseV() then
+        return false
     end
     return true
 end
@@ -1041,7 +1061,7 @@ function Chord:eRPT(range)
     if self:iseRPT(range) then
         return self:clone()
     end
-    local permutations_ = self:eRP(range):permutations()
+    local permutations_ = self:eRP(range):voicings()
     for index, permutation in ipairs(permutations_) do
         et = permutation:et()
         if et:iseV() then
@@ -1062,6 +1082,7 @@ end
 -- of range, permutational, and inversional equivalence.
 
 function Chord:iseRPI(range)
+    --[[
     if not self:iseP() then
         return false
     end
@@ -1070,6 +1091,10 @@ function Chord:iseRPI(range)
     end
     local layer_ = self:layer()
     if not ((0 <= layer_) and (layer_ <= range)) then
+        return false
+    end
+    ]]
+    if not self:iseRP(range) then
         return false
     end
     -- GVLS: tests only the outer intervals:
@@ -1091,6 +1116,7 @@ end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, and inversional equivalence.
+-- FIXME: Use reflection in the inversion flat? Use plain less than?
 
 function Chord:eRPI(range)
     if self:iseRPI(range) then
@@ -1175,6 +1201,7 @@ end
 
 function Chord:information()
     local et = self:eT():et()
+    local ev = self:eV():et()
     local eopt = self:eOPT():et()
     local epcs = self:epcs():eP()
     local eopti = self:eOPTI():et()
@@ -1190,6 +1217,8 @@ eP:       %s  iseP:    %s
 eT:       %s  iseT:    %s
           %s
 eI:       %s  iseI:    %s
+eV:       %s  iseV:    %s
+          %s
 eOP:      %s  iseOP:   %s
 pcs:      %s
 eOPT:     %s  iseOPT:  %s
@@ -1205,6 +1234,8 @@ tostring(self:eP()),    tostring(self:iseP()),
 tostring(self:eT()),    tostring(self:iseT()),
 tostring(et),
 tostring(self:eI()),    tostring(self:iseI()),
+tostring(self:eV()),    tostring(self:iseV()),
+tostring(ev),
 tostring(self:eOP()),   tostring(self:iseOP()),
 tostring(epcs),
 tostring(self:eOPT()),  tostring(self:iseOPT()),
@@ -1480,15 +1511,17 @@ function ChordSpace.allChordsInRange(voices, first, last, g)
 end
 
 function pass(message)
-    print()
-    print('PASSED:', message)
-    print()
+    if false then
+        print()
+        print('PASSED:', message)
+        print()
+    end
 end
 
 function fail(message)
     print('========================================================================')
     print('FAILED:', message)
-    print('========================================================================')
+    print('------------------------------------------------------------------------')
     --os.exit()
 end
 
@@ -1524,36 +1557,36 @@ iseOPTI <=> iseOPT and iseOPI and iseOP and iseO and iseP and iseT and iseI and 
 function testEquivalence(equivalence, chord, iseE, eE)
     local equivalent = eE(chord)
     if (iseE(equivalent) == true) then
-        pass(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+        pass(string.format( '(1) chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
     else
-        fail(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        fail(string.format(' (2) chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
     end
     if (iseE(chord) == true) then
         if (equivalent == chord) then
-            pass(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+            pass(string.format( '(3) (chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
-            fail(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+            fail(string.format( '(4) (chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
     if not (iseE(chord) == true) then
         if not (equivalent == chord) then
-            pass(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+            pass(string.format( '(5) not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
-            fail(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+            fail(string.format(' (6) not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
     if (equivalent == chord) then
         if (iseE(chord) == true) then
-            pass(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+            pass(string.format(' (7) (equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
-            fail(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+            fail(string.format(' (8) (equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
     if not (equivalent == chord) then
         if not (iseE(chord) == true) then
-            pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+            pass(string.format(' (9) not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
         else
-            fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, equivalence, chord:information(), equivalent:information()))
+            fail(string.format('(10) not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
 end
@@ -1567,16 +1600,16 @@ function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
     end
     if (iseE(chord) == true) then
         if otherIseEsN == #otherIseEs then
-            pass(string.format('%s: compound equivalence for:\n%s', equivalence, tostring(chord)))
+            pass(string.format('(11) %s: compound equivalence for:\n%s', equivalence, tostring(chord)))
         else
-            fail(string.format('%s: missing component equivalence for:\n%s', equivalence, chord:information()))
+            fail(string.format('(12) %s: missing component equivalence for:\n%s', equivalence, chord:information()))
         end
     end
     if not (iseE(chord) == true) then
         if otherIseEsN == #otherIseEs then
-            fail(string.format('%s: false compound equivalence for:\n%s', equivalence, chord:information()))
+            fail(string.format('(13) %s: false compound equivalence for:\n%s', equivalence, chord:information()))
         else
-            pass(string.format('%s: compound equivalence for:\n%s', equivalence, tostring(chord)))
+            pass(string.format('(14) %s: compound equivalence for:\n%s', equivalence, tostring(chord)))
         end
     end
 end
@@ -1590,8 +1623,8 @@ local function testEquivalences(voices)
         testEquivalence('I',    chord, Chord.iseI,    chord.eI)
         testEquivalence('V',    chord, Chord.iseV,    chord.eV)
         testEquivalence('OP',   chord, Chord.iseOP,   chord.eOP)
-        --testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
-        --testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
+        testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
+        testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
         --testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
         testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
     end
