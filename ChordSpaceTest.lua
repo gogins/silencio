@@ -1,33 +1,62 @@
 require "Silencio"
-require("ChordSpace")
+--ChordSpace = require("ChordSpace")
+ChordSpace = require("Chords")
 local matrix = require("matrix")
 
-print("CHORDSPACE UNIT TESTS")
-print('')
-print('package.path:', package.path)
-print('package.cpath:', package.cpath)
+print([[
 
-print_ = print
+U N I T   T E S T S   F O R   C H O R D S P A C E
 
-verbose = false
+We generate all chords in R and test the consistency of the formulas for
+identifying (iseE) and generating (eE) each of the equivalence classes (E)
+O, P, T, I, OP, OPT, OPI, and OPTI with respect to their representative or
+"normal" fundamental domains.
 
-function print(message)
-    if verbose then
-        print_(message)
-    end
+If the formulas for the fundamental domains identify or produce duplicates,
+then the duplicates must be removed or accounted for in the tests. This
+could happen e.g. if Chord:iseE() identifies more than one chord as the
+equivalent, but Chord:eE() sends all equivalent chords to one element of that
+class.
+
+In addition, 3-dimensional graphics of iseE(R) and eE(R) for trichords must
+look correct for OP, OPI, OPT, and OPTI.
+
+]])
+
+for n = 0, 12 do
+	local f = ChordSpace.factorial(n)
+	print(string.format('%2d factorial is: %9d.', n, f))
 end
 
+print('How does operator % behave?')
+for pitch = -24, 23, 1 do
+    local pc = pitch % ChordSpace.OCTAVE
+    print(string.format('%9.4f = %9.4f %% ChordSpace.OCTAVE', pc, pitch))
+end
+print('')
+
+local chord = Chord:new{4, 7, 11}
+local chord = Chord:new{0, 4, 7, 10}
+for index, permutation in ipairs(chord:permutations()) do
+    print(string.format('permutation: %s', tostring(permutation)))
+end
+for index, voicing in ipairs(chord:voicings()) do
+    local et = voicing:et()
+    print(string.format('voicing: %s  et: %s  span: %9.4f  iseV: %s', tostring(voicing), tostring(et), et:maximumInterval(), tostring(et:iseV())))
+end
+print(chord:information())
+
 function pass(message)
-    print_()
-    print_('PASSED:', message)
-    print_()
+    print()
+    print('PASSED:', message)
+    print()
 end
 
 function fail(message)
-    print_()
-    print_('FAILED:', message)
-    print_()
-    os.exit()
+    print('========================================================================')
+    print('FAILED:', message)
+    print('========================================================================')
+    --os.exit()
 end
 
 function result(expression, message)
@@ -38,17 +67,107 @@ function result(expression, message)
     end
 end
 
-for n = 0, 12 do
-	local f = ChordSpace.factorial(n)
-	print(string.format('%2d factorial is: %9d.', n, f))
+local range = ChordSpace.OCTAVE + 1
+
+--[[
+Consistency is tested as follows for a set of chords in R for 2 through 12
+voices, for each equivalence class whether simple (O) or compound (OP):
+
+chord:eE():iseE() == true
+-- Skip if duplicate iseE(): (chord:iseE() == true) => (chord:eE() == chord)
+not (chord:iseE() == true) => not (chord:eE() == chord)
+(chord:eE() == chord) => (chord:iseE() == true)
+not (chord:eE() == chord) => not (chord:iseE() == true)
+
+Additionally, for the compound equivalence classes, chord:isE() on the l.h.s.
+will imply AND of each chord:iseE() for the constituent simple equivalent
+classes on the r.h.s, and the same with the sides switched.
+
+iseOP <=> iseO and iseP
+iseOPT <=> iseOP and iseO and iseP and iseT and iseV
+iseOPI <=> iseOP and iseO and iseP and iseI
+iseOPTI <=> iseOPT and iseOPI and iseOP and iseO and iseP and iseT and iseI and iseV
+]]
+function testEquivalence(equivalence, chord, iseE, eE)
+    local equivalent = eE(chord)
+    if (iseE(equivalent) == true) then
+        pass(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+    else
+        fail(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+    end
+    if (iseE(chord) == true) then
+        if (equivalent == chord) then
+            pass(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+        else
+            fail(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
+    if not (iseE(chord) == true) then
+        if not (equivalent == chord) then
+            pass(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+        else
+            fail(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
+    if (equivalent == chord) then
+        if (iseE(chord) == true) then
+            pass(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+        else
+            fail(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
+    if not (equivalent == chord) then
+        if not (iseE(chord) == true) then
+            pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+        else
+            fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, equivalence, chord:information(), equivalent:information()))
+        end
+    end
 end
 
-print_('How does operator % behave?')
-for pitch = -24, 23, 1 do
-    local pc = pitch % ChordSpace.OCTAVE
-    print_(string.format('%9.4f = %9.4f %% ChordSpace.OCTAVE', pc, pitch))
+function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
+    local otherIseEsN = 0
+    for index, otherIseE in ipairs(otherIseEs) do
+        if (otherIseE(chord) == true) then
+            otherIseEsN = otherIseEsN + 1
+        end
+    end
+    if (iseE(chord) == true) then
+        if otherIseEsN == #otherIseEs then
+            pass(string.format('%s: compound equivalence for:\n%s', equivalence, tostring(chord)))
+        else
+            fail(string.format('%s: missing component equivalence for:\n%s', equivalence, chord:information()))
+        end
+    end
+    if not (iseE(chord) == true) then
+        if otherIseEsN == #otherIseEs then
+            fail(string.format('%s: false compound equivalence for:\n%s', equivalence, chord:information()))
+        else
+            pass(string.format('%s: compound equivalence for:\n%s', equivalence, tostring(chord)))
+        end
+    end
 end
-print_('')
+
+local function testEquivalences(voices)
+    local chord = ChordSpace.iterator(voices, -range)
+    while ChordSpace.next(chord, -range, range, 1) do
+        testEquivalence('O',    chord, Chord.iseO,    chord.eO)
+        testEquivalence('P',    chord, Chord.iseP,    chord.eP)
+        testEquivalence('T',    chord, Chord.iseT,    chord.eT)
+        testEquivalence('I',    chord, Chord.iseI,    chord.eI)
+        testEquivalence('V',    chord, Chord.iseV,    chord.eV)
+        testEquivalence('OP',   chord, Chord.iseOP,   chord.eOP)
+        --testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
+        --testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
+        --testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
+        testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
+    end
+end
+
+for voices = 2, 12 do
+    print(string.format('\nTESTING CHORDS OF %2d VOICES...\n', voices))
+    testEquivalences(voices)
+end
 
 local a = Chord:new{3, 3, 6}
 local b = Chord:new{3, 3, 6}
@@ -62,39 +181,39 @@ table.insert(chords, Chord:new{0, 0, 0})
 table.insert(chords, Chord:new{0, -3, 0})
 table.insert(chords, Chord:new{0, 0, -3})
 volume1 = ChordSpace.volumeSquared(chords)
-print_('volume: ' .. tostring(volume1))
+print('volume: ' .. tostring(volume1))
 chords = {}
 table.insert(chords, Chord:new{-3, 0, 0, 0})
 table.insert(chords, Chord:new{0, 0, 0, 0})
 table.insert(chords, Chord:new{3, -3, 0, 0})
 table.insert(chords, Chord:new{0, 0, -3, 0})
 volume2 = ChordSpace.volumeSquared(chords)
-print_('volume: ' .. tostring(volume2))
+print('volume: ' .. tostring(volume2))
 result(math.abs(volume1) == math.abs(volume2), "Volumes of same simplex in space and in subspace must be equal.")
 for i = 3, 12 do
-    print_(string.format('CHORDS OF %d VOICES...', i))
+    print(string.format('CHORDS OF %d VOICES...', i))
     local chord = Chord:new()
     chord:resize(i)
     local maximallyEven = chord:maximallyEven()
-    print_(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
+    print(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
     local cyclicalSimplex = chord:cyclicalSimplex(ChordSpace.OCTAVE)
-    print_('cyclical region:\n' .. matrix:new(cyclicalSimplex):tostring())
+    print('cyclical region:\n' .. matrix:new(cyclicalSimplex):tostring())
     local homogeneous = ChordSpace.homogeneousSimplex(cyclicalSimplex)
-    print_('homogeneous:\n' .. homogeneous:tostring())
+    print('homogeneous:\n' .. homogeneous:tostring())
     local invariant = ChordSpace.invariantSimplex(homogeneous)
-    print_('invariant:\n' .. invariant:tostring())
+    print('invariant:\n' .. invariant:tostring())
     local transposed = invariant:transpose()
-    print_('transposed:\n' .. transposed:tostring())
+    print('transposed:\n' .. transposed:tostring())
     local squared = matrix.mul(transposed, invariant)
-    print_('squared:\n' .. squared:tostring())
+    print('squared:\n' .. squared:tostring())
     for j = 1, #cyclicalSimplex do
         local point = cyclicalSimplex[j]
-        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalSimplex)))
+        print(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, cyclicalSimplex)))
     end
     local epSimplex = chord:epSimplex(ChordSpace.OCTAVE)
     for j = 1, #epSimplex do
         local point = epSimplex[j]
-        print_(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, epSimplex)))
+        print(tostring(point) .. '  BC: ' .. tostring(ChordSpace.barycentricCoordinates(point, epSimplex)))
     end
     local targetCoordinates = chord:origin()
     if ChordSpace.backwards then
@@ -123,7 +242,7 @@ for k, chordType in pairs(chordTypes) do
     local epSimplex = chord:epSimplex()
     for j = 1, #epSimplex do
         local point = epSimplex[j]
-        print_(string.format('Normal region %2d: %s  layer: %6.2f', j, tostring(point), tostring(point:sum())))
+        print(string.format('Normal region %2d: %s  layer: %6.2f', j, tostring(point), tostring(point:sum())))
     end
     local permutations = chord:cyclicalPermutations()
     local insideCount = 0
@@ -131,22 +250,22 @@ for k, chordType in pairs(chordTypes) do
         permutation = permutation
         chord = permutation
         local maximallyEven = chord:maximallyEven()
-        print_(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
+        print(string.format('maximallyEven for %2d voices: %s', i, tostring(maximallyEven)))
         local epSimplex = chord:epSimplex(ChordSpace.OCTAVE)
-        print_('normal region:\n' .. matrix:new(epSimplex):tostring())
+        print('normal region:\n' .. matrix:new(epSimplex):tostring())
         local homogeneous = ChordSpace.homogeneousSimplex(epSimplex)
-        print_('homogeneous:\n' .. homogeneous:tostring())
+        print('homogeneous:\n' .. homogeneous:tostring())
         local invariant = ChordSpace.invariantSimplex(homogeneous)
-        print_('invariant:\n' .. invariant:tostring())
+        print('invariant:\n' .. invariant:tostring())
         local transposed = invariant:transpose()
-        print_('transposed:\n' .. transposed:tostring())
+        print('transposed:\n' .. transposed:tostring())
         local squared = matrix.mul(transposed, invariant)
-        print_('squared:\n' .. squared:tostring())
+        print('squared:\n' .. squared:tostring())
         local isInside = permutation:isInSimplex(epSimplex)
         if isInside then
             insideCount = insideCount + 1
         end
-        print_(string.format('%5s permutation %d: %s  inside: %s', chordType, i, tostring(permutation), tostring(isInside)))
+        print(string.format('%5s permutation %d: %s  inside: %s', chordType, i, tostring(permutation), tostring(isInside)))
     end
     result(insideCount == 1, "One and only one of the cyclical permutations of a chord must be in the normal region: actually inside: " .. tostring(insideCount))
 end
@@ -184,8 +303,8 @@ function iseOPIeOPI(voiceCount)
         end
     end
     if passes == false then
-        print_(chord:label())
-        print_(opi:label())
+        print(chord:label())
+        print(opi:label())
     end
     result(passes, string.format('eOPI must equate to iseOPI for %d voices.', voiceCount))
 end
@@ -250,13 +369,13 @@ result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: IofGbM7 must be the same fr
 print('')
 
 G7 = ChordSpace.chordsForNames['G7']
-print_(G7:label())
+print(G7:label())
 P, I, T, V = chordSpaceGroup:fromChord(G7)
 for T = 0, 11 do
     chord = chordSpaceGroup:toChord(P, I, T, V)
-    print_(chord:label())
+    print(chord:label())
     chord = chordSpaceGroup:toChord(P, I+1, T, V)
-    print_(chord:label())
+    print(chord:label())
 end
 ]]
 for voiceCount = 3, 4 do
@@ -272,17 +391,17 @@ for voiceCount = 3, 4 do
             for T = 0, ChordSpace.OCTAVE - 1 do
                 for V = 0, chordSpaceGroup.countV - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
-                    print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
+                    print(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                     local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
+                    print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                     if (fromPITV ~= frompitv) or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
-                        --print_(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
-                        --print_(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
+                        --print(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
+                        --print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                         passes = false
                         result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
                     end
-                    print_('')
+                    print('')
                 end
             end
         end
@@ -343,8 +462,8 @@ for voiceCount = 3, 4 do
             fail(string.format('Each chord in OPTI must return iseOPTI true for %d voices.', voiceCount))
         end
         if chord:eOPTI() ~= chord then
-            print_('Normal:' .. chord:label())
-            print_('eOPTI: ' .. chord:eOPTI():label())
+            print('Normal:' .. chord:label())
+            print('eOPTI: ' .. chord:eOPTI():label())
             fail(string.format('Each chord in OPTI must be eOPTI for %d voices.', voiceCount))
         end
         print('')
@@ -411,8 +530,8 @@ for voiceCount = 3, 4 do
         end
     end
     if not passes then
-        print_(chord)
-        print_(inverseop)
+        print(chord)
+        print(inverseop)
     end
     result(passes, string.format('Chord/Inverse must be, if not a fixed point, one inside/one outside the representative fundamental domain of inversional equivalence for %d voices.', voiceCount))
 end
@@ -506,7 +625,7 @@ for voices = 2, 6 do
         if (op == opti) or (op == opti_i) then
             if op ~= opt then
                 passes = false
-                print_('If it is OPTI or OPTI:I:OPT it must be OPT.')
+                print('If it is OPTI or OPTI:I:OPT it must be OPT.')
                 break
             end
         end
@@ -514,25 +633,25 @@ for voices = 2, 6 do
             if not ((op == opti) or (op == opti_i_opt)) then
                 ChordSpace.bing = true
                 passes = false
-                print_('If it is OPT it must be either OPTI or OPTI:I:OPT.')
+                print('If it is OPT it must be either OPTI or OPTI:I:OPT.')
                 local voicings = op:voicings()
                 for key, voicing in pairs(voicings) do
-                    print_(tostring(voicing:et()) .. '  iseV: ' .. tostring(voicing:iseV(ChordSpace.OCTAVE)) .. ' To unisons: ' .. tostring(voicing:et():distanceToUnisonDiagonal()))
+                    print(tostring(voicing:et()) .. '  iseV: ' .. tostring(voicing:iseV(ChordSpace.OCTAVE)) .. ' To unisons: ' .. tostring(voicing:et():distanceToUnisonDiagonal()))
                 end
                 break
             end
         end
     end
     if passes == false then
-        print_('op:        ' .. tostring(op))
-        print_('opt:       ' .. tostring(opt))
-        print_('opt_i:     ' .. tostring(opt_i))
-        print_('opt_i_op:  ' .. tostring(opt_i_op))
-        print_('opt_i_opt: ' .. tostring(opt_i_opt))
-        print_('opti:      ' .. tostring(opti))
-        print_('opti_i:    ' .. tostring(opti_i))
-        print_('opti_i_op: ' .. tostring(opti_i_op))
-        print_('opti_i_opt:' .. tostring(opti_i_opt))
+        print('op:        ' .. tostring(op))
+        print('opt:       ' .. tostring(opt))
+        print('opt_i:     ' .. tostring(opt_i))
+        print('opt_i_op:  ' .. tostring(opt_i_op))
+        print('opt_i_opt: ' .. tostring(opt_i_opt))
+        print('opti:      ' .. tostring(opti))
+        print('opti_i:    ' .. tostring(opti_i))
+        print('opti_i_op: ' .. tostring(opti_i_op))
+        print('opti_i_opt:' .. tostring(opti_i_opt))
         result(passes, string.format('OPTI U OPTI:I():eOPT() == OPT for %d voices.', voices))
     end
 end
