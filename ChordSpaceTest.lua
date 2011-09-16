@@ -27,11 +27,18 @@ for n = 0, 12 do
 	local f = ChordSpace.factorial(n)
 	print(string.format('%2d factorial is: %9d.', n, f))
 end
+print('')
 
 print('How does operator % behave?')
 for pitch = -24, 23, 1 do
     local pc = pitch % ChordSpace.OCTAVE
     print(string.format('%9.4f = %9.4f %% ChordSpace.OCTAVE', pc, pitch))
+end
+print('')
+
+ops = ChordSpace.allOfEquivalenceClass(3, 'OP')
+for index, op in pairs(ops) do
+    print(string.format('Chord      %4d:\n%s\n', index, op:information()))
 end
 print('')
 

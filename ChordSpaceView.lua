@@ -292,36 +292,44 @@ function ChordView:drawChord(chord, name, picking)
     gl.glBegin(gl.GL_QUADS)
     local quadric = glu.gluNewQuadric()
     glu.gluQuadricNormals(quadric, glu.GLU_SMOOTH)
-    local z = chord:eOPT()
-    local alpha = 1
+    local alpha = 0.875
     local radius = 0
+    local red = 0.75
+    local green = 0.75
+    local blue = 0.75
+    local z = chord:eOPT():et()
     if z      == self.augmentedTriad then
-        gl.glColor4f(1, 1, 1, alpha)
+        red = 1
+        green = 1
+        blue = 1
     else if z == self.majorTriad1 then
-        gl.glColor4f(1, 0, 0, alpha)
+        red = 1
+        green = 0
+        blue = 0
     else if z == self.minorTriad1 then
-        gl.glColor4f(0, 0, 1, alpha)
-    else
-        local red = 0.5
-        local green = 0.5
-        local blue = 0.5
-        if chord:iseOPT() then
-            green = 0
-        end
-        if chord:iseOPI() then
-            blue = 0
-        end
-        local saturation = 1.0
-        local value = 1.0
-        local value = 0.5 + chord:sum() / 24.0
-        --red, green, blue = hsv_to_rgb(hue, saturation, value)
-        gl.glColor4f(red, green, blue, alpha)
+        red = 0
+        green = 0
+        blue = 1
+    else 
+    if chord:iseT() == true then
+        red = red * 0.25
+    end
+    if chord:iseI() == true then
+        blue = blue * 0.25
+    end
     end end end
+    local saturation = 1.0
+    local value = 1 - (0.375 * (chord:layer() / 12.0))
+    red = red * value
+    blue = blue * value
+    green = green * value
+    --red, green, blue = hsv_to_rgb(hue, saturation, value)
+    gl.glColor4f(red, green, blue, alpha)
     local radius = 1/8
     if self:isE(chord) then
         if self.pickedChord ~= nil then
-            if self.pickedChord:label() == chord:label() then
-                radius = radius * 1.5
+            if self.pickedChord:information() == chord:information() then
+                radius = radius * 1.75
                 if self.drawInverse == true then
                     gl.glColor4f(1, 0, 1, 1)
                 else
@@ -330,11 +338,13 @@ function ChordView:drawChord(chord, name, picking)
             end
         end
     end
+    --[[
     if chord:isFlatRP() then
         radius = radius * 1.5
     end
+    ]]
     if chord:iseV(self.octaves * ChordSpace.OCTAVE) then
-        radius = radius * 1.5
+        radius = radius * 1.75
     end
     glu.gluSphere(quadric, radius, 20, 50)
     gl.glEnd()
@@ -342,26 +352,15 @@ function ChordView:drawChord(chord, name, picking)
 end
 
 function ChordView:createChords()
-    self.augmentedTriad = Chord:new{0, 4, 8}:eOPT()
-    self.majorTriad1 =    Chord:new{0, 4, 7}:eOPT()
-    self.minorTriad1 =    Chord:new{0, 3, 7}:eOPT()
+    self.augmentedTriad = Chord:new{0, 4, 8}:eOPT():et()
+    self.majorTriad1 =    Chord:new{0, 4, 7}:eOPT():et()
+    self.minorTriad1 =    Chord:new{0, 3, 7}:eOPT():et()
     local dummy = nil
     if self.constructChordsByOperation then
         dummy, self.chords = ChordSpace.allOfEquivalenceClassByOperation(3, self.equivalence)
     else
         dummy, self.chords = ChordSpace.allOfEquivalenceClass(3, self.equivalence)
     end
-    print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
-    --local midpoints = ChordSpace.inversionMidpoints(3)
-    --for key, midpoint in ipairs(midpoints) do
-    --    table.insert(self.chords, midpoint)
-    --    print('Midpoint:', tostring(midpoint))
-    --end
-    ---local flats = ChordSpace.flatsRP(3)
-    --for key, flat in ipairs(flats) do
-    --    table.insert(self.chords, flat)
-    --    print('Flat:', tostring(flat))
-    --end
     print(string.format('Created %s chords for equivalence class %s.', #self.chords, self.equivalence))
 end
 
@@ -520,7 +519,7 @@ function ChordView:processHits(hits)
     self.pickedChord = self.chords[pickedName]
     -- print(string.format('hits: %d  pickedName: %d  pickedDepth: %d', hits, pickedName, pickedDepth))
     -- print(self.pickedChord:__tostring())
-    print(self.pickedChord:label())
+    print(self.pickedChord:information())
     print()
 end
 
@@ -645,8 +644,8 @@ function ChordView:display()
                 else
                     self.pickedChord = self:E(self.pickedChord:T( 1))
                 end
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_T) == glfw.GLFW_RELEASE then
@@ -655,9 +654,9 @@ function ChordView:display()
             -- I?
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_PRESS and not ipressed then
                 ipressed = true
-                local layer = self.pickedChord:sum()
+                local layer = self.pickedChord:layer()
                 self.pickedChord = self:E(self.pickedChord:I())
-                print(self.pickedChord:label())
+                print(self.pickedChord:information())
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_I) == glfw.GLFW_RELEASE then
@@ -667,8 +666,8 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_P) == glfw.GLFW_PRESS and not ppressed then
                 ppressed = true
                 self.pickedChord = self:E(self.pickedChord:nrP())
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_P) == glfw.GLFW_RELEASE then
@@ -678,8 +677,8 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_L) == glfw.GLFW_PRESS and not lpressed then
                 lpressed = true
                 self.pickedChord = self:E(self.pickedChord:nrL())
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_L) == glfw.GLFW_RELEASE then
@@ -689,8 +688,8 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_R) == glfw.GLFW_PRESS and not rpressed then
                 rpressed = true
                 self.pickedChord = self:E(self.pickedChord:nrR())
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_R) == glfw.GLFW_RELEASE then
@@ -700,8 +699,8 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_D) == glfw.GLFW_PRESS and not dpressed then
                 dpressed = true
                 self.pickedChord = self:E(self.pickedChord:nrD())
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_D) == glfw.GLFW_RELEASE then
@@ -711,8 +710,8 @@ function ChordView:display()
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_K) == glfw.GLFW_PRESS and not kpressed then
                 kpressed = true
                 self.pickedChord = self:E(self.pickedChord:K(self.octaves * 12))
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_K) == glfw.GLFW_RELEASE then
@@ -726,8 +725,8 @@ function ChordView:display()
                 else
                     self.pickedChord = self:E(self.pickedChord:Q(-1, self.modality))
                 end
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_Q) == glfw.GLFW_RELEASE then
@@ -741,8 +740,8 @@ function ChordView:display()
                 else
                     self.pickedChord = self:E(self.pickedChord:move(1,  1))
                 end
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_1) == glfw.GLFW_RELEASE then
@@ -756,8 +755,8 @@ function ChordView:display()
                 else
                     self.pickedChord = self:E(self.pickedChord:move(2,  1))
                 end
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_2) == glfw.GLFW_RELEASE then
@@ -771,8 +770,8 @@ function ChordView:display()
                 else
                     self.pickedChord = self:E(self.pickedChord:move(3,  1))
                 end
-                print(self.pickedChord:label())
-                print(ChordSpace.namesForChords[self.pickedChord:label()])
+                print(self.pickedChord:information())
+                print(ChordSpace.namesForChords[self.pickedChord:information()])
                 print()
             end
             if glfw.glfwGetKey(window, glfw.GLFW_KEY_3) == glfw.GLFW_RELEASE then
