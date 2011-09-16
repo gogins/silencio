@@ -3,6 +3,9 @@ require "Silencio"
 ChordSpace = require("Chords")
 local matrix = require("matrix")
 
+local printPass = false
+local failExits = false
+
 print([[
 
 U N I T   T E S T S   F O R   C H O R D S P A C E
@@ -54,16 +57,20 @@ end
 print(chord:information())
 
 function pass(message)
-    print()
-    print('PASSED:', message)
-    print()
+    if printPass then
+        print()
+        print('PASSED:', message)
+        print()
+    end
 end
 
 function fail(message)
     print('========================================================================')
     print('FAILED:', message)
     print('========================================================================')
-    --os.exit()
+    if failExits then
+        os.exit()
+    end
 end
 
 function result(expression, message)

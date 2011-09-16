@@ -825,24 +825,35 @@ end
 -- Returns whether the chord is within the representative fundamental domain
 -- of inversional equivalence.
 
-function Chord:iseI()
-    local chord = self:clone()
-    local lowerVoice = 2
-    local upperVoice = #chord
-    while lowerVoice < upperVoice do
-        -- GVLS: tests only 1 interval: x[2] - x[1] <= x[#x] - x[#x - 1]
-        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
-        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
-        if lowerInterval < upperInterval then
-            return true
+function Chord:iseI(inverse)
+    -- GLVS:
+    if false then
+        local chord = self:clone()
+        local lowerVoice = 2
+        local upperVoice = #chord
+        while lowerVoice < upperVoice do
+            -- GVLS: tests only 1 interval: x[2] - x[1] <= x[#x] - x[#x - 1]
+            local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+            local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
+            if lowerInterval < upperInterval then
+                return true
+            end
+            if lowerInterval > upperInterval then
+                return false
+            end
+            lowerVoice = lowerVoice + 1
+            upperVoice = upperVoice - 1
         end
-        if lowerInterval > upperInterval then
+        return true
+    end
+    -- MKG:
+    if true then
+        inverse = inverse or self:I()
+        if self > inverse then
             return false
         end
-        lowerVoice = lowerVoice + 1
-        upperVoice = upperVoice - 1
+        return true
     end
-    return true
 end
 
 -- Returns the equivalent of the chord within the representative fundamental

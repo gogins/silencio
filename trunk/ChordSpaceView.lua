@@ -12,7 +12,13 @@ The purposes of this package are:
 
 (2) To demonstrate chord space for trichords.
 
-TODO: Actually play chords, perhaps using Csound via FFI, or using fluidsynth.
+TODO:
+
+(1) Actually play chords, perhaps using Csound via FFI, or better yet using fluidsynth.
+
+(2) Alpha so OPTI is most solid, then in decreasing solidity, with OP visible and R just barely visible.
+
+(3) Print key bindings before displaying orbifold.
 
 ]]
 end
@@ -310,7 +316,7 @@ function ChordView:drawChord(chord, name, picking)
         red = 0
         green = 0
         blue = 1
-    else 
+    else
     if chord:iseT() == true then
         red = red * 0.25
     end
