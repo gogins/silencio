@@ -2404,6 +2404,7 @@ function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
  end
 
 function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
+    print 'hi'
     g = g or 1
     local equivalenceMapper = nil
     if equivalence == 'OP' then
@@ -2425,7 +2426,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, ChordSpace.OCTAVE + 1)
+    local chordset = ChordSpace.allChordsInRange(voices, - (ChordSpace.OCTAVE + 1), ChordSpace.OCTAVE + 1)
     -- Select only those O chords that are within the complete
     -- equivalence class.
     local equivalentChords = {}

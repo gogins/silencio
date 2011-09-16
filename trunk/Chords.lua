@@ -945,12 +945,13 @@ end
 -- domain of voicing equivalence.
 
 function Chord:eV()
-    for index, voicing in ipairs(self:voicings()) do
+    for index, voicing in ipairs(self:permutations()) do
         local wraparound = voicing[1] + ChordSpace.OCTAVE - voicing[#voicing]
         local iseV_ = true
         for voice = 1, #voicing - 1 do
             local inner = voicing[voice + 1] - voicing[voice]
-            if inner > wraparound then
+            if not ChordSpace.gte_epsilon(wraparound, inner) then
+            --if inner > wraparound then
                 iseV_ = false
             end
         end
@@ -1181,6 +1182,7 @@ end
 
 function Chord:information()
     local et = self:eT():et()
+    local evt = self:eV():et()
     local eopt = self:eOPT():et()
     local epcs = self:epcs():eP()
     local eopti = self:eOPTI():et()
@@ -1196,6 +1198,8 @@ eP:       %s  iseP:    %s
 eT:       %s  iseT:    %s
           %s
 eI:       %s  iseI:    %s
+eV:       %s  iseV:    %s
+          %s
 eOP:      %s  iseOP:   %s
 pcs:      %s
 eOPT:     %s  iseOPT:  %s
@@ -1211,6 +1215,8 @@ tostring(self:eP()),    tostring(self:iseP()),
 tostring(self:eT()),    tostring(self:iseT()),
 tostring(et),
 tostring(self:eI()),    tostring(self:iseI()),
+tostring(self:eV()),    tostring(self:iseV()),
+tostring(evt),
 tostring(self:eOP()),   tostring(self:iseOP()),
 tostring(epcs),
 tostring(self:eOPT()),  tostring(self:iseOPT()),
@@ -1424,7 +1430,7 @@ function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
         equivalenceMapper = Chord.eOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, ChordSpace.OCTAVE + 1)
+    local chordset = ChordSpace.allChordsInRange(voices, -(ChordSpace.OCTAVE + 1), ChordSpace.OCTAVE + 1)
     -- Coerce all chords to the equivalence class.
     local equivalentChords = {}
     for hash, chord in pairs(chordset) do
@@ -1464,7 +1470,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPTI
     end
     -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, ChordSpace.OCTAVE + 1)
+    local chordset = ChordSpace.allChordsInRange(voices, -(ChordSpace.OCTAVE + 1), ChordSpace.OCTAVE + 1)
     -- Select only those O chords that are within the complete
     -- equivalence class.
     local equivalentChords = {}
