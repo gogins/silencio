@@ -1,8 +1,10 @@
 local ChordSpaceView = {}
 function ChordSpaceView.help()
 print [[
-'''
+
+C H O R D S P A C E   V I E W
 Copyright 2010 by Michael Gogins.
+
 This software is licensed under the terms
 of the GNU Lesser General Public License.
 
@@ -14,12 +16,46 @@ The purposes of this package are:
 
 TODO:
 
-(1) Actually play chords, perhaps using Csound via FFI, or better yet using fluidsynth.
+(1) Actually play chords using Fluidsynth.
 
-(2) Alpha so OPTI is most solid, then in decreasing solidity, with OP visible and R just barely visible.
+(2) Alpha so OPTI is most solid, then in decreasing solidity, with OP visible
+    and R just barely visible.
 
-(3) Print key bindings before displaying orbifold.
+KEY BINDINGS
 
+[Esc]                   Exit program.
+[c]                     Iterate/stop iterating inversions.
+[Keypad +]              Zoom in.
+[Keypad -]              Zoom out.
+[Keypad left arrow]     Move left.
+[Keypad right arrow]    Move right.
+[Keypad up arrow]       Move up.
+[Keypad down arrow]     Move down.
+[Keypad 9]              Spin in.
+[Keypad 3]              Spin out.
+[Keypad 7]              Spin left.
+[Keypad 1]              Spin right.
+[Keypad 8]              Spin up.
+[Keypad 2]              Spin down.
+[T]                     Transpose up.
+[Shift][T]              Transpose down.
+[I]                     Invert (reflect in the origin).
+[P]                     Apply the neo-Riemannian parallel transformation.
+[L]                     Apply the neo-Riemannian leading-tone exchange
+                        transformation.
+[R]                 `   Apply the neo-Riemannian relative minor/major
+                        transformation.
+[D]                     Apply the neo-Riemannian dominant transformation.
+[K]                     Apply the neo-Riemannian K transformation
+                        (change "modality").
+[Q]                     Apply the neo-Riemannian Q transformation by 1 semitone
+                        (contextual transposition depending on "modality").
+[1]                     Move voice 1 by 1 semitone up.
+[Shift][1]              Move voice 1 by 1 semitone down.
+[2]                     Move voice 2 by 1 semitone up.
+[Shift][2]              Move voice 2 by 1 semitone down.
+[3]                     Move voice 3 by 1 semitone up.
+[Shift][3]              Move voice 3 by 1 semitone down.
 ]]
 end
 
@@ -844,6 +880,8 @@ function ChordView:display()
         end
     end
 end
+
+ChordSpaceView.help()
 
 chordView = ChordView:new()
 chordView.iterateInversions = false

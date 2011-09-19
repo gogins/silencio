@@ -1553,4 +1553,546 @@ function ChordSpace.allChordsInRange(voices, first, last, g)
     return ChordSpace.sortedSet(chordset)
 end
 
+-- Move 1 voice of the chord,
+-- optionally under range equivalence
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:move(voice, interval)
+    local chord = self:clone()
+    chord[voice] = T(chord[voice], interval)
+    return chord
+end
+
+-- Performs the neo-Riemannian Lettonwechsel transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrL()
+    local cv = self:eV()
+    local cvt = self:eV():et()
+    if cvt[2] == 4 then
+        cv[1] = cv[1] - 1
+    else
+        if cvt[2] == 3 then
+            cv[3] = cv[3] + 1
+        end
+    end
+    return cv
+end
+
+-- Performs the neo-Riemannian parallel transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrP()
+    local cv = self:eV()
+    local cvt = self:eV():et()
+    if cvt[2] == 4 then
+        cv[2] = cv[2] - 1
+    else
+        if cvt[2] == 3 then
+            cv[2] = cv[2] + 1
+        end
+    end
+    return cv
+end
+
+-- Performs the neo-Riemannian relative transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrR()
+    local cv = self:eV()
+    local cvt = self:eV():et()
+    if cvt[2] == 4 then
+        cv[3] = cv[3] + 2
+    else
+        if cvt[2] == 3 then
+            cv[1] = cv[1] - 2
+        end
+    end
+    return cv
+end
+
+-- Performs the neo-Riemannian dominant transformation.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:nrD()
+    return self:eep():T(-7)
+end
+
+-- Returns the chord inverted by the sum of its first two voices.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:K(range)
+    range = range or ChordSpace.OCTAVE
+    local chord = self:clone()
+    if #chord < 2 then
+        return chord
+    end
+    local ep = chord:ep()
+    local x = ep[1] + ep[2]
+    return self:I(x)
+end
+
+-- Returns whether the chord is a transpositional form of Y with interval size g.
+-- Only works in equal temperament.
+
+function Chord:Tform(Y, g)
+    local eopx = self:eop()
+    local i = 0
+    while i < ChordSpace.OCTAVE do
+        local ty = Y:T(i)
+        local eopty = ty:eop()
+        if eopx == eopty then
+            return true
+        end
+        i = i + g
+    end
+    return false
+end
+
+-- Returns whether the chord is an inversional form of Y with interval size g.
+-- Only works in equal temperament.
+
+function Chord:Iform(Y, g)
+    local eopx = self:eop()
+    local i = 0
+    while i < ChordSpace.OCTAVE do
+        local iy = Y:I(i)
+        local eopiy = iy:eop()
+        if eopx == eopiy then
+            return true
+        end
+        i = i + g
+    end
+    return false
+end
+
+-- Returns the contextual transposition of the chord by x with respect to m
+-- with minimum interval size g.
+-- NOTE: Does NOT return the result under any equivalence class.
+
+function Chord:Q(x, m, g)
+    g = g or 1
+    if self:Tform(m, g) then
+        return self:T(x)
+    end
+    if self:Iform(m, g) then
+        return self:T(-x)
+    end
+    return self:clone()
+end
+
+-- Returns the voice-leading between chords a and b,
+-- i.e. what you have to add to a to get b, as a
+-- chord of directed intervals.
+
+function ChordSpace.voiceleading(a, b)
+    local voiceleading = a:clone()
+    for voice = 1, #voiceleading do
+        voiceleading[voice] = b[voice] - a[voice]
+    end
+    return voiceleading
+end
+
+-- Returns whether the voiceleading
+-- between chords a and b contains a parallel fifth.
+
+function ChordSpace.parallelFifth(a, b)
+    local v = ChordSpace.voiceleading(a, b)
+    if v:count(7) > 1 then
+        return true
+    else
+        return false
+    end
+end
+
+-- Returns the smoothness of the voiceleading between
+-- chords a and b by L1 norm.
+
+function ChordSpace.voiceleadingSmoothness(a, b)
+    local L1 = 0
+    for voice = 1, #a do
+        L1 = L1 + math.abs(b[voice] - a[voice])
+    end
+    return L1
+end
+
+-- Returns which of the voiceleadings (source to d1, source to d2)
+-- is the smoother (shortest moves), optionally avoiding parallel fifths.
+
+function ChordSpace.voiceleadingSmoother(source, d1, d2, avoidParallels, range)
+    range = range or ChordSpace.OCTAVE
+    if avoidParallels then
+        if ChordSpace.parallelFifth(source, d1) then
+            return d2
+        end
+        if ChordSpace.parallelFifth(source, d2) then
+            return d1
+        end
+    end
+    local s1 = ChordSpace.voiceleadingSmoothness(source, d1)
+    local s2 = ChordSpace.voiceleadingSmoothness(source, d2)
+    if s1 <= s2 then
+        return d1
+    else
+        return d2
+    end
+end
+
+-- Returns which of the voiceleadings (source to d1, source to d2)
+-- is the simpler (fewest moves), optionally avoiding parallel fifths.
+
+function ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
+    avoidParallels = avoidParallels or false
+    if avoidParallels then
+        if ChordSpace.parallelFifth(source, d1) then
+            return d2
+        end
+        if ChordSpace.parallelFifth(source, d2) then
+            return d1
+        end
+    end
+    local v1 = ChordSpace.voiceleading(source, d1):ep()
+    local v2 = ChordSpace.voiceleading(source, d2):ep()
+    for voice = #v1, 1, -1 do
+        if v1[voice] < v2[voice] then
+            return d1
+        end
+        if v2[voice] < v1[voice] then
+            return d2
+        end
+    end
+    return d1
+end
+
+-- Returns which of the voiceleadings (source to d1, source to d2)
+-- is the closer (first smoother, then simpler), optionally avoiding parallel fifths.
+
+function ChordSpace.voiceleadingCloser(source, d1, d2, avoidParallels)
+    avoidParallels = avoidParallels or false
+    if avoidParallels then
+        if ChordSpace.parallelFifth(source, d1) then
+            return d2
+        end
+        if ChordSpace.parallelFifth(source, d2) then
+            return d1
+        end
+    end
+    local s1 = ChordSpace.voiceleadingSmoothness(source, d1)
+    local s2 = ChordSpace.voiceleadingSmoothness(source, d2)
+    if s1 < s2 then
+        return d1
+    end
+    if s1 > s2 then
+        return d2
+    end
+    return ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
+end
+
+-- Returns which of the destinations has the closest voice-leading
+-- from the source, optionally avoiding parallel fifths.
+
+function ChordSpace.voiceleadingClosest(source, destinations, avoidParallels)
+    local d = destinations[1]
+    for i = 2, #destinations do
+        d = ChordSpace.voiceleadingCloser(source, d, destinations[i], avoidParallels)
+    end
+    return d
+end
+
+-- Returns the voicing of the destination which has the closest voice-leading
+-- from the source within the range, optionally avoiding parallel fifths.
+-- TODO: Do not collect all voicings, but test them individually in a loop
+-- as in the body of Voicings.
+
+function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
+    local destinations = destination:Voicings(range)
+    local closest = ChordSpace.voiceleadingClosest(source, destinations, range, avoidParallels)
+    return closest
+end
+
+-- Creates a complete Silencio "note on" event for the
+-- indicated voice of the chord. The other parameters are used
+-- if the internal duration, channel, velocity, and pan of the
+-- chord are nil.
+
+function Chord:note(voice_, time_, duration_, channel_, velocity_, pan_)
+    time_ = time_ or 0
+    duration_ = duration_ or 0.25
+    channel_ = channel_ or 1
+    velocity_ = velocity_ or 80
+    pan_ = pan_ or 0
+    local note_ = Event:new()
+    note_[TIME] = time_
+    note_[DURATION] = self.duration[voice_] or duration_
+    note_[CHANNEL] = self.channel[voice_] or channel_
+    note_[KEY] = self[voice_]
+    note_[VELOCITY] = self.velocity[voice_] or velocity_
+    note_[PAN] = self.pan[voice_] or pan_
+    return note_
+end
+
+-- Returns an individual note for each voice of the chord.
+-- The chord's duration, instrument, and loudness are used if present,
+-- if not the specified values are used.
+
+function Chord:notes(time_, duration_, channel_, velocity_, pan_)
+    local notes_ = Score:new()
+    for voice, key in ipairs(self) do
+        table.insert(notes_, self:note(voice, time_, duration_, channel_, velocity_, pan_))
+    end
+    return notes_
+end
+
+-- If the event is a note, moves its pitch
+-- to the closest pitch of the chord.
+-- If octaveEquivalence is true (the default),
+-- the pitch-class of the note is moved to the closest pitch-class
+-- of the chord; otherwise, the pitch of the note is moved to the closest
+-- absolute pitch of the chord.
+
+function conformToChord(event, chord, octaveEquivalence)
+    octaveEquivalence = octaveEquivalence or true
+    if event[STATUS] ~= 144 then
+        return
+    else
+        local pitch = event[KEY]
+        if octaveEquivalence then
+            local pitchClass = pitch % ChordSpace.OCTAVE
+            local octave = pitch - pitchClass
+            local chordPitchClass = chord[1] % ChordSpace.OCTAVE
+            local distance = math.abs(chordPitchClass - pitchClass)
+            local closestPitchClass = chordPitchClass
+            local minimumDistance = distance
+            for voice = 2, #chord do
+                chordPitchClass = chord[voice] % ChordSpace.OCTAVE
+                distance = math.abs(chordPitchClass - pitchClass)
+                if distance < minimumDistance then
+                    minimumDistance = distance
+                    closestPitchClass = chordPitchClass
+                end
+            end
+            event[KEY] = octave + closestPitchClass
+        else
+            local chordPitch = chord[1]
+            local distance = math.abs(chordPitch - pitch)
+            local closestPitch = chordPitch
+            local minimumDistance = distance
+            for voice = 2, #chord do
+                chordPitch = chord[voice]
+                distance = math.abs(chordPitch - pitch)
+                if distance < minimumDistance then
+                    minimumDistance = distance
+                    closestPitch = chordPitch
+                end
+            end
+            event[KEY] = closestPitch
+        end
+    end
+end
+
+-- Inserts the notes of the chord into the score at the specified time.
+-- The internal duration, instrument, and loudness are used if present,
+-- if not the specified values are used.
+
+function ChordSpace.insert(score, chord, time_, duration, channel, velocity, pan)
+    -- print(score, chord, time_, duration, channel, velocity, pan)
+    for voice = 1, #chord do
+        local event = chord:note(voice, time_, duration, channel, velocity, pan)
+        table.insert(score, event)
+    end
+end
+
+-- For all the notes in the score
+-- beginning at or later than the start time,
+-- and up to but not including the end time,
+-- moves the pitch of the note to belong to the chord, using the
+-- conformToChord function.
+
+function ChordSpace.apply(score, chord, start, end_, octaveEquivalence)
+    octaveEquivalence = octaveEquivalence or true
+    local slice = score:slice(start, end_)
+    for index, event in ipairs(slice) do
+        conformToChord(event, chord, octaveEquivalence)
+    end
+end
+
+-- Returns a chord containing all the pitches of the score
+-- beginning at or later than the start time,
+-- and up to but not including the end time.
+
+function gather(score, start, end_)
+    local chord = Chord:new()
+    local slice = score:slice(start, end_)
+    for index, event in ipairs(slice) do
+        local pitch = event[KEY]
+        if not chord:contains(pitch) then
+            table.insert(chord, pitch)
+        end
+    end
+    return chord
+end
+
+-- Orthogonal additive groups for unordered chords of given arity under range
+-- equivalence (RP): prime form or P, inversion or I, transposition or T, and
+-- voicing or V. P x I x T = OP, P x I x T x V = RP. There is a bijective
+-- mapping between chords in RP and values of P, I, T, V. Therefore, an
+-- operation on P, I, T, or V may be used to independently transform the
+-- respective symmetry of any chord. Some of these operations will reflect
+-- in RP.
+
+ChordSpaceGroup = {}
+
+-- N is the number of voices in the chord space, g is the generator of
+-- transposition, range is the size of chord space,
+-- optis is an ordered table of all OPTI chords for g,
+-- voicings is an ordered table of all octavewise permutations in RP.
+
+function ChordSpaceGroup:new(o)
+    local o = o or {optisForIndexes = {}, indexesForOptis = {}, voicingsForIndexes = {}, indexesForVoicings = {}}
+    setmetatable(o, self)
+    self.__index = self
+    return o
+end
+
+-- Returns all permutations of octaves for the indicated
+-- number of voices within the indicated range.
+
+function ChordSpace.octavewisePermutations(voices, range)
+    range = range or ChordSpace.OCTAVE
+    local voicings = {}
+    local zero = Chord:new()
+    zero:resize(voices)
+    local odometer = zero:clone()
+    -- Enumerate the permutations.
+    -- iterator[1] is the most significant voice, and
+    -- iterator[N] is the least significant voice.
+    voicing = 0
+    while true do
+        voicings[voicing] = odometer:clone()
+        odometer[voices] = odometer[voices] + ChordSpace.OCTAVE
+         -- "Carry" octaves.
+        for voice = voices, 2, - 1 do
+            if odometer[voice] > range then
+                odometer[voice] = zero[voice]
+                odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
+            end
+        end
+        if odometer[1] > range then
+            break
+        end
+        voicing = voicing + 1
+    end
+    return voicings
+end
+
+function ChordSpaceGroup:initialize(voices, range, g)
+    self.voices = voices or 3
+    self.range = range or 60
+    self.g = g or 1
+    self.countP = 0
+    self.countV = 0
+    if #self.optisForIndexes == 0 then
+        self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OPTI', self.g)
+        for index, opti in pairs(self.optisForIndexes) do
+            self.indexesForOptis[opti:__hash()] = index
+            self.countP = self.countP + 1
+        end
+    end
+    if #self.voicingsForIndexes == 0 then
+        self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
+        for index, voicing in pairs(self.voicingsForIndexes) do
+            self.indexesForVoicings[voicing:__hash()] = index
+            self.countV = self.countV + 1
+        end
+    end
+end
+
+-- Returns the chord for the indices of prime form, inversion,
+-- transposition, and voicing. The chord is not in RP; rather, each voice of
+-- the chord's OP may have zero or more octaves added to it.
+
+function ChordSpaceGroup:toChord(P, I, T, V)
+    print_(string.format('toChord args:   %f, %f, %f, %f', P, I, T, V))
+    P = P % self.countP
+    I = I % 2
+    T = T % ChordSpace.OCTAVE
+    V = V % self.countV
+    print_(string.format('toChord modulo: %f, %f, %f, %f', P, I, T, V))
+    local opti = self.optisForIndexes[P]
+    print_('toChord   opti: ' .. tostring(opti))
+    if I == 0 then
+        opt = opti
+    else
+        opt = opti:I():eOP()
+    end
+    print_('toChord   opt:  ' .. tostring(opt))
+    local op_t = opt:T(T)
+    print_('toChord   op_t: ' .. tostring(op_t))
+    local op = op_t:eOP()
+    print_('toChord   op:   ' .. tostring(op))
+    local voicing = self.voicingsForIndexes[V]
+    local revoicing = op:origin()
+    for voice = 1, #voicing do
+        revoicing[voice] = op[voice] + voicing[voice]
+    end
+    return revoicing, opti, op, voicing
+end
+
+-- Returns the indices of prime form, inversion, transposition,
+-- and voicing for a chord.
+
+function ChordSpaceGroup:fromChord(chord)
+    for key, chord in pairs(chord:cyclicalPermutations()) do
+        if chord:eO():iseV(self.range) then
+            break
+        end
+    end
+    local op = chord:eOP()
+    print_('fromChord op:   ' .. tostring(op))
+    local voicing = chord:origin()
+    for voice = 1, #chord do
+        voicing[voice] = chord[voice] - op[voice]
+    end
+    local V = self.indexesForVoicings[voicing:__hash()]
+    print_(V)
+    local opt = op:eOPT()
+    print_('fromChord opt:  ' .. tostring(opt))
+    local T = 0
+    for t = 0, ChordSpace.OCTAVE - 1, self.g do
+        local opt_t = opt:T(t)
+        print_('fromChord opt_t:' .. tostring(opt_t))
+        if opt_t == op then
+            T = t
+            break
+        end
+    end
+    print_(T)
+    local opti = op:eOPTI()
+    print_('fromChord opti: ' .. tostring(opti) .. ' ' .. opti:__hash())
+    local P = self.indexesForOptis[opti:__hash()]
+    print_(P)
+    local I = 0
+    if opti ~= opt then
+        I = 1
+        if opti:I():eOP() ~= opt then
+            print("Error: OP(I(OPTI)) must equal OPT.")
+            os.exit()
+        end
+    end
+    print_(I)
+    return P, I, T, V
+end
+
+function ChordSpaceGroup:list()
+    for index, opti in pairs(self.optisForIndexes) do
+        print(string.format('index: %5d  opti: %s  index from opti: %s', index, tostring(opti), self.indexesForOptis[opti:__hash()]))
+    end
+    for index = 0, #self.optisForIndexes - 1 do
+        print(string.format('opti from index: %s  index:  %5d', tostring(self.optisForIndexes[index]), index))
+    end
+    for index, voicing in pairs(self.voicingsForIndexes) do
+        print(string.format('voicing index: %5d  voicing: %s  index from voicing: %5d', index, tostring(voicing), self.indexesForVoicings[voicing:__hash()]))
+    end
+end
+
 return ChordSpace
