@@ -178,7 +178,7 @@ giFluidOrgan		    fluidLoad		        "Organ Jeux V1.4 (3,674KB).SF2", giFluidsyn
                         
 #ifdef ENABLE_PIANOTEQ
             
-giPianoteq              vstinit                 "C:\\utah\\opt\\pianoteq-3.5\\Pianoteq35.dll", 0
+giPianoteq              vstinit                 "C:\\utah\\opt\\pianoteq-3.5\\Pianoteq.dll", 0
                         vstinfo                 giPianoteq
 
 #end

@@ -5,6 +5,8 @@ local matrix = require("matrix")
 
 local printPass = false
 local failExits = false
+local exitAfterFailureCount = 10
+local failureCount = 0
 
 print([[
 
@@ -68,7 +70,8 @@ function fail(message)
     print('========================================================================')
     print('FAILED:', message)
     print('========================================================================')
-    if failExits then
+    failureCount = failureCount + 1
+    if failExits and (failureCount > exitAfterFailureCount) then
         os.exit()
     end
 end
