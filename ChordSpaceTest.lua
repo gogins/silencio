@@ -174,9 +174,9 @@ local function testEquivalences(voices)
         testEquivalence('I',    chord, Chord.iseI,    chord.eI)
         testEquivalence('V',    chord, Chord.iseV,    chord.eV)
         testEquivalence('OP',   chord, Chord.iseOP,   chord.eOP)
-        --testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
-        --testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
-        --testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
+        testEquivalence('OPT',  chord, Chord.iseOPT,  chord.eOPT)
+        testEquivalence('OPI',  chord, Chord.iseOPI,  chord.eOPI)
+        testEquivalence('OPTI', chord, Chord.iseOPTI, chord.eOPTI)
         testCompoundEquivalence('OP', chord, Chord.iseOP, {Chord.iseO, Chord.iseP})
     end
 end
