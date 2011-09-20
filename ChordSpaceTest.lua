@@ -4,7 +4,7 @@ ChordSpace = require("Chords")
 local matrix = require("matrix")
 
 local printPass = false
-local failExits = false
+local failExits = true
 local exitAfterFailureCount = 10
 local failureCount = 0
 

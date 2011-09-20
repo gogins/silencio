@@ -1060,7 +1060,8 @@ function Chord:eRPT(range)
     if self:iseRPT(range) then
         return self:clone()
     end
-    local permutations_ = self:eRP(range):permutations()
+    local erp = self:eRP(range)
+    local permutations_ = erp:eRP(range):permutations()
     for index, permutation in ipairs(permutations_) do
         et = permutation:et()
         if et:iseV() then
@@ -1081,25 +1082,16 @@ end
 -- of range, permutational, and inversional equivalence.
 
 function Chord:iseRPI(range)
-    if not self:iseP() then
+    if not self:iseRP(range) then
         return false
     end
-    if not (self[#self] <= (self[1] + range)) then
-        return false
-    end
-    local layer_ = self:layer()
-    if not ((0 <= layer_) and (layer_ <= range)) then
-        return false
-    end
-    -- GVLS: tests only the outer intervals:
-    --if not ((self[2] - self[1]) <= (self[#self] - self[#self - 1])) then
-    --    return false
-    --end
-    if not self:iseI() then
+    local inverse = self:I():eRP(range)
+    if not self:iseI(inverse) then
         return false
     end
     return true
 end
+
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, and inversional equivalence.
@@ -1112,10 +1104,11 @@ end
 -- domain of range, permutational, and inversional equivalence.
 
 function Chord:eRPI(range)
-    if self:iseRPI(range) then
-        return self:clone()
+    local erp = self:eRP(range)
+    if erp:iseRPI(range) then
+        return erp
     end
-    return self:I():eRP(range)
+    return erp:I():eRP(range)
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
