@@ -240,6 +240,7 @@ end
 -- For taking numerical errors into account.
 
 ChordSpace.EPSILON = 1
+local epsilonFactor = 1000
 
 while true do
     ChordSpace.EPSILON = ChordSpace.EPSILON / 2
@@ -252,7 +253,7 @@ while true do
 end
 
 function ChordSpace.eq_epsilon(a, b, factor)
-    factor = factor or 20
+    factor = factor or epsilonFactor
     if (math.abs(a - b) < (ChordSpace.EPSILON * factor)) then
         return true
     end
@@ -260,7 +261,7 @@ function ChordSpace.eq_epsilon(a, b, factor)
 end
 
 function ChordSpace.gt_epsilon(a, b, factor)
-    factor = factor or 20
+    factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
     if eq then
         return false
@@ -272,7 +273,7 @@ function ChordSpace.gt_epsilon(a, b, factor)
 end
 
 function ChordSpace.lt_epsilon(a, b, factor)
-    factor = factor or 20
+    factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
     if eq then
         return false
@@ -284,7 +285,7 @@ function ChordSpace.lt_epsilon(a, b, factor)
 end
 
 function ChordSpace.gte_epsilon(a, b, factor)
-    factor = factor or 20
+    factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
     if eq then
         return true
@@ -296,7 +297,7 @@ function ChordSpace.gte_epsilon(a, b, factor)
 end
 
 function ChordSpace.lte_epsilon(a, b, factor)
-    factor = factor or 20
+    factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
     if eq then
         return true
