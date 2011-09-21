@@ -977,35 +977,46 @@ end
 -- of range, permutational, and transpositional equivalence.
 
 function Chord:iseRPT(range)
-    -- GVLS: failed to test for the origin.
-    local origin_= self:origin()
-    if origin_ == self then
-        return true
-    end
-    -- GVLS: Failed to test for (range) and permutational equivalence.
-    if not self:iseRP(range) then
-        return false
-    end
-    -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
-    if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
-        return false
-    end
-    local layer_ = self:layer()
-    -- GVLS: if not (layer_ == 0) then
-    if not ChordSpace.eq_epsilon(layer_, 0) then
-        return false
-    end
-    if #self <= 2 then
-        return true
-    end
-    local wraparound = self[1] + range - self[#self]
-    for voice = 1, #self - 1  do
-        local inner = self[voice + 1] - self[voice]
-        if not (ChordSpace.lte_epsilon(wraparound, inner)) then
+    if true then
+        -- GVLS: failed to test for the origin.
+        local origin_= self:origin()
+        if origin_ == self then
+            return true
+        end
+        -- GVLS: Failed to test for (range) and permutational equivalence.
+        if not self:iseRP(range) then
             return false
         end
+        -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
+        if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
+            return false
+        end
+        local layer_ = self:layer()
+        -- GVLS: if not (layer_ == 0) then
+        if not ChordSpace.eq_epsilon(layer_, 0) then
+            return false
+        end
+        if #self <= 2 then
+            return true
+        end
+        local wraparound = self[1] + range - self[#self]
+        for voice = 1, #self - 1  do
+            local inner = self[voice + 1] - self[voice]
+            if not (ChordSpace.lte_epsilon(wraparound, inner)) then
+                return false
+            end
+        end
+        return true
     end
-    return true
+    if false then
+        if not self:iseRP(range) then
+            return false
+        end
+        if not self:iseV() then
+            return false
+        end
+        return true
+    end
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1057,15 +1068,12 @@ end
 -- as set-class type, or chord type.
 
 function Chord:eRPT(range)
-    if self:iseRPT(range) then
-        return self:clone()
-    end
     local erp = self:eRP(range)
-    local permutations_ = erp:eRP(range):permutations()
-    for index, permutation in ipairs(permutations_) do
-        et = permutation:et()
-        if et:iseV() then
-            return et:eT():eP()
+    local voicings_ = erp:voicings()
+    for voice = 1, #voicings_ do
+        local voicing = voicings_[voice]:eT()
+        if voicing:iseV() then
+            return voicing
         end
     end
     print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
