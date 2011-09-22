@@ -5,8 +5,9 @@ local matrix = require("matrix")
 
 local printPass = false
 local failExits = true
-local exitAfterFailureCount = 10
+local exitAfterFailureCount = 3
 local failureCount = 0
+local printOP = false
 
 print([[
 
@@ -41,11 +42,13 @@ for pitch = -24, 23, 1 do
 end
 print('')
 
-ops = ChordSpace.allOfEquivalenceClass(3, 'OP')
-for index, op in pairs(ops) do
-    print(string.format('Chord      %4d:\n%s\n', index, op:information()))
+if printOP then
+    ops = ChordSpace.allOfEquivalenceClass(3, 'OP')
+    for index, op in pairs(ops) do
+        print(string.format('Chord      %4d:\n%s\n', index, op:information()))
+    end
+    print('')
 end
-print('')
 
 local chord = Chord:new{4, 7, 11}
 local chord = Chord:new{0, 4, 7, 10}
@@ -135,9 +138,9 @@ function testEquivalence(equivalence, chord, iseE, eE)
     end
     if not (equivalent == chord) then
         if not (iseE(chord) == true) then
-            pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
+            pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, tostring(chord), tostring(equivalent)))
         else
-            fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, equivalence, chord:information(), equivalent:information()))
+            fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, chord:information(), equivalent:information()))
         end
     end
 end
