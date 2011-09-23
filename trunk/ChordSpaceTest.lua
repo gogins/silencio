@@ -7,7 +7,7 @@ local printPass = false
 local failExits = true
 local exitAfterFailureCount = 3
 local failureCount = 0
-local printOP = false
+local printOP = true
 
 print([[
 
@@ -42,8 +42,10 @@ for pitch = -24, 23, 1 do
 end
 print('')
 
-if printOP then
-    ops = ChordSpace.allOfEquivalenceClass(3, 'OP')
+if printOP == true then
+    print('Printing all of OP...')
+    local ops = ChordSpace.allOfEquivalenceClass(3, 'OP')
+    print(string.format('There are %d trichords in OP.', #ops))
     for index, op in pairs(ops) do
         print(string.format('Chord      %4d:\n%s\n', index, op:information()))
     end

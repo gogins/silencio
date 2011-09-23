@@ -1667,6 +1667,21 @@ function Chord:iseOPTI(g)
     return self:iseRPTI(ChordSpace.OCTAVE, g)
 end
 
+function Chord:permutations()
+    local chord = self:clone()
+    local permutations_ = {}
+    permutations_[1] = chord
+    for i = 2, #self do
+        chord = chord:cycle()
+        permutations_[i] = chord
+    end
+    return permutations_
+end
+
+function Chord:maximumInterval()
+    return self:max() - self:min()
+end
+
 -- Inverts the chord by another chord that is not necessarily on the unison
 -- diagonal. NOTE: Does NOT return the result under any equivalence class.
 
@@ -1820,6 +1835,7 @@ end
 
 ChordSpace.bing = false
 function Chord:iseV(range)
+    range = range or ChordSpace.OCTAVE
     local isev = true
     for voice = 1, #self - 1 do
         local outer = self[1] + range - self[#self]
@@ -2473,7 +2489,7 @@ end
 -- Returns all permutations of octaves for the indicated
 -- number of voices within the indicated range.
 
-function ChordSpace.octavewisePermutations(voices, range)
+function ChordSpace.permutations(voices, range)
     range = range or ChordSpace.OCTAVE
     local voicings = {}
     local zero = Chord:new()
@@ -2515,7 +2531,7 @@ function ChordSpaceGroup:initialize(voices, range, g)
         end
     end
     if #self.voicingsForIndexes == 0 then
-        self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
+        self.voicingsForIndexes = ChordSpace.permutations(voices, range)
         for index, voicing in pairs(self.voicingsForIndexes) do
             self.indexesForVoicings[voicing:__hash()] = index
             self.countV = self.countV + 1
