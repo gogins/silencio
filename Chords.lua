@@ -1,6 +1,6 @@
-local ChordSpace = {}
-
 local Silencio = require("Silencio")
+
+local ChordSpace = {}
 
 function ChordSpace.help()
 print [[
@@ -469,22 +469,6 @@ function Chord:__eq(other)
     return true
 end
 
-function Chord:__eqlog(other)
-    print(string.format('#self: %d  #other: %d', #self, #other))
-    if not (#self == #other) then
-        return false
-    end
-    for voice = 1, #self do
-        print(string.format('%3d: %9.4f, %9.4f', voice, self[voice], other[voice]))
-        if not (self[voice] == other[voice]) then
-            print('not equal')
-            return false
-        end
-    end
-    print('equal')
-    return true
-end
-
 -- This hash function is used to give chords value semantics for sets.
 
 function Chord:__hash()
@@ -720,33 +704,42 @@ end
 -- of the indicated range equivalence.
 
 function Chord:iseR(range)
-    local gvls = false
-    local gvls_modified = true
-    local mkg = false
-    if gvls then
-        local max_ = self:max()
-        local min_ = self:min()
-        if not (max_ <= (min_ + range)) then
-            return false
-        end
-        local layer_ = self:layer()
-        if not ((0 <= layer_) and (layer_ <= range)) then
-            return false
-        end
-        return true
+    --[[ GVLS:
+    local max_ = self:max()
+    local min_ = self:min()
+    if not (max_ <= (min_ + range)) then
+        return false
     end
-    if gvls_modified then
-        local max_ = self:max()
-        local min_ = self:min()
-        if not ChordSpace.lte_epsilon(max_, (min_ + range)) then
-            return false
-        end
-        local layer_ = self:layer()
-        if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
-            return false
-        end
-        return true
+    local layer_ = self:layer()
+    if not ((0 <= layer_) and (layer_ <= range)) then
+        return false
     end
+    return true
+    --]]
+    --[[ GVLS modified:
+    local max_ = self:max()
+    local min_ = self:min()
+    if not ChordSpace.lte_epsilon(max_, (min_ + range)) then
+        return false
+    end
+    local layer_ = self:layer()
+    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
+        return false
+    end
+    return true
+    --]]
+    ----[[ MKG:
+    local max_ = self:max()
+    local min_ = self:min()
+    if not ChordSpace.lte_epsilon(max_, (min_ + range)) then
+        return false
+    end
+    local layer_ = self:layer()
+    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
+        return false
+    end
+    return true
+    --]]
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -793,7 +786,7 @@ end
 
 function Chord:iseP()
     for voice = 2, #self do
-        if self[voice - 1] > self[voice] then
+        if not (self[voice - 1] <= self[voice]) then
             return false
         end
     end
@@ -833,7 +826,7 @@ end
 -- of inversional equivalence.
 
 function Chord:iseI(inverse)
-    -- GLVS:
+    --[[ GLVS:
     if false then
         local chord = self:clone()
         local lowerVoice = 2
@@ -853,14 +846,16 @@ function Chord:iseI(inverse)
         end
         return true
     end
-    -- MKG:
+    --]]
+    ----[[ MKG:
     if true then
         inverse = inverse or self:I()
-        if self > inverse then
+        if not (self <= inverse) then
             return false
         end
         return true
     end
+    --]]
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
@@ -877,8 +872,9 @@ end
 -- of range and permutational equivalence.
 
 function Chord:iseRP(range)
+    --[[ GVLS:
     for voice = 2, #self do
-        if self[voice - 1] > self[voice] then
+        if not (self[voice - 1] <= self[voice]) then
             return false
         end
     end
@@ -890,6 +886,16 @@ function Chord:iseRP(range)
         return false
     end
     return true
+    --]]
+    ----[[ MKG:
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:iseP() then
+        return false
+    end
+    return true
+    --]]
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -983,52 +989,43 @@ end
 -- of range, permutational, and transpositional equivalence.
 
 function Chord:iseRPT(range)
-    if false then
-        -- GVLS: failed to test for the origin.
-        local origin_= self:origin()
-        if origin_ == self then
-            return true
-        end
-        -- GVLS: Failed to test for (range) and permutational equivalence.
-        if not self:iseRP(range) then
-            return false
-        end
-        -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
-        if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
-            return false
-        end
-        local layer_ = self:layer()
-        -- GVLS: if not (layer_ == 0) then
-        if not ChordSpace.eq_epsilon(layer_, 0) then
-            return false
-        end
-        if #self < 2 then
-            return true
-        end
-        local wraparound = self[1] + range - self[#self]
-        for voice = 1, #self - 1  do
-            local inner = self[voice + 1] - self[voice]
-            if not (ChordSpace.lte_epsilon(wraparound, inner)) then
-                return false
-            end
-        end
+    --[[ GVLS:
+    -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
+    if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
+        return false
+    end
+    local layer_ = self:layer()
+    -- GVLS: if not (layer_ == 0) then
+    if not ChordSpace.eq_epsilon(layer_, 0) then
+        return false
+    end
+    if #self < 2 then
         return true
     end
-    if true then
-        if not self:iseR(range) then
+    local wraparound = self[1] + range - self[#self]
+    for voice = 1, #self - 1  do
+        local inner = self[voice + 1] - self[voice]
+        if not ChordSpace.lte_epsilon(wraparound, inner) then
             return false
         end
-        if not self:iseP() then
-            return false
-        end
-        if not self:iseT() then
-            return false
-        end
-        if not self:iseV() then
-            return false
-        end
-        return true
     end
+    return true
+    --]]
+    ----[[ MKG:
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:iseP() then
+        return false
+    end
+    if not self:iseT() then
+        return false
+    end
+    if not self:iseV() then
+        return false
+    end
+    return true
+    --]]
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1142,49 +1139,40 @@ end
 -- of range, permutational, transpositional, and inversional equivalence.
 
 function Chord:iseRPTI(range)
-    if false then
-        -- GVLS: failed to test for the origin.
-        local origin_= self:origin()
-        if origin_ == self then
-            return true
-        end
-        -- GVLS: Failed to test for (range) and permutational equivalence.
-        if not self:iseRP(range) then
-            return false
-        end
-        -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
-        if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
-            return false
-        end
-        local layer_ = self:layer()
-        -- GVLS: if not (layer_ == 0) then
-        if not ChordSpace.eq_epsilon(layer_, 0) then
-            return false
-        end
-        if #self <= 2 then
-            return true
-        end
-        local wraparound = self[1] + range - self[#self]
-        for voice = 1, #self - 1  do
-            local inner = self[voice + 1] - self[voice]
-            if not (ChordSpace.lte_epsilon(wraparound, inner)) then
-                return false
-            end
-        end
-        if not self:iseI() then
-            return false
-        end
+    --[[ GVLS:
+    -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
+    if not ChordSpace.lte_epsilon(self[#self], (self[1] + range)) then
+        return false
+    end
+    local layer_ = self:layer()
+    -- GVLS: if not (layer_ == 0) then
+    if not ChordSpace.eq_epsilon(layer_, 0) then
+        return false
+    end
+    if #self <= 2 then
         return true
     end
-    if true then
-        if not self:iseRPI(range) then
+    local wraparound = self[1] + range - self[#self]
+    for voice = 1, #self - 1  do
+        local inner = self[voice + 1] - self[voice]
+        if not ChordSpace.lte_epsilon(wraparound, inner) then
             return false
         end
-        if not self:iseRPT(range) then
-            return false
-        end
-        return true
     end
+    if not self:iseI() then
+        return false
+    end
+    return true
+    --]]
+    ----[[ MKG:
+    if not self:iseRPT(range) then
+        return false
+    end
+    if not self:iseRPI(range) then
+        return false
+    end
+    return true
+    --]]
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1507,12 +1495,13 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     end
     -- Enumerate all chords in O.
     local chordset = ChordSpace.allChordsInRange(voices, -(ChordSpace.OCTAVE + 1), ChordSpace.OCTAVE + 1)
+    print(#chordset)
     -- Select only those O chords that are within the complete
     -- equivalence class.
     local equivalentChords = {}
     for hash, equivalentChord in pairs(chordset) do
         if equivalenceMapper(equivalentChord) then
-            -- print(hash, chord, equivalentChord, equivalentChord:__hash())
+            --print(hash, equivalentChord, equivalentChord:__hash())
             table.insert(equivalentChords, equivalentChord)
         end
     end
