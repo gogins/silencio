@@ -89,9 +89,8 @@ function result(expression, message)
     end
 end
 
-print()
-print('ChordSpaceGroup')
-print()
+--[[
+
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 chordSpaceGroup:list()
@@ -148,7 +147,7 @@ end
 
 for voiceCount = 3, 4 do
 
-    if false then
+    if true then
 
     passes = true
     chordSpaceGroup = ChordSpaceGroup:new()
@@ -177,6 +176,7 @@ for voiceCount = 3, 4 do
     result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
     end
 end
+--]]
 
 local range = ChordSpace.OCTAVE + 1
 
@@ -434,8 +434,7 @@ function printVoicings(chord)
     end
 end
 
-
-print('ChordSpaceGroup')
+print('TESTING CHORD SPACE GROUPS...')
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 chordSpaceGroup:list()

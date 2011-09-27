@@ -228,6 +228,10 @@ mess.
 It may be that my R, P, T, and I do not fit together to make OPTI because my I
 does not use the inversion flat.
 
+2011-Sep-27
+
+Redo tests of equivalences.
+
 ]]
 end
 
@@ -806,20 +810,45 @@ end
 -- of transpositional equivalence.
 
 function Chord:iseT()
+    ----[[ GVLS:
     local layer_ = self:layer()
     if not ChordSpace.eq_epsilon(layer_, 0) then
         return false
     end
     return true
+    --]]
+    --[[ MKG:
+    g = g or 1
+    local ep = self:eP()
+    if not (ep == ep:eT(g):eP()) then
+        return false
+    end
+    return true
+    --]]
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of transpositonal equivalence.
 
 function Chord:eT()
+    ----[[ GVLS:
     local layer_ = self:layer()
     local sumPerVoice = layer_ / #self
     return self:T(-sumPerVoice)
+    --]]
+    --[[ MKG:
+    g = g or 1
+    local iterator = self
+    -- Transpose down to layer 0 or just below.
+    while iterator:layer() > 0 do
+        iterator = iterator:T(-g)
+    end
+    -- Transpose up to layer 0 or just above.
+    while iterator:layer() < 0 do
+        iterator = iterator:T(g)
+    end
+    return iterator
+    --]]
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1471,7 +1500,7 @@ function ChordSpace.allOfEquivalenceClassByOperation(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(sortedChords) do
-        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:sum())
+        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:layer())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end
@@ -1510,7 +1539,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local zeroBasedChords = {}
     local index = 0
     for key, chord in pairs(equivalentChords) do
-        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:sum())
+        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:layer())
         table.insert(zeroBasedChords, index, chord)
         index = index + 1
     end
