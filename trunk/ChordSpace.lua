@@ -198,6 +198,11 @@ arises from a voice-leading automorphism in the Riemannian group.
 TODO: Implement various scales found in 20th and 21st century harmony
 along with 'splitting' and 'merging' operations.
 
+]]
+end
+--[[
+LOG
+
 LOG
 
 2011-Sep-07
@@ -228,12 +233,39 @@ mess.
 It may be that my R, P, T, and I do not fit together to make OPTI because my I
 does not use the inversion flat.
 
+[2011-Sep-28: Not so, but because my T was aligned on 12-TET.]
+
 2011-Sep-27
 
-Redo tests of equivalences.
+Redo tests of equivalences. [2011-Sep-28: They pass up to 5 voices.]
 
+2011-Sep-28
+
+First, some lessons learned painfully. I can still think quite well, but I am
+slower, and I have to allow for that. So I actually need to think MORE
+CAREFULLY (which takes longer) in order to make sure tests and logic are quite
+clear, as this will save yet more time in testing and debugging. E.g., if I
+had had my current unit tests in place when I began to rewrite this code,
+I would have been where I am now four or five months ago. It wouldn't hurt,
+either, to ask for help sooner rather than later -- DT's advice was extremely
+helpful.
+
+OK, I get it now. My prior attempts to combine representative fundamental
+domains were ill-advised.
+
+The fundamental domain formulas are now as correct as the tests I have written
+can tell, although I should try to come up with some additional tests. Yet
+there still may be problems...
+TODO:
+
+(1) I need to display the equivalences in the viewer much more clearly.
+
+(2) I need to redo ChordSpaceGroup to use different orbifolds
+    and equivalences. I need to use opti not OPTI in order to keep
+    chords in temperament under operations; opti SHOULD be et(OPTI).
+
+(3) Figure out what's up with LuaJIT, perhaps raise an issue.
 ]]
-end
 
 ChordSpace.help()
 
