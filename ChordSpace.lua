@@ -201,7 +201,6 @@ along with 'splitting' and 'merging' operations.
 ]]
 end
 --[[
-LOG
 
 LOG
 
@@ -235,14 +234,14 @@ does not use the inversion flat.
 
 [2011-Sep-28: Not so, but because my T was aligned on 12-TET.]
 
-2011-Sep-27
+    2011-Sep-27
 
 Redo tests of equivalences. [2011-Sep-28: They pass up to 5 voices.]
 
 2011-Sep-28
 
-First, some lessons learned painfully. I can still think quite well, but I am
-slower, and I have to allow for that. So I actually need to think MORE
+First, some lessons learned painfully. I can still think quite well, but I AM
+slower, and I have to ALLOW for that. So I actually need to think MORE
 CAREFULLY (which takes longer) in order to make sure tests and logic are quite
 clear, as this will save yet more time in testing and debugging. E.g., if I
 had had my current unit tests in place when I began to rewrite this code,
@@ -256,13 +255,21 @@ domains were ill-advised.
 The fundamental domain formulas are now as correct as the tests I have written
 can tell, although I should try to come up with some additional tests. Yet
 there still may be problems...
+
 TODO:
 
 (1) I need to display the equivalences in the viewer much more clearly.
 
-(2) I need to redo ChordSpaceGroup to use different orbifolds
-    and equivalences. I need to use opti not OPTI in order to keep
-    chords in temperament under operations; opti SHOULD be et(OPTI).
+(2) I need to redo ChordSpaceGroup to use different orbifolds and
+    equivalences. I need to keep operations in OPTI, I, and T strictly
+    within equal temperament. But I don't think I need to use the GVLS
+    fundamental domains for this at all. The symmetries of the operations are
+    all I need musically, and so I can simply put the GVLS OPTIs into equal
+    temperament and enumerate them for my prime form groups. But, what is the
+    correct way to do that? It is the equally tempered chord in OP that is
+    the closest transposition up the unison diagonal from the OPTI. I think
+    we can obtain it by taking the floor of the OPTI and then transposing it
+    up by one unit of transposition.
 
 (3) Figure out what's up with LuaJIT, perhaps raise an issue.
 ]]
@@ -601,6 +608,26 @@ end
 
 function Chord:maximumInterval()
     return self:max() - self:min()
+end
+
+-- Returns a new chord whose pitches are the floors of this chord's pitches.
+
+function Chord:floor()
+    local chord = self:clone()
+    for voice = 1, #self do
+        chord[voice] = math.floor(self[voice])
+    end
+    return chord
+end
+
+-- Returns a new chord whose pitches are the ceilings of this chord's pitches.
+
+function Chord:ceil()
+    local chord = self:clone()
+    for voice = 1, #self do
+        chord[voice] = math.ceil(self[voice])
+    end
+    return chord
 end
 
 -- Returns a value copy of the chord.
