@@ -7,7 +7,7 @@ local printPass = false
 local failExits = true
 local exitAfterFailureCount = 3
 local failureCount = 0
-local printOP = true
+local printOP = false
 
 print([[
 
@@ -52,7 +52,7 @@ if printOP == true then
     print('')
 end
 
-local chord = Chord:new{4, 7, 11}
+--local chord = Chord:new{4, 7, 11}
 local chord = Chord:new{0, 4, 7, 10}
 for index, permutation in ipairs(chord:permutations()) do
     print(string.format('permutation: %s', tostring(permutation)))
@@ -89,7 +89,7 @@ function result(expression, message)
     end
 end
 
---[[
+----[[
 
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
