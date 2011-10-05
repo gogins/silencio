@@ -100,6 +100,7 @@ local GbM7 = ChordSpace.chordsForNames['GbM7']
 print('GbM7:')
 print(GbM7:information())
 local P, I, T, V = chordSpaceGroup:fromChord(GbM7)
+print('PITV', P, I, T, V)
 print(string.format('GbM7:             P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 GbM7[2] = GbM7[2] + 12
 GbM7[4] = GbM7[4] + 24
