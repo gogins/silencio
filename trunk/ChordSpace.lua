@@ -2267,7 +2267,7 @@ function ChordSpaceGroup:fromChord(chord)
     end
     local V = self.indexesForVoicings[voicing:__hash()]
     print(V)
-    local opt = op:eOPT()
+    local opt = op:eOPTT()
     print('fromChord opt:  ' .. tostring(opt))
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
@@ -2279,7 +2279,7 @@ function ChordSpaceGroup:fromChord(chord)
         end
     end
     print(T)
-    local opti = op:eOPTI()
+    local opti = op:eOPTTI()
     print('fromChord opti: ' .. tostring(opti) .. ' ' .. opti:__hash())
     local P = self.indexesForOptis[opti:__hash()]
     print(P)
