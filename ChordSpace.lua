@@ -2267,27 +2267,27 @@ function ChordSpaceGroup:fromChord(chord)
     end
     local V = self.indexesForVoicings[voicing:__hash()]
     print(V)
-    local opt = op:eOPTT()
-    print('fromChord opt:  ' .. tostring(opt))
+    local optt = op:eOPTT()
+    print('fromChord optt:  ' .. tostring(optt))
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
-        local opt_t = opt:T(t)
-        print('fromChord opt_t:' .. tostring(opt_t))
-        if opt_t == op then
+        local optt_t = optt:T(t)
+        print('fromChord optt_t:' .. tostring(optt_t))
+        if optt_t == op then
             T = t
             break
         end
     end
-    print(T)
-    local opti = op:eOPTTI()
-    print('fromChord opti: ' .. tostring(opti) .. ' ' .. opti:__hash())
-    local P = self.indexesForOptis[opti:__hash()]
-    print(P)
+    print('T:', T)
+    local optti = op:eOPTTI()
+    print('fromChord opti: ' .. tostring(optti) .. ' ' .. optti:__hash())
+    local P = self.indexesForOptis[optti:__hash()]
+    print('P:', P)
     local I = 0
-    if opti ~= opt then
+    if optti ~= optt then
         I = 1
-        if opti:I():eOP() ~= opt then
-            print("Error: OP(I(OPTI)) must equal OPT.")
+        if optti:I():eOP() ~= optt then
+            print("Error: OP(I(OPTTI)) must equal OPTT.")
             os.exit()
         end
     end
