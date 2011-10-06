@@ -8,6 +8,7 @@ local failExits = true
 local exitAfterFailureCount = 3
 local failureCount = 0
 local printOP = false
+local printChordSpaceGroup = false
 
 print([[
 
@@ -93,8 +94,10 @@ end
 
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
-chordSpaceGroup:list()
-print()
+if printChordSpaceGroup then
+    chordSpaceGroup:list()
+    print()
+end
 
 local GbM7 = ChordSpace.chordsForNames['GbM7']
 print('GbM7:')
