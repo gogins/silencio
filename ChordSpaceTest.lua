@@ -98,6 +98,9 @@ if printChordSpaceGroup then
     chordSpaceGroup:list()
     print()
 end
+for index, chord in pairs(chordSpaceGroup.optisForIndexes) do
+    print(index, tostring(chord))
+end
 
 local GbM7 = ChordSpace.chordsForNames['GbM7']
 print('GbM7:')
