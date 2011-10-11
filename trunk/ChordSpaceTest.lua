@@ -98,6 +98,7 @@ if printChordSpaceGroup then
     chordSpaceGroup:list()
     print()
 end
+print('Equivalence class OPTTI:')
 for index, chord in pairs(chordSpaceGroup.optisForIndexes) do
     print(index, tostring(chord))
 end
