@@ -256,6 +256,11 @@ The fundamental domain formulas are now as correct as the tests I have written
 can tell, although I should try to come up with some additional tests. Yet
 there still may be problems...
 
+2011-Oct-11
+
+RPTT and RPTTI need unit tests. The definitions in :information and in
+ChordSpaceGroup are not consistent, this is why ChordSpaceGroup is failing.
+
 TODO:
 
 (1) I need to display the equivalences in the viewer much more clearly.
@@ -1688,7 +1693,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPTI
     end
     if equivalence == 'OPTTI' then
-        equivalenceMapper = Chord.iseOPTI
+        equivalenceMapper = Chord.iseOPTTI
     end
     -- Enumerate all chords in O.
     local chordset = ChordSpace.allChordsInRange(voices, -(ChordSpace.OCTAVE + 1), ChordSpace.OCTAVE + 1)
@@ -2203,10 +2208,10 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.countP = 0
     self.countV = 0
     if #self.optisForIndexes == 0 then
-        self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OPTTI', self.g)
+        self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OPT', self.g)
         for index, opti in pairs(self.optisForIndexes) do
-            local optit = opti:eTT(g)
-            self.indexesForOptis[optit:__hash()] = index
+            local optti = opti:eOPTTI()
+            self.indexesForOptis[optti:__hash()] = index
             self.countP = self.countP + 1
         end
     end
