@@ -92,6 +92,20 @@ end
 
 ----[[
 
+print('Equivalence class OPTI:')
+local ops = ChordSpace.allOfEquivalenceClass(4, 'OP')
+local optis = {}
+for index, chord in pairs(ops) do
+    opti = chord:eOPTI()
+    table.insert(optis, opti)
+end
+optis = ChordSpace.sortedSet(optis)
+for index, opti in pairs(optis) do
+    local transposition = math.ceil(opti[1]) - opti[1]
+    local optti = opti:T(transposition)
+    print(index, tostring(opti), transposition, tostring(optti))
+end
+
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 if printChordSpaceGroup then
