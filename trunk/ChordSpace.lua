@@ -189,15 +189,6 @@ Q(c, n, m)      Contexual transposition;
                 or T(c, -n) if c is an I-form of M. Not a generalized form
                 of L or R; but, like them, K and Q generate the T-I group.
 
-TODO: Implement Rachel Hall, "Linear Contextual Transformations," 2009,
-which seems to further extend the Generalized Contextual Group using
-affine transformations in chord space, and Maxx Cho, "The Voice-Leading
-Automorphism and Riemannian Operators," 2009, which may show that tonality
-arises from a voice-leading automorphism in the Riemannian group.
-
-TODO: Implement various scales found in 20th and 21st century harmony
-along with 'splitting' and 'merging' operations.
-
 ]]
 end
 --[[
@@ -261,22 +252,30 @@ there still may be problems...
 RPTT and RPTTI need unit tests. The definitions in :information and in
 ChordSpaceGroup are not consistent, this is why ChordSpaceGroup is failing.
 
+2011-Oct-13
+
+I have redone ChordSpaceGroup using different orbifolds and equivalences that
+keep operations in OPTI, I, and T strictly within equal temperament. I do not
+use the GVLS fundamental domains directly for this at all. The symmetries of
+the operations are all I need musically, so I simply put the GVLS OPTIs into
+equal temperament and enumerate them for my set-class group (OPTTI). I do this
+by taking the floor of the OPTI and then transposing it up by one unit of
+transposition.
+
 TODO:
 
-(1) I need to display the equivalences in the viewer much more clearly.
+--  Implement Rachel Hall, "Linear Contextual Transformations," 2009,
+    which seems to further extend the Generalized Contextual Group using
+    affine transformations in chord space, and Maxx Cho, "The Voice-Leading
+    Automorphism and Riemannian Operators," 2009, which may show that tonality
+    arises from a voice-leading automorphism in the Riemannian group.
 
-(2) I need to redo ChordSpaceGroup to use different orbifolds and
-    equivalences. I need to keep operations in OPTI, I, and T strictly
-    within equal temperament. But I don't think I need to use the GVLS
-    fundamental domains for this at all. The symmetries of the operations are
-    all I need musically, and so I can simply put the GVLS OPTIs into equal
-    temperament and enumerate them for my prime form groups. But, what is the
-    correct way to do that? It is the equally tempered chord in OP that is
-    the closest transposition up the unison diagonal from the OPTI. I think
-    we can obtain it by taking the floor of the OPTI and then transposing it
-    up by one unit of transposition.
+--  Implement various scales found in 20th and 21st century harmony
+    along with 'splitting' and 'merging' operations.
 
-(3) Figure out what's up with LuaJIT, perhaps raise an issue.
+--  Display the fundamental domains in the viewer much more clearly.
+
+--  Figure out what's up with LuaJIT, perhaps raise an issue.
 ]]
 
 ChordSpace.help()
@@ -923,16 +922,10 @@ end
 
 function Chord:eTT(g)
     g = g or 1
-    local iterator = self
-    -- Transpose down to layer 0 or just below.
-    while iterator:layer() > 0 do
-        iterator = iterator:T(-g)
-    end
-    -- Transpose up to layer 0 or just above.
-    while iterator:layer() < 0 do
-        iterator = iterator:T(g)
-    end
-    return iterator
+    local et = self:eT()
+    local transposition = math.ceil(et[1]) - et[1]
+    local ett = et:T(transposition)
+    return ett
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1397,7 +1390,6 @@ function Chord:information()
     local eopt = self:eOPT():et()
     local epcs = self:epcs():eP()
     local eopti = self:eOPTI():et()
-    local eoptit = eopti:eTT(1)
     local eOP = self:eOP()
     local chordName = ChordSpace.namesForChords[eOP:__hash()]
     if chordName == nil then
@@ -1437,7 +1429,7 @@ tostring(eopt),
 tostring(self:eOPI()),  tostring(self:iseOPI()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
 tostring(eopti),
-tostring(eoptit),
+tostring(self:eOPTTI()),
 self:layer())
 end
 
@@ -2208,7 +2200,7 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.countP = 0
     self.countV = 0
     if #self.optisForIndexes == 0 then
-        self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OPT', self.g)
+        self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OP', self.g)
         for index, opti in pairs(self.optisForIndexes) do
             local optti = opti:eOPTTI()
             self.indexesForOptis[optti:__hash()] = index

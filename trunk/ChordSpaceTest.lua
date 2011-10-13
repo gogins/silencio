@@ -103,7 +103,7 @@ optis = ChordSpace.sortedSet(optis)
 for index, opti in pairs(optis) do
     local transposition = math.ceil(opti[1]) - opti[1]
     local optti = opti:T(transposition)
-    print(index, tostring(opti), transposition, tostring(optti))
+    print(index, tostring(opti), transposition, tostring(optti), tostring(opti:eOPTTI()))
 end
 
 local chordSpaceGroup = ChordSpaceGroup:new()
