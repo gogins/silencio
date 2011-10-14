@@ -2221,26 +2221,22 @@ end
 -- the chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
-    print(string.format('toChord args:   %f, %f, %f, %f', P, I, T, V))
     P = P % self.countP
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % self.countV
-    print(string.format('toChord modulo: %f, %f, %f, %f', P, I, T, V))
+    print('toChord:', P, I, T, V)
     local opti = self.optisForIndexes[P]
-    print('toChord   opti: ' .. tostring(opti))
     if I == 0 then
         opt = opti
     else
         opt = opti:I():eOP()
     end
-    print('toChord   opt:  ' .. tostring(opt))
     local op_t = opt:T(T)
-    print('toChord   op_t: ' .. tostring(op_t))
     local op = op_t:eOP()
-    print('toChord   op:   ' .. tostring(op))
     local voicing = self.voicingsForIndexes[V]
-    local revoicing = op:origin()
+    print(voicing, tostring(voicing))
+    local revoicing = op:clone()
     for voice = 1, #voicing do
         revoicing[voice] = op[voice] + voicing[voice]
     end
@@ -2257,7 +2253,6 @@ function ChordSpaceGroup:fromChord(chord)
         end
     end
     local op = chord:eOP()
-    print('fromChord op:   ' .. tostring(op))
     local voicing = chord:origin()
     for voice = 1, #chord do
         voicing[voice] = chord[voice] - op[voice]
@@ -2265,21 +2260,16 @@ function ChordSpaceGroup:fromChord(chord)
     local V = self.indexesForVoicings[voicing:__hash()]
     print(V)
     local optt = op:eOPTT()
-    print('fromChord optt:  ' .. tostring(optt))
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         local optt_t = optt:T(t)
-        print('fromChord optt_t:' .. tostring(optt_t))
         if optt_t == op then
             T = t
             break
         end
     end
-    print('T:', T)
     local optti = op:eOPTTI()
-    print('fromChord opti: ' .. tostring(optti) .. ' ' .. optti:__hash())
     local P = self.indexesForOptis[optti:__hash()]
-    print('P:', P)
     local I = 0
     if optti ~= optt then
         I = 1
@@ -2288,7 +2278,6 @@ function ChordSpaceGroup:fromChord(chord)
             os.exit()
         end
     end
-    print(I)
     return P, I, T, V
 end
 
