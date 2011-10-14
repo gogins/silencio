@@ -92,20 +92,6 @@ end
 
 ----[[
 
-print('Equivalence class OPTI:')
-local ops = ChordSpace.allOfEquivalenceClass(4, 'OP')
-local optis = {}
-for index, chord in pairs(ops) do
-    opti = chord:eOPTI()
-    table.insert(optis, opti)
-end
-optis = ChordSpace.sortedSet(optis)
-for index, opti in pairs(optis) do
-    local transposition = math.ceil(opti[1]) - opti[1]
-    local optti = opti:T(transposition)
-    print(index, tostring(opti), transposition, tostring(optti), tostring(opti:eOPTTI()))
-end
-
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
 if printChordSpaceGroup then
@@ -121,7 +107,6 @@ local GbM7 = ChordSpace.chordsForNames['GbM7']
 print('GbM7:')
 print(GbM7:information())
 local P, I, T, V = chordSpaceGroup:fromChord(GbM7)
-print('PITV', P, I, T, V)
 print(string.format('GbM7:             P: %d  I: %s  T: %s  V: %s', P, I, T, V))
 GbM7[2] = GbM7[2] + 12
 GbM7[4] = GbM7[4] + 24
@@ -135,7 +120,7 @@ print('shouldBeGbM7:')
 print(shouldBeGbM7:information())
 P, I, T, V = chordSpaceGroup:fromChord(shouldBeGbM7)
 print(string.format('shouldBeGbM7:     P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: GbM7 must be the same from and to PITV')
+result(shouldBeGbM7 == GbM7, 'ChordSpaceGroup: GbM7 must be the same from and to PITV')
 
 local IofGbM7 = ChordSpace.chordsForNames['GbM7']:I():eOP()
 print('IofGbM7:')
