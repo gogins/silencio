@@ -8,7 +8,7 @@ local failExits = true
 local exitAfterFailureCount = 3
 local failureCount = 0
 local printOP = false
-local printChordSpaceGroup = false
+local printChordSpaceGroup = true
 
 print([[
 
@@ -98,58 +98,45 @@ if printChordSpaceGroup then
     chordSpaceGroup:list()
     print()
 end
-print('Equivalence class OPTTI:')
-for index, chord in pairs(chordSpaceGroup.optisForIndexes) do
-    print(index, tostring(chord))
+
+function testChordSpaceGroup(group, chordName)
+    print(string.format('BEGAN test ChordSpaceGroup for %s...', chordName))
+    local originalChord = ChordSpace.chordsForNames[chordName]
+    print(string.format('Original chord:\n%s', originalChord:information()))
+    local P, I, T, V = chordSpaceGroup:fromChord(originalChord)
+    local reconstitutedChord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('Reconstituted chord:\n%s', reconstitutedChord:information()))
+    result(originalChord == reconstitutedChord, 'Reconstituted chord must be the same as the original chord.')
+    local revoicedOriginalChord = originalChord:clone()
+    revoicedOriginalChord[1] = revoicedOriginalChord[1] + 12
+    revoicedOriginalChord[2] = revoicedOriginalChord[2] + 24
+    print(string.format('Revoiced original chord:\n%s', revoicedOriginalChord:information()))
+    local P, I, T, V = chordSpaceGroup:fromChord(revoicedOriginalChord)
+    local reconstitutedRevoicedChord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('Reconstituted revoiced chord:\n%s', reconstitutedRevoicedChord:information()))
+    result(revoicedOriginalChord == reconstitutedRevoicedChord, 'Reconstituted revoiced chord must be the same as the original revoiced chord.')
+    local invertedChord = originalChord:I():eOP()
+    print(string.format('Inverted original chord:\n%s', invertedChord:information()))
+    local P, I, T, V = chordSpaceGroup:fromChord(invertedChord)
+    local reconstitutedInvertedChord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('Reconstituted inverted chord:\n%s', reconstitutedInvertedChord:information()))
+    result(invertedChord == reconstitutedInvertedChord, 'Reconstituted inverted chord must be the same as the original inverted chord.')
+    print(string.format('ENDED test ChordSpaceGroup for %s.', chordName))
+    print()
 end
 
-local GbM7 = ChordSpace.chordsForNames['GbM7']
-print('GbM7:')
-print(GbM7:information())
-local P, I, T, V = chordSpaceGroup:fromChord(GbM7)
-print(string.format('GbM7:             P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-GbM7[2] = GbM7[2] + 12
-GbM7[4] = GbM7[4] + 24
-print('GbM7 revoiced:')
-print(GbM7:information())
-P, I, T, V = chordSpaceGroup:fromChord(GbM7)
-print(string.format('GbM7 revoiced:    P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-
-local shouldBeGbM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('shouldBeGbM7:')
-print(shouldBeGbM7:information())
-P, I, T, V = chordSpaceGroup:fromChord(shouldBeGbM7)
-print(string.format('shouldBeGbM7:     P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-result(shouldBeGbM7 == GbM7, 'ChordSpaceGroup: GbM7 must be the same from and to PITV')
-
-local IofGbM7 = ChordSpace.chordsForNames['GbM7']:I():eOP()
-print('IofGbM7:')
-print(IofGbM7:information())
-P, I, T, V = chordSpaceGroup:fromChord(IofGbM7)
-print(string.format('IofGbM7:          P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-IofGbM7[2] = IofGbM7[2] + 12
-IofGbM7[4] = IofGbM7[4] + 24
-print('IofGbM7 revoiced:')
-print(IofGbM7:information())
-P, I, T, V = chordSpaceGroup:fromChord(IofGbM7)
-print(string.format('IofGbM7 revoiced: P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-
-local shouldBeIofGbM7 = chordSpaceGroup:toChord(P, I, T, V)
-print('shouldBeIofGbM7:')
-print(shouldBeIofGbM7:information())
-P, I, T, V = chordSpaceGroup:fromChord(shouldBeIofGbM7)
-print(string.format('shouldBeIofGbM7:  P: %d  I: %s  T: %s  V: %s', P, I, T, V))
-result(shouldBeIofGbM7 == IofGbM7, 'ChordSpaceGroup: IofGbM7 must be the same from and to PITV')
-print('')
+testChordSpaceGroup(chordSpaceGroup, 'Gb7')
 
 G7 = ChordSpace.chordsForNames['G7']
 print(G7:information())
 P, I, T, V = chordSpaceGroup:fromChord(G7)
 for T = 0, 11 do
-    chord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('T:         %d', T))
+    chord = chordSpaceGroup:toChord(P, 0, T, V)
     print(chord:information())
-    chord = chordSpaceGroup:toChord(P, I+1, T, V)
+    chord = chordSpaceGroup:toChord(P, 1, T, V)
     print(chord:information())
+    print()
 end
 
 for voiceCount = 3, 4 do
@@ -165,10 +152,11 @@ for voiceCount = 3, 4 do
             for T = 0, ChordSpace.OCTAVE - 1 do
                 for V = 0, chordSpaceGroup.countV - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
-                    print(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
+                    print(string.format("toChord    (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                     local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
+                    print(p, i, t, v)
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
+                    print(string.format("fromChord  (P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                     if (fromPITV ~= frompitv) or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         --print(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                         --print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
