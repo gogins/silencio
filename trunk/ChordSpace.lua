@@ -262,6 +262,11 @@ equal temperament and enumerate them for my set-class group (OPTTI). I do this
 by taking the floor of the OPTI and then transposing it up by one unit of
 transposition.
 
+2011-Oct-16
+
+Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number 
+and transposition.
+
 TODO:
 
 --  Implement Rachel Hall, "Linear Contextual Transformations," 2009,
@@ -1407,10 +1412,11 @@ eV:       %s  iseV:    %s
 eOP:      %s  iseOP:   %s
 pcs:      %s
 eOPT:     %s  iseOPT:  %s
+eOPTT:    %s 
           %s
 eOPI:     %s  iseOPI:  %s
 eOPTI:    %s  iseOPTI: %s
-          %s
+eOPTTI    %s
           %s
 layer:      %6.2f]],
 tostring(self), chordName,
@@ -1425,11 +1431,12 @@ tostring(evt),
 tostring(self:eOP()),   tostring(self:iseOP()),
 tostring(epcs),
 tostring(self:eOPT()),  tostring(self:iseOPT()),
+tostring(self:eOPTT()),
 tostring(eopt),
 tostring(self:eOPI()),  tostring(self:iseOPI()),
 tostring(self:eOPTI()), tostring(self:iseOPTI()),
-tostring(eopti),
 tostring(self:eOPTTI()),
+tostring(eopti),
 self:layer())
 end
 
@@ -1449,6 +1456,14 @@ function ChordSpace.sortedSet(collection)
     end
     table.sort(sortedSet_)
     return sortedSet_
+end
+
+function ChordSpace.zeroBasedSet(sortedSet)
+    local zeroBasedSet = {}
+    for index, value in pairs(sortedSet) do
+        zeroBasedSet[index - 1] = value
+    end
+    return zeroBasedSet
 end
 
 function ChordSpace.setContains(setA, x)
@@ -2199,20 +2214,24 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.g = g or 1
     self.countP = 0
     self.countV = 0
-    if #self.optisForIndexes == 0 then
-        self.optisForIndexes = ChordSpace.allOfEquivalenceClass(self.voices, 'OP', self.g)
-        for index, opti in pairs(self.optisForIndexes) do
-            local optti = opti:eOPTTI()
-            self.indexesForOptis[optti:__hash()] = index
-            self.countP = self.countP + 1
-        end
+    self.indexesForOptis = {}
+    self.indexesForVoicings = {}
+    local ops = ChordSpace.allOfEquivalenceClass(self.voices, 'OP', self.g)
+    local temporaryOPTTIs = {}
+    for index, op in pairs(ops) do
+        local optti = op:eOPTTI()
+        table.insert(temporaryOPTTIs, optti)
     end
-    if #self.voicingsForIndexes == 0 then
-        self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
-        for index, voicing in pairs(self.voicingsForIndexes) do
-            self.indexesForVoicings[voicing:__hash()] = index
-            self.countV = self.countV + 1
-        end
+    self.optisForIndexes = ChordSpace.sortedSet(temporaryOPTTIs)
+    self.optisForIndexes = ChordSpace.zeroBasedSet(self.optisForIndexes)
+    for index, optti in pairs(self.optisForIndexes) do
+        self.indexesForOptis[optti:__hash()] = index
+        self.countP = self.countP + 1
+    end
+    self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
+    for index, voicing in pairs(self.voicingsForIndexes) do
+        self.indexesForVoicings[voicing:__hash()] = index
+        self.countV = self.countV + 1
     end
 end
 
@@ -2225,17 +2244,22 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % self.countV
-    print('toChord:', P, I, T, V)
-    local opti = self.optisForIndexes[P]
+    print('toChord:             ', P, I, T, V)
+    local optti = self.optisForIndexes[P]
+    print('toChord:   optti:    ', optti, optti:__hash())
+    local optt = nil
     if I == 0 then
-        opt = opti
+        optt = optti
     else
-        opt = opti:I():eOP()
+        optt = optti:I():eOP()
     end
-    local op_t = opt:T(T)
-    local op = op_t:eOP()
+    print('toChord:   optt:     ', optt)
+    local optt_t = optt:T(T)
+    print('toChord:   optt_t:   ', optt_t)
+    local op = optt_t:eOP()
+    print('toChord:   op:       ', op)
     local voicing = self.voicingsForIndexes[V]
-    print(voicing, tostring(voicing))
+    print('toChord:   voicing:  ', tostring(voicing))
     local revoicing = op:clone()
     for voice = 1, #voicing do
         revoicing[voice] = op[voice] + voicing[voice]
@@ -2247,28 +2271,39 @@ end
 -- and voicing for a chord.
 
 function ChordSpaceGroup:fromChord(chord)
-    for key, chord in pairs(chord:permutations()) do
-        if chord:eO():iseV(self.range) then
-            break
-        end
+    print('fromChord: chord:    ', chord)
+    -- Finding voicing in current order of pitches.
+    local eo = chord:eO()
+    print('fromChord: eo:       ', eo)
+    local voicing = eo:origin()
+    for voice, pitch in ipairs(eo) do
+        voicing[voice] = chord[voice] - eo[voice]
     end
-    local op = chord:eOP()
-    local voicing = chord:origin()
+    local voicingsForPitches = Chord:new()
     for voice = 1, #chord do
-        voicing[voice] = chord[voice] - op[voice]
+        voicingsForPitches[eo[voice]] = voicing[voice]
     end
+    -- Create same voicing for eOP order of pitches.
+    local eop = chord:eOP()
+    print('fromChord: eop:     ', eop)
+    local voicing = Chord:new()
+    for voice, pitch in ipairs(eop) do
+        voicing[voice] = voicingsForPitches[eop[voice]]
+    end
+    print('fromChord: voicing:  ', voicing)
     local V = self.indexesForVoicings[voicing:__hash()]
-    print(V)
-    local optt = op:eOPTT()
+    local optt = chord:eOPTT()
+    print('fromChord: optt:     ', optt)
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
-        local optt_t = optt:T(t)
-        if optt_t == op then
+        local optt_t = optt:T(t):eOP()
+        if optt_t == eop then
             T = t
             break
         end
     end
-    local optti = op:eOPTTI()
+    local optti = chord:eOPTTI()
+    print('fromChord: optti:    ', optti, optti:__hash())
     local P = self.indexesForOptis[optti:__hash()]
     local I = 0
     if optti ~= optt then
@@ -2278,6 +2313,7 @@ function ChordSpaceGroup:fromChord(chord)
             os.exit()
         end
     end
+    print('fromChord:           ', P, I, T, V)
     return P, I, T, V
 end
 
