@@ -264,7 +264,7 @@ transposition.
 
 2011-Oct-16
 
-Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number 
+Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number
 and transposition.
 
 TODO:
@@ -1412,7 +1412,7 @@ eV:       %s  iseV:    %s
 eOP:      %s  iseOP:   %s
 pcs:      %s
 eOPT:     %s  iseOPT:  %s
-eOPTT:    %s 
+eOPTT:    %s
           %s
 eOPI:     %s  iseOPI:  %s
 eOPTI:    %s  iseOPTI: %s
@@ -2273,22 +2273,22 @@ end
 function ChordSpaceGroup:fromChord(chord)
     print('fromChord: chord:    ', chord)
     -- Finding voicing in current order of pitches.
-    local eo = chord:eO()
-    print('fromChord: eo:       ', eo)
-    local voicing = eo:origin()
-    for voice, pitch in ipairs(eo) do
-        voicing[voice] = chord[voice] - eo[voice]
+    local pcs = chord:epcs()
+    print('fromChord: pcs:      ', pcs)
+    local voicing = pcs:origin()
+    for voice, pitch in ipairs(pcs) do
+        voicing[voice] = chord[voice] - pcs[voice]
     end
     local voicingsForPitches = Chord:new()
     for voice = 1, #chord do
-        voicingsForPitches[eo[voice]] = voicing[voice]
+        voicingsForPitches[pcs[voice]] = voicing[voice]
     end
     -- Create same voicing for eOP order of pitches.
-    local eop = chord:eOP()
-    print('fromChord: eop:     ', eop)
+    local op = pcs:eOP()
+    print('fromChord: op:       ', op)
     local voicing = Chord:new()
-    for voice, pitch in ipairs(eop) do
-        voicing[voice] = voicingsForPitches[eop[voice]]
+    for voice, pitch in ipairs(op) do
+        voicing[voice] = voicingsForPitches[op[voice]]
     end
     print('fromChord: voicing:  ', voicing)
     local V = self.indexesForVoicings[voicing:__hash()]
@@ -2297,7 +2297,7 @@ function ChordSpaceGroup:fromChord(chord)
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         local optt_t = optt:T(t):eOP()
-        if optt_t == eop then
+        if optt_t == op then
             T = t
             break
         end
