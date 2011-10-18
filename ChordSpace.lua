@@ -272,7 +272,12 @@ and transposition.
 
 I'm beginning to realize that my chord space group idea is also going to run 
 into the singularity and multiple point problems, e.g. {-4, 0, 4} transposed 
-4 is eOP {-4, 0, 4}, ditto transposed 8 and 12.
+4 is also eOP {-4, 0, 4}, ditto transposed 8 and 12. The inversion flat would 
+behave similiarly.
+
+In other words ChordSpaceGroup:toChord will give the same mirrored chord for 
+different P, I, T, V but :fromChord will give the same P, I, T, V for all of 
+those chords. This is correct, but complicates the unit testing.
 
 TODO:
 
