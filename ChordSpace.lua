@@ -265,7 +265,14 @@ transposition.
 2011-Oct-16
 
 Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number
+Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number
 and transposition.
+
+2011-Oct-17
+
+I'm beginning to realize that my chord space group idea is also going to run 
+into the singularity and multiple point problems, e.g. {-4, 0, 4} transposed 
+4 is eOP {-4, 0, 4}, ditto transposed 8 and 12.
 
 TODO:
 
@@ -826,9 +833,9 @@ end
 
 function Chord:eR(range)
     local chord = self:clone()
-    if chord:iseR(range) then
-        return chord
-    end
+    --if chord:iseR(range) then
+    --    return chord
+    --end
     -- The clue here is that at least one voice must be >= 0,
     -- but no voice can be > range.
     -- First, move all pitches inside the interval [0, OCTAVE),
@@ -837,7 +844,7 @@ function Chord:eR(range)
     -- Then, reflect voices that are outside of the fundamental domain
     -- back into it, which will revoice the chord, i.e.
     -- the sum of pitches is in [0, OCTAVE].
-    while chord:layer() > range do
+    while chord:layer() >= range do
         local maximumPitch, maximumVoice = chord:max()
         -- Because no voice is above the range,
         -- any voices that need to be revoiced will now be negative.
@@ -2259,11 +2266,12 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     local op = optt_t:eOP()
     print('toChord:   op:       ', op)
     local voicing = self.voicingsForIndexes[V]
-    print('toChord:   voicing:  ', tostring(voicing))
+    print('toChord:   voicing:  ', voicing)    
     local revoicing = op:clone()
-    for voice = 1, #voicing do
+    for voice = 1, #op do
         revoicing[voice] = op[voice] + voicing[voice]
     end
+    print('toChord:   revoicing:', revoicing)    
     return revoicing, opti, op, voicing
 end
 
@@ -2271,32 +2279,20 @@ end
 -- and voicing for a chord.
 
 function ChordSpaceGroup:fromChord(chord)
-    print('fromChord: chord:    ', chord)
-    -- Finding voicing in current order of pitches.
-    local pcs = chord:epcs()
-    print('fromChord: pcs:      ', pcs)
-    local voicing = pcs:origin()
-    for voice, pitch in ipairs(pcs) do
-        voicing[voice] = chord[voice] - pcs[voice]
+    print('fromChord: chord:    ', chord, chord:iseOP())
+    local op = nil
+    if chord:iseOP() then
+        op = chord:clone()
+    else
+        op = chord:eOP()
     end
-    local voicingsForPitches = Chord:new()
-    for voice = 1, #chord do
-        voicingsForPitches[pcs[voice]] = voicing[voice]
-    end
-    -- Create same voicing for eOP order of pitches.
-    local op = pcs:eOP()
     print('fromChord: op:       ', op)
-    local voicing = Chord:new()
-    for voice, pitch in ipairs(op) do
-        voicing[voice] = voicingsForPitches[op[voice]]
-    end
-    print('fromChord: voicing:  ', voicing)
-    local V = self.indexesForVoicings[voicing:__hash()]
     local optt = chord:eOPTT()
     print('fromChord: optt:     ', optt)
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         local optt_t = optt:T(t):eOP()
+        print('fromChord: optt_t:   ', optt_t)
         if optt_t == op then
             T = t
             break
@@ -2313,6 +2309,9 @@ function ChordSpaceGroup:fromChord(chord)
             os.exit()
         end
     end
+    local voicing = ChordSpace.voiceleading(op, chord)
+    V = self.indexesForVoicings[voicing:__hash()]
+    print('fromChord: voicing:  ', voicing, V)
     print('fromChord:           ', P, I, T, V)
     return P, I, T, V
 end
