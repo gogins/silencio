@@ -157,7 +157,7 @@ for voiceCount = 3, 4 do
                     print(string.format("fromChord  (P: %f  I: %f  T: %f  V: %f)", p, i, t, v))
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
                     print(string.format("fromChord  (P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
-                    if (fromPITV ~= frompitv) or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
+                    if (fromPITV ~= frompitv) then -- or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         --print(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                         --print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                         passes = false
