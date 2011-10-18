@@ -270,14 +270,13 @@ and transposition.
 
 2011-Oct-17
 
-I'm beginning to realize that my chord space group idea is also going to run 
-into the singularity and multiple point problems, e.g. {-4, 0, 4} transposed 
-4 is also eOP {-4, 0, 4}, ditto transposed 8 and 12. The inversion flat would 
-behave similiarly.
+spoint problems, e.g. {-4, 0, 4} transposed 4 is also eOP {-4, 0, 4}, ditto
+transposed 8 and 12. The inversion flat would behave similiarly.
 
-In other words ChordSpaceGroup:toChord will give the same mirrored chord for 
-different P, I, T, V but :fromChord will give the same P, I, T, V for all of 
-those chords. This is correct, but complicates the unit testing.
+In other words, for some chords ChordSpaceGroup:toChord will give the same
+chord for several different P, I, T, V, but ChordSpaceGroup:fromChord can only
+give the same P, I, T, V for all of those chords. This is correct, but it
+means that in unit testing from and should compare only chords, not numbers.
 
 TODO:
 
@@ -2252,31 +2251,46 @@ end
 -- the chord's OP may have zero or more octaves added to it.
 
 function ChordSpaceGroup:toChord(P, I, T, V)
+    local printme = false
     P = P % self.countP
     I = I % 2
     T = T % ChordSpace.OCTAVE
     V = V % self.countV
-    print('toChord:             ', P, I, T, V)
+    if printme then
+        print('toChord:             ', P, I, T, V)
+    end
     local optti = self.optisForIndexes[P]
-    print('toChord:   optti:    ', optti, optti:__hash())
+    if printme then
+        print('toChord:   optti:    ', optti, optti:__hash())
+    end
     local optt = nil
     if I == 0 then
         optt = optti
     else
         optt = optti:I():eOP()
     end
-    print('toChord:   optt:     ', optt)
+    if printme then
+        print('toChord:   optt:     ', optt)
+    end
     local optt_t = optt:T(T)
-    print('toChord:   optt_t:   ', optt_t)
+    if printme then
+        print('toChord:   optt_t:   ', optt_t)
+    end
     local op = optt_t:eOP()
-    print('toChord:   op:       ', op)
+    if printme then
+        print('toChord:   op:       ', op)
+    end
     local voicing = self.voicingsForIndexes[V]
-    print('toChord:   voicing:  ', voicing)    
+    if printme then
+        print('toChord:   voicing:  ', voicing)
+    end
     local revoicing = op:clone()
     for voice = 1, #op do
         revoicing[voice] = op[voice] + voicing[voice]
     end
-    print('toChord:   revoicing:', revoicing)    
+    if printme then
+        print('toChord:   revoicing:', revoicing)
+    end
     return revoicing, opti, op, voicing
 end
 
@@ -2284,27 +2298,38 @@ end
 -- and voicing for a chord.
 
 function ChordSpaceGroup:fromChord(chord)
-    print('fromChord: chord:    ', chord, chord:iseOP())
+    local printme = false
+    if printme then
+        print('fromChord: chord:    ', chord, chord:iseOP())
+    end
     local op = nil
     if chord:iseOP() then
         op = chord:clone()
     else
         op = chord:eOP()
     end
-    print('fromChord: op:       ', op)
+    if printme then
+        print('fromChord: op:       ', op)
+    end
     local optt = chord:eOPTT()
-    print('fromChord: optt:     ', optt)
+    if printme then
+        print('fromChord: optt:     ', optt)
+    end
     local T = 0
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         local optt_t = optt:T(t):eOP()
-        print('fromChord: optt_t:   ', optt_t)
+        if printme then
+            print('fromChord: optt_t:   ', optt_t)
+        end
         if optt_t == op then
             T = t
             break
         end
     end
     local optti = chord:eOPTTI()
-    print('fromChord: optti:    ', optti, optti:__hash())
+    if printme then
+        print('fromChord: optti:    ', optti, optti:__hash())
+    end
     local P = self.indexesForOptis[optti:__hash()]
     local I = 0
     if optti ~= optt then
@@ -2316,8 +2341,10 @@ function ChordSpaceGroup:fromChord(chord)
     end
     local voicing = ChordSpace.voiceleading(op, chord)
     V = self.indexesForVoicings[voicing:__hash()]
-    print('fromChord: voicing:  ', voicing, V)
-    print('fromChord:           ', P, I, T, V)
+    if printme then
+        print('fromChord: voicing:  ', voicing, V)
+        print('fromChord:           ', P, I, T, V)
+    end
     return P, I, T, V
 end
 
