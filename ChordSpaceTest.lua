@@ -90,7 +90,7 @@ function result(expression, message)
     end
 end
 
-----[[
+--[[
 
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
@@ -201,6 +201,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
     else
         fail(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
     end
+    --[[
     if (iseE(chord) == true) then
         if (equivalent == chord) then
             pass(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
@@ -215,6 +216,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
             fail(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
+    ]]
     if (equivalent == chord) then
         if (iseE(chord) == true) then
             pass(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
@@ -222,6 +224,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
             fail(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
         end
     end
+    --[[
     if not (equivalent == chord) then
         if not (iseE(chord) == true) then
             pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, tostring(chord), tostring(equivalent)))
@@ -229,6 +232,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
             fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, chord:information(), equivalent:information()))
         end
     end
+    ]]
 end
 
 function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
