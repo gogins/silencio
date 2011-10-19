@@ -811,7 +811,7 @@ function Chord:iseR(range)
     end
     return true
     --]]
-    ----[[ MKG:
+    ----[[ MKG several equivalents of boundary points in domain:
     local max_ = self:max()
     local min_ = self:min()
     if not ChordSpace.lte_epsilon(max_, (min_ + range)) then
@@ -819,6 +819,18 @@ function Chord:iseR(range)
     end
     local layer_ = self:layer()
     if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
+        return false
+    end
+    return true
+    --]]
+    --[[ MKG only one equivalent of each point in domain:
+    local max_ = self:max()
+    local min_ = self:min()
+    if not ChordSpace.lt_epsilon(max_, (min_ + range)) then
+        return false
+    end
+    local layer_ = self:layer()
+    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lt_epsilon(layer_, range)) then
         return false
     end
     return true
@@ -836,6 +848,28 @@ end
 -- domain of a range equivalence.
 
 function Chord:eR(range)
+    ----[[ Includes upper boundary (several equivalent points in domain).
+    local chord = self:clone()
+    --if chord:iseR(range) then
+    --    return chord
+    --end
+    -- The clue here is that at least one voice must be >= 0,
+    -- but no voice can be > range.
+    -- First, move all pitches inside the interval [0, OCTAVE),
+    -- which is not the same as the fundamental domain.
+    chord = self:epcs()
+    -- Then, reflect voices that are outside of the fundamental domain
+    -- back into it, which will revoice the chord, i.e.
+    -- the sum of pitches is in [0, OCTAVE].
+    while chord:layer() > range do
+        local maximumPitch, maximumVoice = chord:max()
+        -- Because no voice is above the range,
+        -- any voices that need to be revoiced will now be negative.
+        chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
+    end
+    return chord
+    --]]
+    --[[ Excludes upper boundary (one equivalent point in domain).
     local chord = self:clone()
     --if chord:iseR(range) then
     --    return chord
@@ -855,6 +889,7 @@ function Chord:eR(range)
         chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
     end
     return chord
+    --]]
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
@@ -2267,7 +2302,7 @@ function ChordSpaceGroup:toChord(P, I, T, V)
     if I == 0 then
         optt = optti
     else
-        optt = optti:I():eOP()
+        optt = optti:I():eOPTT()
     end
     if printme then
         print('toChord:   optt:     ', optt)
@@ -2334,8 +2369,11 @@ function ChordSpaceGroup:fromChord(chord)
     local I = 0
     if optti ~= optt then
         I = 1
-        if optti:I():eOP() ~= optt then
-            print("Error: OP(I(OPTTI)) must equal OPTT.")
+        local optt_i_optt = optt:I():eOPTT()
+        if optt_i_optt ~= optti then
+            print("Error: OPTT(I(OPTT)) must equal OPTTI.")
+            print('optt_i_optt:', optt_i_optt:information()) 
+            print('optti:      ', optti:information()) 
             os.exit()
         end
     end
