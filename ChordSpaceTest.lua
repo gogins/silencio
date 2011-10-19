@@ -177,13 +177,10 @@ local range = ChordSpace.OCTAVE + 1
 
 --[[
 Consistency is tested as follows for a set of chords in R for 2 through 12
-voices, for each equivalence class whether simple (O) or compound (OP):
-
-chord:eE():iseE() == true
--- Skip if duplicate iseE(): (chord:iseE() == true) => (chord:eE() == chord)
-not (chord:iseE() == true) => not (chord:eE() == chord)
-(chord:eE() == chord) => (chord:iseE() == true)
-not (chord:eE() == chord) => not (chord:iseE() == true)
+voices, for each equivalence class whether simple (O) or compound (OP). Note
+that some tests are omitted because more than one chord within the same
+fundamental domain may be equivalent, though these must be on the boundary
+of the domain.
 
 Additionally, for the compound equivalence classes, chord:isE() on the l.h.s.
 will imply AND of each chord:iseE() for the constituent simple equivalent
@@ -195,44 +192,25 @@ iseOPI <=> iseOP and iseO and iseP and iseI
 iseOPTI <=> iseOPT and iseOPI and iseOP and iseO and iseP and iseT and iseI and iseV
 ]]
 function testEquivalence(equivalence, chord, iseE, eE)
-    local equivalent = eE(chord)
-    if (iseE(equivalent) == true) then
-        pass(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
-    else
-        fail(string.format('chord:e%s():ise%s == true\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+    -- chord:eE():iseE() == true
+    local test = string.format('chord:e%s():ise%s() == true', equivalence, equivalence)
+    if not (iseE(eE(chord)) == true) then
+        fail(test)
     end
-    --[[
-    if (iseE(chord) == true) then
-        if (equivalent == chord) then
-            pass(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
-        else
-            fail(string.format('(chord:ise%s() == true) => (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
+    -- (chord:iseE() == false) => (chord:eE() ~= chord)
+    local test = string.format('(chord:ise%s() == false) => (chord:e%s() ~= chord)', equivalence, equivalence)
+    if iseE(chord) == false then
+        if not (eE(chord) ~= chord) then
+            fail(test)
         end
     end
-    if not (iseE(chord) == true) then
-        if not (equivalent == chord) then
-            pass(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
-        else
-            fail(string.format('not (chord:ise%s() == true) => not (chord:e%s == chord)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
-        end
-    end
-    ]]
-    if (equivalent == chord) then
-        if (iseE(chord) == true) then
-            pass(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, tostring(chord), tostring(equivalent)))
-        else
-            fail(string.format('(equivalent == chord) => (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, equivalence, chord:information(), equivalent:information()))
-        end
-    end
-    --[[
-    if not (equivalent == chord) then
+    -- (chord:eE() == chord) => (chord:iseE() == true)
+    local test = string.format('(chord:e%s() == chord) => (chord:ise%s() == true)', equivalence, equivalence)
+    if eE(chord) == chord then
         if not (iseE(chord) == true) then
-            pass(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:\n%s\nEquivalent:\n%s', equivalence, tostring(chord), tostring(equivalent)))
-        else
-            fail(string.format('not (equivalent == chord) => not (chord:ise%s() == true)\nChord:%s\nEquivalent:%s', equivalence, chord:information(), equivalent:information()))
+            fail(test)
         end
     end
-    ]]
 end
 
 function testCompoundEquivalence(equivalence, chord, iseE, otherIseEs)
