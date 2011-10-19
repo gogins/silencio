@@ -6,7 +6,7 @@ function ChordSpace.help()
 print [[
 C H O R D S P A C E
 
-Copyright 2010 by Michael Gogins.
+Copyright 2010, 2011 by Michael Gogins.
 
 This software is licensed under the terms of the GNU Lesser General Public
 License.
@@ -30,7 +30,7 @@ generating procedures:
 
 --  Implementing chord progressions performed within a more abstract
     equivalence class by means of the best-formed voice-leading within a less
-    abstract equivalence class (thus implementing fundamentals of
+    abstract equivalence class (thus implementing some fundamentals of
     "counterpoint").
 
 The associated ChordSpaceView package can display these chord spaces and
@@ -49,8 +49,8 @@ other pitches can be represented simply by using fractions.
 
 A voice is a distinct sound that is heard as having a pitch.
 
-A chord is simply a set of voices heard at the same time or, what is the same
-thing, a point in a chord space having one dimension of pitch for each voice
+A chord is simply a set of voices heard at the same time, represented here
+as a point in a chord space having one dimension of pitch for each voice
 in the chord.
 
 For the purposes of algorithmic composition in Silencio, a score is considered
@@ -77,7 +77,7 @@ orbifold compared to the parent space.
 
 In most cases, a chord space can be divided into a number, possibly
 infinite, of geometrically equivalent fundamental domains for the same
-equivalence class. Therefore, we use the notion of 'representative'
+equivalence class. Therefore, here we use the notion of 'representative'
 fundamental domain. For example, the representative fundamental domain of
 unordered sequences, out of all possible orderings, consists of all sequences
 in their ordinary sorted order. It is important, in the following, to identify
@@ -265,18 +265,27 @@ transposition.
 2011-Oct-16
 
 Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number
-Problems with ChordSpaceGroup:toChord and :fromChord. Look at voicing number
 and transposition.
 
 2011-Oct-17
 
-spoint problems, e.g. {-4, 0, 4} transposed 4 is also eOP {-4, 0, 4}, ditto
+Problems, e.g. {-4, 0, 4} transposed 4 is also eOP {-4, 0, 4}, ditto
 transposed 8 and 12. The inversion flat would behave similiarly.
 
 In other words, for some chords ChordSpaceGroup:toChord will give the same
 chord for several different P, I, T, V, but ChordSpaceGroup:fromChord can only
 give the same P, I, T, V for all of those chords. This is correct, but it
 means that in unit testing from and should compare only chords, not numbers.
+
+2011-Oct-19
+
+In 1 dimension, all pitches under OP equivalence fall in the fundamental
+domain {[0, 12)}; there are no duplicate equivalents.
+
+In 2 dimensions, all chords under OP equivalence fall in the fundamental
+domain {[-6, 6], [-6, 6], [12, 0], [0, 12]}; there are duplicate
+equivalents, because otherwise the chord {11, 11} has no equivalent in
+the domain (it is actually {-1, 11}).
 
 TODO:
 
@@ -2372,8 +2381,8 @@ function ChordSpaceGroup:fromChord(chord)
         local optt_i_optt = optt:I():eOPTT()
         if optt_i_optt ~= optti then
             print("Error: OPTT(I(OPTT)) must equal OPTTI.")
-            print('optt_i_optt:', optt_i_optt:information()) 
-            print('optti:      ', optti:information()) 
+            print('optt_i_optt:', optt_i_optt:information())
+            print('optti:      ', optti:information())
             os.exit()
         end
     end
