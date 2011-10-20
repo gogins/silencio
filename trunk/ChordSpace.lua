@@ -287,6 +287,11 @@ domain {[-6, 6], [-6, 6], [12, 0], [0, 12]}; there are duplicate
 equivalents, because otherwise the chord {11, 11} has no equivalent in
 the domain (it is actually {-1, 11}).
 
+2011-Oct-19
+
+The fromChord thing is failing because it obtains the wrong P for the chord.
+The chord:eOPTTI is correct, however.
+
 TODO:
 
 --  Implement Rachel Hall, "Linear Contextual Transformations," 2009,

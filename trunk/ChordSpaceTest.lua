@@ -9,6 +9,7 @@ local exitAfterFailureCount = 3
 local failureCount = 0
 local printOP = false
 local printChordSpaceGroup = true
+local voicesToTest = 4
 
 print([[
 
@@ -90,7 +91,7 @@ function result(expression, message)
     end
 end
 
---[[
+----[[
 
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
@@ -162,6 +163,8 @@ for voiceCount = 3, 4 do
                         --print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
                         passes = false
                         result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+                        print(fromPITV:information())
+                        print(frompitv:information())
                     end
                     print('')
                 end
@@ -196,19 +199,25 @@ function testEquivalence(equivalence, chord, iseE, eE)
     local test = string.format('chord:e%s():ise%s() == true', equivalence, equivalence)
     if not (iseE(eE(chord)) == true) then
         fail(test)
+    else
+        pass(test)
     end
     -- (chord:iseE() == false) => (chord:eE() ~= chord)
-    local test = string.format('(chord:ise%s() == false) => (chord:e%s() ~= chord)', equivalence, equivalence)
+    test = string.format('(chord:ise%s() == false) => (chord:e%s() ~= chord)', equivalence, equivalence)
     if iseE(chord) == false then
         if not (eE(chord) ~= chord) then
             fail(test)
+        else
+            pass(test)
         end
     end
     -- (chord:eE() == chord) => (chord:iseE() == true)
-    local test = string.format('(chord:e%s() == chord) => (chord:ise%s() == true)', equivalence, equivalence)
+    test = string.format('(chord:e%s() == chord) => (chord:ise%s() == true)', equivalence, equivalence)
     if eE(chord) == chord then
         if not (iseE(chord) == true) then
             fail(test)
+        else
+            pass(test)
         end
     end
 end
@@ -252,7 +261,7 @@ local function testEquivalences(voices)
     end
 end
 
-for voices = 2, 12 do
+for voices = 2, voicesToTest do
     print(string.format('\nTESTING CHORDS OF %2d VOICES...\n', voices))
     testEquivalences(voices)
 end
