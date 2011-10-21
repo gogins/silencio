@@ -368,7 +368,7 @@ function ChordSpace.lt_epsilon(a, b, factor)
     return false
 end
 
-function ChordSpace.gte_epsilon(a, b, factor)
+function ChordSpace.ge_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
     if eq then
@@ -380,7 +380,7 @@ function ChordSpace.gte_epsilon(a, b, factor)
     return false
 end
 
-function ChordSpace.lte_epsilon(a, b, factor)
+function ChordSpace.le_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
     if eq then
@@ -763,10 +763,12 @@ end
 -- the pitch is in the interval [0, OCTAVE).
 
 function ChordSpace.epc(pitch)
-    while pitch < 0 do
+    --while pitch < 0 do
+    while ChordSpace.lt_epsilon(pitch, 0) do
         pitch = pitch + ChordSpace.OCTAVE
     end
-    while pitch >= ChordSpace.OCTAVE do
+    --while pitch >= ChordSpace.OCTAVE do
+    while ChordSpace.ge_epsilon(pitch, ChordSpace.OCTAVE) do
         pitch = pitch - ChordSpace.OCTAVE
     end
     return pitch
@@ -777,7 +779,8 @@ end
 
 function Chord:isepcs()
     for voice = 1, #chord do
-        if not (self[voice] == ChordSpace.epc(chord[voice])) then
+        --if not (self[voice] == ChordSpace.epc(chord[voice])) then
+        if not ChordSpace.eq_epsilon(self[voice], ChordSpace.epc(chord[voice])) then
             return false
         end
     end
@@ -833,11 +836,11 @@ function Chord:iseR(range)
     --[[ GVLS modified:
     local max_ = self:max()
     local min_ = self:min()
-    if not ChordSpace.lte_epsilon(max_, (min_ + range)) then
+    if not ChordSpace.le_epsilon(max_, (min_ + range)) then
         return false
     end
     local layer_ = self:layer()
-    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
+    if not (ChordSpace.le_epsilon(0, layer_) and ChordSpace.le_epsilon(layer_, range)) then
         return false
     end
     return true
@@ -845,23 +848,11 @@ function Chord:iseR(range)
     ----[[ MKG several equivalents of boundary points in domain:
     local max_ = self:max()
     local min_ = self:min()
-    if not ChordSpace.lte_epsilon(max_, (min_ + range)) then
+    if not ChordSpace.le_epsilon(max_, (min_ + range)) then
         return false
     end
     local layer_ = self:layer()
-    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lte_epsilon(layer_, range)) then
-        return false
-    end
-    return true
-    --]]
-    --[[ MKG only one equivalent of each point in domain:
-    local max_ = self:max()
-    local min_ = self:min()
-    if not ChordSpace.lt_epsilon(max_, (min_ + range)) then
-        return false
-    end
-    local layer_ = self:layer()
-    if not (ChordSpace.lte_epsilon(0, layer_) and ChordSpace.lt_epsilon(layer_, range)) then
+    if not (ChordSpace.le_epsilon(0, layer_) and ChordSpace.le_epsilon(layer_, range)) then
         return false
     end
     return true
@@ -879,7 +870,6 @@ end
 -- domain of a range equivalence.
 
 function Chord:eR(range)
-    ----[[ Includes upper boundary (several equivalent points in domain).
     local chord = self:clone()
     --if chord:iseR(range) then
     --    return chord
@@ -892,35 +882,14 @@ function Chord:eR(range)
     -- Then, reflect voices that are outside of the fundamental domain
     -- back into it, which will revoice the chord, i.e.
     -- the sum of pitches is in [0, OCTAVE].
-    while chord:layer() > range do
+    --while chord:layer() > range do
+    while ChordSpace.gt_epsilon(chord:layer(), range) do
         local maximumPitch, maximumVoice = chord:max()
         -- Because no voice is above the range,
         -- any voices that need to be revoiced will now be negative.
         chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
     end
     return chord
-    --]]
-    --[[ Excludes upper boundary (one equivalent point in domain).
-    local chord = self:clone()
-    --if chord:iseR(range) then
-    --    return chord
-    --end
-    -- The clue here is that at least one voice must be >= 0,
-    -- but no voice can be > range.
-    -- First, move all pitches inside the interval [0, OCTAVE),
-    -- which is not the same as the fundamental domain.
-    chord = self:epcs()
-    -- Then, reflect voices that are outside of the fundamental domain
-    -- back into it, which will revoice the chord, i.e.
-    -- the sum of pitches is in [0, OCTAVE].
-    while chord:layer() >= range do
-        local maximumPitch, maximumVoice = chord:max()
-        -- Because no voice is above the range,
-        -- any voices that need to be revoiced will now be negative.
-        chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
-    end
-    return chord
-    --]]
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
@@ -935,7 +904,8 @@ end
 
 function Chord:iseP()
     for voice = 2, #self do
-        if not (self[voice - 1] <= self[voice]) then
+        --if not (self[voice - 1] <= self[voice]) then
+        if not ChordSpace.le_epsilon(self[voice - 1], self[voice]) then
             return false
         end
     end
@@ -1174,7 +1144,7 @@ function Chord:eV()
         local iseV_ = true
         for voice = 1, #voicing - 1 do
             local inner = voicing[voice + 1] - voicing[voice]
-            if not ChordSpace.gte_epsilon(wraparound, inner) then
+            if not ChordSpace.ge_epsilon(wraparound, inner) then
             --if inner > wraparound then
                 iseV_ = false
             end
@@ -1191,7 +1161,7 @@ end
 function Chord:iseRPT(range)
     --[[ GVLS:
     -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
-    if not (ChordSpace.lte_epsilon(self[#self], (self[1] + range))) then
+    if not (ChordSpace.le_epsilon(self[#self], (self[1] + range))) then
         return false
     end
     local layer_ = self:layer()
@@ -1205,7 +1175,7 @@ function Chord:iseRPT(range)
     local wraparound = self[1] + range - self[#self]
     for voice = 1, #self - 1  do
         local inner = self[voice + 1] - self[voice]
-        if not ChordSpace.lte_epsilon(wraparound, inner) then
+        if not ChordSpace.le_epsilon(wraparound, inner) then
             return false
         end
     end
@@ -1377,7 +1347,7 @@ end
 function Chord:iseRPTI(range)
     --[[ GVLS:
     -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
-    if not ChordSpace.lte_epsilon(self[#self], (self[1] + range)) then
+    if not ChordSpace.le_epsilon(self[#self], (self[1] + range)) then
         return false
     end
     local layer_ = self:layer()
@@ -1391,7 +1361,7 @@ function Chord:iseRPTI(range)
     local wraparound = self[1] + range - self[#self]
     for voice = 1, #self - 1  do
         local inner = self[voice + 1] - self[voice]
-        if not ChordSpace.lte_epsilon(wraparound, inner) then
+        if not ChordSpace.le_epsilon(wraparound, inner) then
             return false
         end
     end
