@@ -9,7 +9,7 @@ local exitAfterFailureCount = 3
 local failureCount = 0
 local printOP = false
 local printChordSpaceGroup = true
-local voicesToTest = 4
+local voicesToTest = 6
 
 print([[
 
@@ -91,7 +91,7 @@ function result(expression, message)
     end
 end
 
-----[[
+--[[
 
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 60)
@@ -148,25 +148,25 @@ for voiceCount = 3, 4 do
     chordSpaceGroup = ChordSpaceGroup:new()
     chordSpaceGroup:initialize(voiceCount, 48)
     chordSpaceGroup:list()
-    for P = 0, chordSpaceGroup.countP - 1 do
-        for I = 0, 1 do
-            for T = 0, ChordSpace.OCTAVE - 1 do
-                for V = 0, chordSpaceGroup.countV - 1 do
+    for V = 0, chordSpaceGroup.countV - 1 do
+        for P = 0, chordSpaceGroup.countP - 1 do
+            for I = 0, 1 do
+                for T = 0, ChordSpace.OCTAVE - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
-                    print(string.format("toChord    (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
                     local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
-                    print(string.format("fromChord  (P: %f  I: %f  T: %f  V: %f)", p, i, t, v))
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print(string.format("fromChord  (P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
-                    if (fromPITV ~= frompitv) then -- or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
-                        --print(string.format("toChord  (P: %f  I: %f  T: %f  V: %f) = %s", P, I, T, V, tostring(fromPITV)))
-                        --print(string.format("fromChord(P: %f  I: %f  T: %f  V: %f) = %s", p, i, t, v, tostring(frompitv)))
+                    print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
+                    print(string.format("fromChord  (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", p, i, t, v, tostring(frompitv)))
+                    print('')
+                    if (fromPITV ~= frompitv) then -- But some multiply equivalent: or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         passes = false
-                        result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+                        local fromPITV = chordSpaceGroup:toChord(P, I, T, V, true)
+                        local p, i, t, v = chordSpaceGroup:fromChord(fromPITV, true)
+                        local frompitv = chordSpaceGroup:toChord(p, i, t, v, true)
                         print(fromPITV:information())
                         print(frompitv:information())
+                        result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
                     end
-                    print('')
                 end
             end
         end
@@ -197,7 +197,10 @@ iseOPTI <=> iseOPT and iseOPI and iseOP and iseO and iseP and iseT and iseI and 
 function testEquivalence(equivalence, chord, iseE, eE)
     -- chord:eE():iseE() == true
     local test = string.format('chord:e%s():ise%s() == true', equivalence, equivalence)
+    local equivalent = eE(chord)
     if not (iseE(eE(chord)) == true) then
+        print(chord:information())
+        print(equivalent:information())
         fail(test)
     else
         pass(test)
@@ -206,6 +209,8 @@ function testEquivalence(equivalence, chord, iseE, eE)
     test = string.format('(chord:ise%s() == false) => (chord:e%s() ~= chord)', equivalence, equivalence)
     if iseE(chord) == false then
         if not (eE(chord) ~= chord) then
+            print(chord:information())
+            print(equivalent:information())
             fail(test)
         else
             pass(test)
@@ -215,6 +220,8 @@ function testEquivalence(equivalence, chord, iseE, eE)
     test = string.format('(chord:e%s() == chord) => (chord:ise%s() == true)', equivalence, equivalence)
     if eE(chord) == chord then
         if not (iseE(chord) == true) then
+            print(chord:information())
+            print(equivalent:information())
             fail(test)
         else
             pass(test)
