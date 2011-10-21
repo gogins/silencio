@@ -287,10 +287,11 @@ domain {[-6, 6], [-6, 6], [12, 0], [0, 12]}; there are duplicate
 equivalents, because otherwise the chord {11, 11} has no equivalent in
 the domain (it is actually {-1, 11}).
 
-2011-Oct-19
+2011-Oct-20
 
-The fromChord thing is failing because it obtains the wrong P for the chord.
-The chord:eOPTTI is correct, however.
+DD'OOOOHHHHHHHHHHHHH.... -0 and 0 are messing up chord comparators and hashes.
+Hence the sets of OPTTI are wrong. Hence the ChordSpaceGroup is wrong. But,
+now I know what the problem is!
 
 TODO:
 
@@ -539,7 +540,20 @@ function Chord:__eq(other)
         return false
     end
     for voice = 1, #self do
-        if not (self[voice] == other[voice]) then
+        --if not (self[voice] == other[voice]) then
+        if not (ChordSpace.eq_epsilon(self[voice], other[voice])) then
+            return false
+        end
+    end
+    return true
+end
+
+function Chord:__eq_epsilon(other)
+    if not (#self == #other) then
+        return false
+    end
+    for voice = 1, #self do
+        if not (ChordSpace.eq_epsilon(self[voice], other[voice])) then
             return false
         end
     end
@@ -552,10 +566,11 @@ function Chord:__hash()
     local buffer = ''
     local comma = ','
     for voice = 1, #self do
+        local digit = tostring(self[voice])
         if voice == 1 then
-            buffer = buffer .. tostring(self[voice])
+            buffer = buffer .. digit
         else
-            buffer = buffer .. comma .. tostring(self[voice])
+            buffer = buffer .. comma .. digit
         end
     end
     return buffer
@@ -567,10 +582,12 @@ end
 function Chord:__lt(other)
     local voices = math.min(#self, #other)
     for voice = 1, voices do
-        if self[voice] < other[voice] then
+        --if self[voice] < other[voice] then
+        if ChordSpace.lt_epsilon(self[voice], other[voice]) then
             return true
         end
-        if self[voice] > other[voice] then
+        --if self[voice] > other[voice] then
+        if ChordSpace.gt_epsilon(self[voice], other[voice]) then
             return false
         end
     end
@@ -2299,8 +2316,8 @@ end
 -- transposition, and voicing. The chord is not in RP; rather, each voice of
 -- the chord's OP may have zero or more octaves added to it.
 
-function ChordSpaceGroup:toChord(P, I, T, V)
-    local printme = false
+function ChordSpaceGroup:toChord(P, I, T, V, printme)
+    printme = printme or false
     P = P % self.countP
     I = I % 2
     T = T % ChordSpace.OCTAVE
@@ -2346,8 +2363,8 @@ end
 -- Returns the indices of prime form, inversion, transposition,
 -- and voicing for a chord.
 
-function ChordSpaceGroup:fromChord(chord)
-    local printme = false
+function ChordSpaceGroup:fromChord(chord, printme)
+    printme = printme or false
     if printme then
         print('fromChord: chord:    ', chord, chord:iseOP())
     end
@@ -2368,9 +2385,12 @@ function ChordSpaceGroup:fromChord(chord)
     for t = 0, ChordSpace.OCTAVE - 1, self.g do
         local optt_t = optt:T(t):eOP()
         if printme then
-            print('fromChord: optt_t:   ', optt_t)
+            print('fromChord: optt_t:   ', optt_t, t)
         end
-        if optt_t == op then
+        if optt_t:__eq_epsilon(op) == true then
+            if printme then
+                print('equals')
+            end
             T = t
             break
         end
