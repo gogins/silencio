@@ -198,7 +198,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
     -- chord:eE():iseE() == true
     local test = string.format('chord:e%s():ise%s() == true', equivalence, equivalence)
     local equivalent = eE(chord)
-    if not (iseE(eE(chord)) == true) then
+    if not (iseE(equivalent) == true) then
         print(chord:information())
         print(equivalent:information())
         fail(test)
@@ -208,7 +208,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
     -- (chord:iseE() == false) => (chord:eE() ~= chord)
     test = string.format('(chord:ise%s() == false) => (chord:e%s() ~= chord)', equivalence, equivalence)
     if iseE(chord) == false then
-        if not (eE(chord) ~= chord) then
+        if not (equivalent ~= chord) then
             print(chord:information())
             print(equivalent:information())
             fail(test)
@@ -218,7 +218,7 @@ function testEquivalence(equivalence, chord, iseE, eE)
     end
     -- (chord:eE() == chord) => (chord:iseE() == true)
     test = string.format('(chord:e%s() == chord) => (chord:ise%s() == true)', equivalence, equivalence)
-    if eE(chord) == chord then
+    if equivalent == chord then
         if not (iseE(chord) == true) then
             print(chord:information())
             print(equivalent:information())

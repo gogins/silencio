@@ -386,7 +386,7 @@ function ChordSpace.le_epsilon(a, b, factor)
     if eq then
         return true
     end
-    if a < b then
+    if ChordSpace.lt_epsilon(a, b, factor) then
         return true
     end
     return false
@@ -580,15 +580,29 @@ end
 -- for <, for the pitches in this only.
 
 function Chord:__lt(other)
+    if self:__eq(other) then
+        return false
+    end
     local voices = math.min(#self, #other)
-    for voice = 1, voices do
-        --if self[voice] < other[voice] then
+    for voice = 1, voices do    
         if ChordSpace.lt_epsilon(self[voice], other[voice]) then
             return true
         end
-        --if self[voice] > other[voice] then
-        if ChordSpace.gt_epsilon(self[voice], other[voice]) then
-            return false
+    end
+    if #self < #other then
+        return true
+    end
+    return false
+end
+
+function Chord:__le(other)
+    if self:__eq(other) then
+        return true
+    end
+    local voices = math.min(#self, #other)
+    for voice = 1, voices do
+        if ChordSpace.lt_epsilon(self[voice], other[voice]) then
+            return true
         end
     end
     if #self < #other then
@@ -997,34 +1011,37 @@ end
 
 function Chord:iseI(inverse)
     --[[ GLVS:
-    if false then
-        local chord = self:clone()
-        local lowerVoice = 2
-        local upperVoice = #chord
-        while lowerVoice < upperVoice do
-            -- GVLS: tests only 1 interval: x[2] - x[1] <= x[#x] - x[#x - 1]
-            local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
-            local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
-            if lowerInterval < upperInterval then
-                return true
-            end
-            if lowerInterval > upperInterval then
-                return false
-            end
-            lowerVoice = lowerVoice + 1
-            upperVoice = upperVoice - 1
+    local chord = self:clone()
+    local lowerVoice = 2
+    local upperVoice = #chord
+    while lowerVoice < upperVoice do
+        -- GVLS: tests only 1 interval: x[2] - x[1] <= x[#x] - x[#x - 1]
+        local lowerInterval = chord[lowerVoice] - chord[lowerVoice - 1]
+        local upperInterval = chord[upperVoice] - chord[upperVoice - 1]
+        if lowerInterval < upperInterval then
+            return true
         end
-        return true
-    end
-    --]]
-    ----[[ MKG:
-    if true then
-        inverse = inverse or self:I()
-        if not (self <= inverse) then
+        if lowerInterval > upperInterval then
             return false
         end
-        return true
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
     end
+    return true
+    --]]
+    ----[[ MKG:
+    inverse = inverse or self:I()
+    if not self:__le(inverse) then
+        return false
+    end
+    return true
+    --]]
+    --[[ MKG:
+    inverse = self:I()
+    if not self:__le(inverse) then
+        return false
+    end
+    return true
     --]]
 end
 
@@ -1309,6 +1326,7 @@ function Chord:iseRPI(range)
         return false
     end
     local inverse = self:I():eRP(range)
+    assert(inverse, 'Inverse is nil.')
     if not self:iseI(inverse) then
         return false
     end
