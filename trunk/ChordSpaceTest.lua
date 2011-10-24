@@ -99,7 +99,9 @@ function printEquivalences(equivalenceClass, voices)
     print('')
 end
 
-for voices = 1, 5 do
+--[[
+
+for voices = 1, 4 do
     printEquivalences('OP', voices)
     printEquivalences('OPT', voices)
     printEquivalences('OPTT', voices)
@@ -108,10 +110,10 @@ for voices = 1, 5 do
     printEquivalences('OPTTI', voices)
 end
 
-----[[
+]]
 
 local chordSpaceGroup = ChordSpaceGroup:new()
-chordSpaceGroup:initialize(4, 60)
+chordSpaceGroup:initialize(4, 36)
 if printChordSpaceGroup then
     chordSpaceGroup:list()
     print()
@@ -172,7 +174,7 @@ for voiceCount = 3, 4 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
                     --local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
                     --local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
+                    --print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
                     --[[
                     print(string.format("fromChord  (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", p, i, t, v, tostring(frompitv)))
                     print('')
