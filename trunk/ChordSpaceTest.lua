@@ -91,16 +91,31 @@ function result(expression, message)
     end
 end
 
+function printVoicings2(chord)
+    print(chord:information())
+    local voicings = chord:voicings()
+    for i, voicing_ in ipairs(voicings) do
+        local voicing = voicing_:et()
+        print('voicing:  ', tostring(voicing))
+        print('iseV:     ', voicing:iseV())
+        print('eV:       ', voicing:eV())
+        print('to origin:', voicing:distanceToOrigin())
+        print('to unison:', voicing:distanceToUnisonDiagonal())
+        print('')
+    end
+    print('')
+end
+
 local chord = Chord:new{ -13.0000, -13.0000, -13.0000,  -8.0000,  -6.0000}
 print('Chord:')
-print(chord:clone():information())
+printVoicings2(chord)
 print('Chord:eOPT():')
-print(chord:eOPT():information())
+printVoicings2(chord:eOPT())
 print('Chord:eOPI():')
-print(chord:eOPI():information())
+printVoicings2(chord:eOPI())
 print('Chord:eOPTI():')
-print(chord:eOPTI():information())
---os.exit()
+printVoicings2(chord:eOPTI())
+os.exit()
 
 function printEquivalences(equivalenceClass, voices)
     local chords = ChordSpace.allOfEquivalenceClass(voices, equivalenceClass)
@@ -199,7 +214,7 @@ for voiceCount = 3, 4 do
                         print(frompitv:information())
                         result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
                     end
-                    ]]
+                    --]]
                 end
             end
         end

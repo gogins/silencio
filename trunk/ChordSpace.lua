@@ -471,6 +471,16 @@ FAILED: chord:eOPTI():iseOPTI() == true
 
 It looks like the real culprit is this eV thing.
 
+2011-Oct-25
+
+Regarding eV, it's tricky because to start with a voicing and permute doesn't
+give the same permutations as starting with a chord and permuting. So the
+permutations have always to be in the same order. This may be my whole problem
+all along.
+
+I think eV may be the first permutation that is the closest to the unison
+diagonal.
+
 TODO:
 
 --  Implement Rachel Hall, "Linear Contextual Transformations," 2009,
@@ -598,7 +608,7 @@ end
 -- Returns the Euclidean distance between chords a and b,
 -- which must have the same number of voices.
 
-local function euclidean(a, b)
+function ChordSpace.euclidean(a, b)
     local sumOfSquaredDifferences = 0
     for voice = 1, #a do
         sumOfSquaredDifferences = sumOfSquaredDifferences + math.pow((a[voice] - b[voice]), 2)
@@ -894,6 +904,20 @@ function Chord:origin()
         clone_[voice] = 0
     end
     return clone_
+end
+
+function Chord:distanceToOrigin()
+    local origin = self:origin()
+    return ChordSpace.euclidean(self, origin)
+end
+
+function Chord:distanceToUnisonDiagonal()
+    local unison = self:origin()
+    local pitch = self:layer() / #self
+    for voice = 1, #self do
+        unison[voice] = pitch
+    end
+    return ChordSpace.euclidean(self, unison)
 end
 
 -- Returns the maximally even chord in the chord's space,
@@ -1298,6 +1322,9 @@ function Chord:cycle(stride)
     return clone_
 end
 
+-- Returns the permutations of the pitches in a chord. The permutations from
+-- each particular permutation are always returned in the same order.
+
 function Chord:permutations()
     local chord = self:clone()
     local permutations_ = {}
@@ -1306,6 +1333,7 @@ function Chord:permutations()
         chord = chord:cycle()
         permutations_[i] = chord
     end
+    table.sort(permutations_)
     return permutations_
 end
 
@@ -1474,7 +1502,7 @@ function Chord:eRPT(range)
         end
     end
     print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
-    --]]    
+    --]]
 end
 
 function Chord:eRPTT(range)
