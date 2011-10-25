@@ -225,7 +225,7 @@ does not use the inversion flat.
 
 [2011-Sep-28: Not so, but because my T was aligned on 12-TET.]
 
-    2011-Sep-27
+2011-Sep-27
 
 Redo tests of equivalences. [2011-Sep-28: They pass up to 5 voices.]
 
@@ -468,6 +468,8 @@ layer:        0.00
 ========================================================================
 FAILED: chord:eOPTI():iseOPTI() == true
 ========================================================================
+
+It looks like the real culprit is this eV thing.
 
 TODO:
 
@@ -1451,6 +1453,7 @@ end
 -- as set-class type, or chord type.
 
 function Chord:eRPT(range)
+    --[[
     local erp = self:eRP(range)
     local voicings_ = erp:voicings()
     for voice = 1, #voicings_ do
@@ -1460,6 +1463,18 @@ function Chord:eRPT(range)
         end
     end
     print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
+    --]]
+    ----[[
+    local erp = self:eRP(range)
+    local voicings_ = erp:voicings()
+    for voice = 1, #voicings_ do
+        local voicing = voicings_[voice]
+        if voicing:iseV() then
+            return voicing:eT()
+        end
+    end
+    print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
+    --]]    
 end
 
 function Chord:eRPTT(range)
@@ -1499,7 +1514,6 @@ function Chord:iseRPI(range)
     end
     return true
 end
-
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, and inversional equivalence.
@@ -1559,7 +1573,7 @@ function Chord:iseRPTI(range)
     if not self:iseRPT(range) then
         return false
     end
-    if not self:iseRPI(range) then
+    if not self:iseI() then
         return false
     end
     return true
@@ -1570,7 +1584,7 @@ function Chord:iseRPTTI(range)
     if not self:iseRPTT(range) then
         return false
     end
-    if not self:iseRPI(range) then
+    if not self:iseI() then
         return false
     end
     return true
@@ -1593,7 +1607,7 @@ end
 
 function Chord:eRPTI(range)
     local rpt = self:eRPT(range)
-    if rpt:iseRPTI(range) then
+    if rpt:iseI() then
         return rpt
     end
     return rpt:I():eRPT(range)
