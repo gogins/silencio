@@ -91,6 +91,17 @@ function result(expression, message)
     end
 end
 
+local chord = Chord:new{ -13.0000, -13.0000, -13.0000,  -8.0000,  -6.0000}
+print('Chord:')
+print(chord:clone():information())
+print('Chord:eOPT():')
+print(chord:eOPT():information())
+print('Chord:eOPI():')
+print(chord:eOPI():information())
+print('Chord:eOPTI():')
+print(chord:eOPTI():information())
+--os.exit()
+
 function printEquivalences(equivalenceClass, voices)
     local chords = ChordSpace.allOfEquivalenceClass(voices, equivalenceClass)
     for index, chord in pairs(chords) do
@@ -173,11 +184,12 @@ for voiceCount = 3, 4 do
                 for T = 0, ChordSpace.OCTAVE - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
                     --local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
-                    --local frompitv = chordSpaceGroup:toChord(p, i, t, v)
+                    local frompitv = chordSpaceGroup:toChord(p, i, t, v)
                     --print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
                     --[[
                     print(string.format("fromChord  (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", p, i, t, v, tostring(frompitv)))
                     print('')
+                    --]]
                     if (fromPITV ~= frompitv) then -- But some multiply equivalent: or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         passes = false
                         local fromPITV = chordSpaceGroup:toChord(P, I, T, V, true)
