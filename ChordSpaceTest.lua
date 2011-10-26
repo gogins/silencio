@@ -93,9 +93,9 @@ end
 
 function printVoicings2(chord)
     print(chord:information())
-    local voicings = chord:voicings()
+    local voicings = chord:permutations()
     for i, voicing_ in ipairs(voicings) do
-        local voicing = voicing_:et()
+        local voicing = voicing_
         print('voicing:  ', tostring(voicing))
         print('iseV:     ', voicing:iseV())
         print('eV:       ', voicing:eV())
@@ -115,7 +115,7 @@ print('Chord:eOPI():')
 printVoicings2(chord:eOPI())
 print('Chord:eOPTI():')
 printVoicings2(chord:eOPTI())
-os.exit()
+--os.exit()
 
 function printEquivalences(equivalenceClass, voices)
     local chords = ChordSpace.allOfEquivalenceClass(voices, equivalenceClass)
@@ -125,7 +125,7 @@ function printEquivalences(equivalenceClass, voices)
     print('')
 end
 
---[[
+----[[
 
 for voices = 1, 4 do
     printEquivalences('OP', voices)
@@ -136,7 +136,7 @@ for voices = 1, 4 do
     printEquivalences('OPTTI', voices)
 end
 
-]]
+--]]
 
 local chordSpaceGroup = ChordSpaceGroup:new()
 chordSpaceGroup:initialize(4, 36)
@@ -199,12 +199,13 @@ for voiceCount = 3, 4 do
                 for T = 0, ChordSpace.OCTAVE - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
                     --local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
-                    local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    --print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
-                    --[[
-                    print(string.format("fromChord  (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", p, i, t, v, tostring(frompitv)))
-                    print('')
+                    --local frompitv = chordSpaceGroup:toChord(p, i, t, v)
+                    print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
+                    ----[[
+                    --print(string.format("fromChord  (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", p, i, t, v, tostring(frompitv)))
+                    --print('')
                     --]]
+                    --[[
                     if (fromPITV ~= frompitv) then -- But some multiply equivalent: or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         passes = false
                         local fromPITV = chordSpaceGroup:toChord(P, I, T, V, true)
