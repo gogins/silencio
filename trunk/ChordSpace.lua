@@ -1353,6 +1353,7 @@ end
 -- domain of voicing equivalence.
 
 function Chord:eV()
+    ----[[
     for index, voicing in ipairs(self:permutations()) do
         local wraparound = voicing[1] + ChordSpace.OCTAVE - voicing[#voicing]
         local iseV_ = true
@@ -1367,6 +1368,25 @@ function Chord:eV()
             return voicing
         end
     end
+    --]]
+    --[[
+    local voicings = self:permutations()
+    local distancesForIndexes = {}
+    for i = 1, #voicings do
+        distancesForIndexes[i] = voicings[i]:distanceToUnisonDiagonal()
+    end
+    local minimumDistanceToUnisonDiagonal = distancesForIndexes[1]
+    for i = 2, #voicings do
+        if distancesForIndexes[i] < minimumDistanceToUnisonDiagonal then
+            minimumDistanceToUnisonDiagonal = distancesForIndexes[i]
+        end
+    end
+    for i = 1, #voicings do
+         if distancesForIndexes[i] == minimumDistanceToUnisonDiagonal then
+            return voicings[i]
+        end
+    end
+    --]]
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -2436,14 +2456,7 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.countV = 0
     self.indexesForOptis = {}
     self.indexesForVoicings = {}
-    local ops = ChordSpace.allOfEquivalenceClass(self.voices, 'OP', self.g)
-    local temporaryOPTTIs = {}
-    for index, op in pairs(ops) do
-        local optti = op:eOPTTI()
-        table.insert(temporaryOPTTIs, optti)
-    end
-    self.optisForIndexes = ChordSpace.sortedSet(temporaryOPTTIs)
-    self.optisForIndexes = ChordSpace.zeroBasedSet(self.optisForIndexes)
+    self.optisForIndexes = ChordSpace.allOfEquivalenceClass(voices, 'OPTTI')
     for index, optti in pairs(self.optisForIndexes) do
         self.indexesForOptis[optti:__hash()] = index
         self.countP = self.countP + 1
