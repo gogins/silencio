@@ -120,7 +120,7 @@ printVoicings2(chord:eOPTI())
 function printEquivalences(equivalenceClass, voices)
     local chords = ChordSpace.allOfEquivalenceClass(voices, equivalenceClass)
     for index, chord in pairs(chords) do
-        print(string.format('%6s %4d: %s  hash: %s', equivalenceClass, index, tostring(chord), chord:__hash()))
+        print(string.format('%6s %4d: %s  %s  hash: %s', equivalenceClass, index, tostring(chord), tostring(chord:et()), chord:__hash()))
     end
     print('')
 end
@@ -198,14 +198,13 @@ for voiceCount = 3, 4 do
             for I = 0, 1 do
                 for T = 0, ChordSpace.OCTAVE - 1 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
-                    --local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
-                    --local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print(string.format("toChord    (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", P, I, T, V, tostring(fromPITV)))
-                    ----[[
-                    --print(string.format("fromChord  (P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f) = %s", p, i, t, v, tostring(frompitv)))
-                    --print('')
-                    --]]
-                    --[[
+                    print("From: ", P, I, T, V)
+                    print("      ", tostring(fromPITV))
+                    local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
+                    print("To:   ", p, i, t, v)
+                    local frompitv = chordSpaceGroup:toChord(p, i, t, v)
+                    print("      ", tostring(frompitv))
+                    print('')
                     if (fromPITV ~= frompitv) then -- But some multiply equivalent: or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
                         passes = false
                         local fromPITV = chordSpaceGroup:toChord(P, I, T, V, true)
