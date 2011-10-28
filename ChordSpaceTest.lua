@@ -127,7 +127,7 @@ end
 
 ----[[
 
-for voices = 1, 4 do
+for voices = 1, 3 do
     printEquivalences('OP', voices)
     printEquivalences('OPT', voices)
     printEquivalences('OPTT', voices)
@@ -200,7 +200,7 @@ for voiceCount = 3, 4 do
                     local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
                     print("From: ", P, I, T, V)
                     print("      ", tostring(fromPITV))
-                    local p, i, t, v = chordSpaceGroup:fromChord(fromPITV)
+                    local p, i, t, v = chordSpaceGroup:fromChord(fromPITV, true)
                     print("To:   ", p, i, t, v)
                     local frompitv = chordSpaceGroup:toChord(p, i, t, v)
                     print("      ", tostring(frompitv))
