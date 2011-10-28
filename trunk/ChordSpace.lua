@@ -481,7 +481,32 @@ all along.
 I think eV may be the first permutation that is the closest to the unison
 diagonal.
 
+2011-Oct-27
+
+It's official:
+
+From:   5       0       0       0
+        {  -3.0000   0.0000   4.0000}
+fromChord: chord:       {  -3.0000   0.0000   4.0000}   true
+fromChord: op:          {  -3.0000   0.0000   4.0000}
+fromChord: optt:        {  -3.0000   0.0000   4.0000}
+fromChord: optt_t:      {  -3.0000   0.0000   4.0000}   0
+equals
+fromChord: optti:       {  -3.0000   0.0000   4.0000}   -3,1.6653345369377e-016,4
+fromChord: voicing:     {   0.0000   0.0000   0.0000}   0
+fromChord:              nil     0       0       0
+To:     nil     0       0       0
+c:\utah\opt\Csound\bin\luajit.exe: .\ChordSpace.lua:2477: attempt to perform arithmetic on local 'P' (a nil value)
+stack traceback:
+        .\ChordSpace.lua:2477: in function 'toChord'
+        ChordSpaceTest.lua:205: in main chunk
+        [C]: ?
+        
+Hashing will need clamping.
+
 TODO:
+
+--  Display the fundamental domains in the viewer much more clearly.
 
 --  Implement Rachel Hall, "Linear Contextual Transformations," 2009,
     which seems to further extend the Generalized Contextual Group using
@@ -491,10 +516,6 @@ TODO:
 
 --  Implement various scales found in 20th and 21st century harmony
     along with 'splitting' and 'merging' operations.
-
---  Display the fundamental domains in the viewer much more clearly.
-
---  Figure out what's up with LuaJIT, perhaps raise an issue.
 ]]
 
 ChordSpace.help()
