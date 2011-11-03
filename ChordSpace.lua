@@ -501,7 +501,7 @@ stack traceback:
         .\ChordSpace.lua:2477: in function 'toChord'
         ChordSpaceTest.lua:205: in main chunk
         [C]: ?
-        
+
 Hashing will need clamping.
 
 TODO:
@@ -670,7 +670,7 @@ end
 function Chord:__tostring()
     local buffer = '{'
     for voice = 1, #self do
-        buffer = buffer .. string.format('%9.4f', self[voice])
+        buffer = buffer .. string.format('%12.7f', self[voice])
     end
     buffer = buffer .. '}'
     return buffer
