@@ -168,13 +168,13 @@ function Lindenmayer:equivalenceClass(chord, equivalence)
         return chord:eOI()
     end
     if equivalence == 'OPT' then
-        return chord:eOPT()
+        return chord:eOPTT()
     end
     if equivalence == 'OPI' then
         return chord:eOPI()
     end
     if equivalence == 'OPTI' then
-        return chord:eOPTI()
+        return chord:eOPTTI()
     end
 end
 

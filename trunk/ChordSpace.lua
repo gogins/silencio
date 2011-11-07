@@ -502,11 +502,16 @@ stack traceback:
         ChordSpaceTest.lua:205: in main chunk
         [C]: ?
 
-Hashing will need clamping.
+Hashing will need clamping. That might need a global g.
 
 TODO:
 
 --  Display the fundamental domains in the viewer much more clearly.
+
+--  Display various temperament systems to see how harmony might work with 
+    voiceleading around the central diagonal. Alternatively, set up columns
+    or lattices of chords that are in interesting relations, and see how they 
+    sound and work together.
 
 --  Implement Rachel Hall, "Linear Contextual Transformations," 2009,
     which seems to further extend the Generalized Contextual Group using

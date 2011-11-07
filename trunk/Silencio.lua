@@ -140,7 +140,40 @@ do
     end
 end
 
-MIDI = require("MIDI")
+local MIDI = require("MIDI")
+
+local haveFfi, ffi = pcall(require, 'ffi')
+if haveFfi == true then
+    print('ffi found.')
+else
+    print('ffi not found.')
+end
+
+local haveJit, jit = pcall(require, 'jit')
+if haveJit == true then
+    print('jit found.')
+else
+    print('jit not found.')
+end
+
+local haveCsound = false
+local csoundapi = nil
+
+if haveFfi == true and haveJit == trueF then
+    haveCsound, csoundapi = ffi.load('csound64.dll.5.2')
+    if haveCsound == true then
+        print('Csound API found:', csoundapi)
+        -- Declare the parts of the Csound API that we need.
+        ffi.cdef[[
+            int csoundGetKsmps(void *);
+            double csoundGetSr(void *);
+            int csoundInputMessage(void *, const char *message);
+            int csoundScoreEvent(void *, char type, const double *, int);
+        ]]
+    else
+        print('Csound API not found.')
+    end
+end
 
 local result, ScoreView = pcall(require, "ScoreView")
 
@@ -199,6 +232,25 @@ function Event:midiScoreEventString()
     local event = self:midiScoreEvent()
     local eventString = string.format("{%s, %d, %d, %g, %g, %g}", event[1], event[2], event[3], event[4], event[5], event[6]) 
     return eventString
+end
+
+-- Assigns the value of this to a ctype buffer of doubles, 
+-- in conventional Silencio order. This is for use with csoundScoreEvent.
+-- This function currently assumes 11 fields in the specified order for 
+-- Csound 'i' score events only.
+
+function Event:toBuffer(buffer)
+    buffer[ 0] = self[CHANNEL + 1]
+    buffer[ 1] = self[TIME]
+    buffer[ 2] = self[DURATION]
+    buffer[ 3] = self[KEY]
+    buffer[ 4] = self[VELOCITY]
+    buffer[ 5] = self[PAN]
+    buffer[ 6] = self[HEIGHT]
+    buffer[ 7] = self[DEPTH]
+    buffer[ 8] = self[PHASE]
+    buffer[ 9] = self[STATUS]
+    buffer[10] = self[HOMOGENEITY]
 end
 
 function Event:clone()
@@ -805,6 +857,27 @@ function Score:slice(begin, end_)
         end
     end
     return slice
+end
+
+-- Sends all events in this, at once, to a running
+-- instance of Csound. This function is meant 
+-- to be called from the lua_exec opcode or 
+-- other Lua opcode, in Csound, to render a score 
+-- that has been generated as part of a Csound performance.
+
+do
+    function Score:toCsound(csound) 
+        if haveCsound == false or csound == nil then
+            print('Csound not available: aborting Score:toCsound.')
+            return
+        end
+        self:sort()
+        local buffer = ffi.new('double[11]')
+        for index, event in ipairs(self) do
+            event:toBuffer(buffer)
+            csoundapi.csoundScoreEvent(csound, 105, buffer, 11)
+        end
+    end
 end
 
 function Score:display()
