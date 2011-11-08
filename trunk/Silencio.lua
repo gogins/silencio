@@ -156,25 +156,6 @@ else
     print('jit not found.')
 end
 
-local haveCsound = false
-local csoundapi = nil
-
-if haveFfi == true and haveJit == trueF then
-    haveCsound, csoundapi = ffi.load('csound64.dll.5.2')
-    if haveCsound == true then
-        print('Csound API found:', csoundapi)
-        -- Declare the parts of the Csound API that we need.
-        ffi.cdef[[
-            int csoundGetKsmps(void *);
-            double csoundGetSr(void *);
-            int csoundInputMessage(void *, const char *message);
-            int csoundScoreEvent(void *, char type, const double *, int);
-        ]]
-    else
-        print('Csound API not found.')
-    end
-end
-
 local result, ScoreView = pcall(require, "ScoreView")
 
 TIME        =  1
@@ -240,7 +221,7 @@ end
 -- Csound 'i' score events only.
 
 function Event:toBuffer(buffer)
-    buffer[ 0] = self[CHANNEL + 1]
+    buffer[ 0] = self[CHANNEL] + 1
     buffer[ 1] = self[TIME]
     buffer[ 2] = self[DURATION]
     buffer[ 3] = self[KEY]
@@ -281,6 +262,11 @@ function Score:new(o)
         self.directory = ''
     end
     return o
+end
+
+function Score:setCsound(csound, api)
+    self.csound = csound
+    self.csoundApi = api
 end
 
 function Score:getTitle()
@@ -864,19 +850,13 @@ end
 -- to be called from the lua_exec opcode or 
 -- other Lua opcode, in Csound, to render a score 
 -- that has been generated as part of a Csound performance.
-
-do
-    function Score:toCsound(csound) 
-        if haveCsound == false or csound == nil then
-            print('Csound not available: aborting Score:toCsound.')
-            return
-        end
-        self:sort()
-        local buffer = ffi.new('double[11]')
-        for index, event in ipairs(self) do
-            event:toBuffer(buffer)
-            csoundapi.csoundScoreEvent(csound, 105, buffer, 11)
-        end
+    
+function Score:toCsound() 
+    self:sort()
+    local buffer = ffi.new('double[11]')
+    for index, event in ipairs(self) do
+        event:toBuffer(buffer)
+        self.csoundApi.csoundScoreEvent(self.csound, 105, buffer, 11)
     end
 end
 
