@@ -55,6 +55,27 @@ end
 score:toCsound()
 }}
 
+    lua_opdef   "postprocess", {{
+local ffi = require("ffi")
+local math = require("math")
+local string = require("string")
+local csoundApi = ffi.load('csound64.dll.5.2')
+ffi.cdef[[
+    int csoundGetKsmps(void *);
+    double csoundGetSr(void *);
+    struct postprocess_t {
+      const char *basename;
+    };
+]]
+
+local postprocess_ct = ffi.typeof('struct postprocess_t *')
+
+function postprocess_init(csound, opcode, carguments)
+    local p = ffi.cast(postprocess_ct, carguments)
+    
+end
+}}
+
             instr       1
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
             ; Simple FM instrument.
@@ -82,8 +103,8 @@ e 4.0
  <objectName/>
  <x>0</x>
  <y>0</y>
- <width>400</width>
- <height>200</height>
+ <width>398</width>
+ <height>479</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
