@@ -5,15 +5,15 @@ print [[
 S I L E N C I O
 
 Copyright (C) 2010 by Michael Gogins
-This software is licensed under the terms 
+This software is licensed under the terms
 of the GNU Lesser General Public License.
 
 Silencio is a simple system for doing algorithmic composition in Lua.
-Silencio runs on Android smartphones and personal computers. 
+Silencio runs on Android smartphones and personal computers.
 It will output scores as MIDI sequence files or as Csound score files.
 
-There are also convenience functions to simplify algorithmic composition, 
-including rescaling scores, splitting and combining scores, and applying 
+There are also convenience functions to simplify algorithmic composition,
+including rescaling scores, splitting and combining scores, and applying
 matrix arithmetic operations to scores.
 
 A score is a matrix in which the rows are events.
@@ -32,29 +32,29 @@ An event is a homogeneous vector with the following dimensions:
 10 Phase, in radians.
 11 Homogeneity, normally always 1.
 
-It is possible to embed a Csound orchestra in a Score object. 
-If Csound is present, the Score object will save this orchestra along with the 
-score in Csound .sco format, and shell out to render the piece using Csound. 
-This enables compositions to be edited and auditioned on a phone, then 
+It is possible to embed a Csound orchestra in a Score object.
+If Csound is present, the Score object will save this orchestra along with the
+score in Csound .sco format, and shell out to render the piece using Csound.
+This enables compositions to be edited and auditioned on a phone, then
 rendered using Csound on a computer.
 
-Pass the invoking script's arg table to Score:processArg() 
+Pass the invoking script's arg table to Score:processArg()
 and it will perform the following commands:
 
 --csound        Render generated score using set Csound orchestra.
 --dir           Sets directory in which to render files (must come first;
-                default is cwd or, on Android, scripts). Script is copied 
+                default is cwd or, on Android, scripts). Script is copied
                 to this directory.
 --display       Display the generated score as a 3-D piano roll using OpenGL.
 --fomus         Render generated score as Fomus music notation file.
 --midi          Render generated score as MIDI file and play it (default).
 --pianoteq      Play generated MIDI sequence file with Pianoteq.
---pianoteq-wav  Render score to soundfile using Pianoteq, 
+--pianoteq-wav  Render score to soundfile using Pianoteq,
                 post-process it, and play it.
 --playmidi      Play generated MIDI file.
                 post-process it, and play it.
 --playwav       Play rendered normalized output soundfile.
---post          Post-process Csound output soundfile: 
+--post          Post-process Csound output soundfile:
                 normalize, CD, MP3, tag, and play it.
 
 Thanks to Peter Billam for the Lua MIDI package
@@ -121,7 +121,7 @@ do
         platform = 'Android'
     else
         local osname = os.getenv('WINDIR')
-        if osname then 
+        if osname then
             platform = 'Windows'
         else
             result, osname = pcall(os.capture, 'uname')
@@ -203,21 +203,21 @@ function Event:fomusNote()
     -- Time in Silencio is in absolute seconds.
     -- Default time in Fomus is in quarter-note beats.
     -- 'beat' in Fomus is type of note per durational unit, e.g. 1/4 for ordinary 4/4.
-    -- We assume MM 120 and 4/4, which is 8 16th notes per second. 
+    -- We assume MM 120 and 4/4, which is 8 16th notes per second.
     -- But we pre-quantize to 64th notes at that tempo, so we set the beat to 64/2.
-    local noteString = string.format("time %g part %g dur %g pitch %g;", self[TIME] * 32, self[CHANNEL] + 1, self[DURATION] * 32, self[KEY]) 
+    local noteString = string.format("time %g part %g dur %g pitch %g;", self[TIME] * 32, self[CHANNEL] + 1, self[DURATION] * 32, self[KEY])
     return noteString
 end
 
 function Event:midiScoreEventString()
     local event = self:midiScoreEvent()
-    local eventString = string.format("{%s, %d, %d, %g, %g, %g}", event[1], event[2], event[3], event[4], event[5], event[6]) 
+    local eventString = string.format("{%s, %d, %d, %g, %g, %g}", event[1], event[2], event[3], event[4], event[5], event[6])
     return eventString
 end
 
--- Assigns the value of this to a ctype buffer of doubles, 
+-- Assigns the value of this to a ctype buffer of doubles,
 -- in conventional Silencio order. This is for use with csoundScoreEvent.
--- This function currently assumes 11 fields in the specified order for 
+-- This function currently assumes 11 fields in the specified order for
 -- Csound 'i' score events only.
 
 function Event:toBuffer(buffer)
@@ -244,7 +244,7 @@ end
 
 function Event:setOffTime(offTime)
     self[DURATION] = offTime - self[TIME]
-end    
+end
 
 function Event:__tostring()
     return string.format('t %9.3f d %9.3f s %6.2f c %7.3f k %7.3f v %7.3f x %7.3f y %7.3f z %7.3f p %7.3f h %7.2f', self[TIME], self[DURATION], self[STATUS], self[CHANNEL], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[HOMOGENEITY])
@@ -385,12 +385,12 @@ function Score:saveSco()
 end
 
 -- Save the score as a format 0 MIDI sequence.
--- The optional patch changes are an array of 
+-- The optional patch changes are an array of
 -- {'patch_change', dtime, channel, patch}.
 function Score:renderMidi(patchChanges)
     print(string.format("Saving \"%s\" as MIDI sequence file...", self:getMidiFilename()))
-    -- Time resolution is 96000 ticks per beat (i.e. per second), 
-    -- i.e. sample precision at 96 KHz. 
+    -- Time resolution is 96000 ticks per beat (i.e. per second),
+    -- i.e. sample precision at 96 KHz.
     local track = {}
     if patchChanges then
         print ('Patch changes:', patchChanges)
@@ -404,7 +404,7 @@ function Score:renderMidi(patchChanges)
         table.insert(track, i, midiscoreevent)
     end
     local midiscore = {TICKS_PER_BEAT, track}
-    midisequence = MIDI.score2midi(midiscore)    
+    midisequence = MIDI.score2midi(midiscore)
     file = io.open(self:getMidiFilename(), "w")
     file:write(midisequence)
     file:close()
@@ -588,7 +588,7 @@ function Score:findScales()
     for i = 1, HOMOGENEITY do
         local minimum, range = self:findScale(i)
         minima[i] = minimum
-        ranges[i] = range 
+        ranges[i] = range
     end
     return {minima, ranges}
 end
@@ -611,7 +611,7 @@ function Score:setScale(dimension, minimum, range)
     end
 end
 
-function Score:tagFile(filename)    
+function Score:tagFile(filename)
     print('Tagging: "' .. filename .. '"...')
     local timestamp = os.date('%Y-%m-%d')
     command = 'bwfmetaedit'
@@ -693,24 +693,24 @@ end
 -- Process rendering-related commands passed in the args table
 -- (typically, command-line arguments from the invoking script).
 
-function Score:processArg(args) 
+function Score:processArg(args)
     print('In script: "' .. args[0] .. '"\n')
     if platform == 'Android' then
         local argz = Silencio.split(args[0], '/')
         local title = argz[#argz]
         self:setTitle(title)
     else
-        self:setTitle(args[0])    
+        self:setTitle(args[0])
     end
     if #args == 0 then
         args[1] = '--midi'
     end
     for i, argument in ipairs(args) do
         if argument == '--dir' then
-            self:setDirectory(args[i + 1])            
+            self:setDirectory(args[i + 1])
             local scriptPath = cwd
             if platform == 'Windows' then
-                scriptPath = scriptPath .. '\\' .. args[0]                
+                scriptPath = scriptPath .. '\\' .. args[0]
             end
             if platform == 'Linux' then
                 scriptPath = scriptPath .. '/' .. args[0]
@@ -759,7 +759,7 @@ function Score:processArg(args)
         if argument == '--display' then
             self:display()
         end
-    end   
+    end
 end
 
 function Score:clone()
@@ -815,7 +815,7 @@ function Score:tieOverlaps(tieExact)
                     else
                         later = (earlierEvent:getOffTime() > laterEvent[TIME])
                     end
-                    if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL]  
+                    if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL]
                         and math.floor(earlierEvent[KEY ] + 0.5) == math.floor(laterEvent[KEY] + 0.5)
                         and later then
                         earlierEvent:setOffTime(laterEvent:getOffTime())
@@ -828,7 +828,7 @@ function Score:tieOverlaps(tieExact)
     end
 end
 
--- Returns the sub-score containing events 
+-- Returns the sub-score containing events
 -- starting at or later than the begin time,
 -- and up to but not including the end time.
 -- The events in the slice are references.
@@ -846,12 +846,12 @@ function Score:slice(begin, end_)
 end
 
 -- Sends all events in this, at once, to a running
--- instance of Csound. This function is meant 
--- to be called from the lua_exec opcode or 
--- other Lua opcode, in Csound, to render a score 
+-- instance of Csound. This function is meant
+-- to be called from the lua_exec opcode or
+-- other Lua opcode, in Csound, to render a score
 -- that has been generated as part of a Csound performance.
-    
-function Score:toCsound() 
+
+function Score:sendToCsound()
     self:sort()
     local buffer = ffi.new('double[11]')
     for index, event in ipairs(self) do
@@ -869,12 +869,12 @@ function Score:display()
 end
 
 --[[
-Generates scores by recursively applying a set of generating 
-functions to a single initial musical event. 
+Generates scores by recursively applying a set of generating
+functions to a single initial musical event.
 This event can be considered to represent a cursor within a score.
 The generating functions may move this cursor around
-within the score, as if moving a pen, and may at any time write the 
-current state of the cursor into the score, or write other events 
+within the score, as if moving a pen, and may at any time write the
+current state of the cursor into the score, or write other events
 based, or not based, upon the cursor into the score.
 
 The generating functions may be lambdas. Generated notes must not
@@ -882,50 +882,50 @@ be the same object as the cursor, but may be clones of the cusor,
 or entirely new objects.
 
 cursor          A Silencio.Event object that represents a position in a
-                musical score. This could be a note, a grain of sound, or 
+                musical score. This could be a note, a grain of sound, or
                 a control event.
 
-depth           The current depth of recursion. This must begin > 1. 
+depth           The current depth of recursion. This must begin > 1.
                 For each recursion, the depth is decremented. Recursion
                 ends when the depth reaches 0.
-                
-Returns the next position of the cursor, and optionally, a table of 
+
+Returns the next position of the cursor, and optionally, a table of
 generated events.
 
 generator = function(cursor, depth)
 cursor, events = generator(cursor, depth)
 
-The algorithm is similar to the deterministic algorithm for computing the 
+The algorithm is similar to the deterministic algorithm for computing the
 attractor of a recurrent iterated function systems. Instead of using
-affine transformation matrixes as the RIFS algorithm does, the current 
+affine transformation matrixes as the RIFS algorithm does, the current
 algorithm uses generating functions; but if each generating function
 applies a single affine transformation matrix to the cursor, the current
 algorithm will in fact compute a RIFS.
 
-generators      A list of generating functions with the above signature. 
+generators      A list of generating functions with the above signature.
                 Unlike RIFS, the functions need not be contractive.
-             
-transitions     An N x N transition matrix for the N generating functions. 
-                If entry [i][j] is 1, then if the current generator is the 
-                ith, then the jth generator will be applied to the current 
-                cursor after the ith; if the entry is 0, the jth generator 
+
+transitions     An N x N transition matrix for the N generating functions.
+                If entry [i][j] is 1, then if the current generator is the
+                ith, then the jth generator will be applied to the current
+                cursor after the ith; if the entry is 0, the jth generator
                 will not be applied to the current cursor after the ith.
                 In addition, each generator in the matrix must be reached
                 at some point during recursion.
-                
-depth           The current depth of recursion. This must begin > 1. 
+
+depth           The current depth of recursion. This must begin > 1.
                 For each recursion, the depth is decremented. Recursion
                 ends when the depth reaches 0.
 
-index           Indicates the current generating function, i.e. the 
+index           Indicates the current generating function, i.e. the
                 index-th row of the transition matrix.
 
 cursor          A Silencio.Event object that represents a position in a
-                musical score. This could be a note, a grain of sound, or 
+                musical score. This could be a note, a grain of sound, or
                 a control event.
 
 score           A Silencio.Score object that collects generated events.
-]]    
+]]
 
 function Silencio.recurrent(generators, transitions, depth, index, cursor, score)
     depth = depth - 1
@@ -940,7 +940,7 @@ function Silencio.recurrent(generators, transitions, depth, index, cursor, score
             for k,event in ipairs(events) do
                 score:append(event:clone())
             end
-            Silencio.recurrent(generators, transitions, depth, transitionIndex, newCursor:clone(), score) 
+            Silencio.recurrent(generators, transitions, depth, transitionIndex, newCursor:clone(), score)
         end
     end
 end
