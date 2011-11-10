@@ -1,5 +1,7 @@
 <CsoundSynthesizer>
-
+<CsOptions>
+-d -RWfo D:/Dropbox/music/lua_scoregen_silencio.wav -m3
+</CsOptions>
 <CsInstruments>
 
 sr      = 48000
@@ -25,10 +27,12 @@ ffi.cdef[[
 ]]
 csoundApi.csoundMessage(csound, "package.path:      %s\\n", package.path)
 csoundApi.csoundMessage(csound, "csound:            0x%08x\\n", csound)
-local framesPerSecond = csoundApi.csoundGetSr(csound)
-csoundApi.csoundMessage(csound, "frames per second: %8d\\n", framesPerSecond)
-local framesPerTick = csoundApi.csoundGetKsmps(csound)
-csoundApi.csoundMessage(csound, "frames per tick:   %8d\\n", framesPerTick)
+
+score = Score:new()
+score:setCsound(csound, csoundApi)
+score:setTitle('lua_scoregen_silencio')
+score:setArtist('Michael_Gogins')
+score:setDirectory('D:/Dropbox/music/')
 
 -- Compute a score using the logistic equation.
 
@@ -39,12 +43,8 @@ local interval = 0.25
 local duration = 0.5
 local insno = 1
 local scoretime = 0.5
-local score = Score:new()
-score:setCsound(csound, csoundApi)
-score:setTitle('lua_scoregen_silencio')
-score:setDirectory('D:/Dropbox/music')
 
-for i = 1, 10 do
+for i = 1, 200 do
     scoretime = scoretime + interval
     y1 = c * y * (1 - y) * 4
     y = y1
@@ -52,118 +52,27 @@ for i = 1, 10 do
     local velocity = 80
     score:append(scoretime, duration, 144.0, 0.0, key, velocity, 0.0, 0.0, 0.0, 0.0)
 end
+-- This note invokes postprocessing.
+-- It must be the last note in the piece and come after all sounds have died away.
 score:append(scoretime + 5, 1.0, 144.0, 1.0)
 score:sendToCsound()
 }}
 
-    lua_opdef   "moogladder", {{
+    lua_opdef "postprocess", {{
 local ffi = require("ffi")
-local math = require("math")
-local string = require("string")
 local csoundApi = ffi.load('csound64.dll.5.2')
+-- Declare the parts of the Csound API that we need.
+-- You must declare MYFLT as double or float as the case may be.
 ffi.cdef[[
-    int csoundGetKsmps(void *);
-    double csoundGetSr(void *);
-    struct moogladder_t {
-      double *out;
-      double *inp;
-      double *freq;
-      double *res;
-      double *istor;
-      double sr;
-      double ksmps;
-      double thermal;
-      double f;
-      double fc;
-      double fc2;
-      double fc3;
-      double fcr;
-      double acr;
-      double tune;
-      double res4;
-      double input;
-      double i;
-      double j;
-      double k;
-      double kk;
-      double stg[6];
-      double delay[6];
-      double tanhstg[6];
-    };
+    int csoundMessage(void *, const char *, ...);
 ]]
 
-local moogladder_ct = ffi.typeof('struct moogladder_t *')
-
-function moogladder_init(csound, opcode, carguments)
-    local p = ffi.cast(moogladder_ct, carguments)
-    p.sr = csoundApi.csoundGetSr(csound)
-    p.ksmps = csoundApi.csoundGetKsmps(csound)
-    if p.istor[0] == 0 then
-        for i = 0, 5 do
-            p.delay[i] = 0.0
-        end
-        for i = 0, 3 do
-            p.tanhstg[i] = 0.0
-        end
-    end
-    return 0
-end
-
-function moogladder_kontrol(csound, opcode, carguments)
-    local p = ffi.cast(moogladder_ct, carguments)
-    -- transistor thermal voltage
-    p.thermal = 1.0 / 40000.0
-    if p.res[0] < 0.0 then
-        p.res[0] = 0.0
-    end
-    -- sr is half the actual filter sampling rate
-    p.fc = p.freq[0] / p.sr
-    p.f = p.fc / 2.0
-    p.fc2 = p.fc * p.fc
-    p.fc3 = p.fc2 * p.fc
-    -- frequency & amplitude correction
-    p.fcr = 1.873 * p.fc3 + 0.4955 * p.fc2 - 0.6490 * p.fc + 0.9988
-    p.acr = -3.9364 * p.fc2 + 1.8409 * p.fc + 0.9968
-    -- filter tuning
-    p.tune = (1.0 - math.exp(-(2.0 * math.pi * p.f * p.fcr))) / p.thermal
-    p.res4 = 4.0 * p.res[0] * p.acr
-    -- Nested 'for' loops crash, not sure why.
-    -- Local loop variables also are problematic.
-    -- Lower-level loop constructs don't crash.
-    p.i = 0
-    while p.i < p.ksmps do
-        p.j = 0
-        while p.j < 2 do
-            p.k = 0
-            while p.k < 4 do
-                if p.k == 0 then
-                    p.input = p.inp[p.i] - p.res4 * p.delay[5]
-                    p.stg[p.k] = p.delay[p.k] + p.tune * (math.tanh(p.input * p.thermal) - p.tanhstg[p.k])
-                else
-                    p.input = p.stg[p.k - 1]
-                    p.tanhstg[p.k - 1] = math.tanh(p.input * p.thermal)
-                    if p.k < 3 then
-                        p.kk = p.tanhstg[p.k]
-                    else
-                        p.kk = math.tanh(p.delay[p.k] * p.thermal)
-                    end
-                    p.stg[p.k] = p.delay[p.k] + p.tune * (p.tanhstg[p.k - 1] - p.kk)
-                end
-                p.delay[p.k] = p.stg[p.k]
-                p.k = p.k + 1
-            end
-            -- 1/2-sample delay for phase compensation
-            p.delay[5] = (p.stg[3] + p.delay[4]) * 0.5
-            p.delay[4] = p.stg[3]
-            p.j = p.j + 1
-        end
-        p.out[p.i] = p.delay[5]
-        p.i = p.i + 1
-    end
+function postprocess_init(csound, opcode, carguments)
+    csoundApi.csoundMessage(csound, 'Post-processing...\\n')
+    score:postProcess()
     return 0
 end
 }}
-
 
             instr       1
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -181,9 +90,7 @@ asignal     foscili     kamplitude, khz, kcarrier, kmodulator, kindex, isine
             endin
             
             instr 	2
-            	print p1, p2, p3
-            	prints "Post-processing...\n"
-            	/* lua_iopcall "postprocess" */
+            	lua_iopcall "postprocess"
             endin
             
 </CsInstruments>
@@ -197,10 +104,10 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>72</x>
- <y>179</y>
- <width>400</width>
- <height>200</height>
+ <x>696</x>
+ <y>55</y>
+ <width>650</width>
+ <height>310</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
