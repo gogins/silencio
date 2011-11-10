@@ -90,7 +90,14 @@ asignal     foscili     kamplitude, khz, kcarrier, kmodulator, kindex, isine
             endin
             
             instr 	2
-            	lua_iopcall "postprocess"
+S4          getcfg	4
+iresult     strcmp     S4, "1"
+            if iresult != 0 then
+            prints "Off-line performance, post-processing will be performed.\n"
+            lua_iopcall "postprocess"
+            else
+            prints "Real-time performance, no post-processing will be performed.\n"
+            endif
             endin
             
 </CsInstruments>
@@ -107,7 +114,7 @@ e 4.0
  <x>696</x>
  <y>55</y>
  <width>650</width>
- <height>310</height>
+ <height>546</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
