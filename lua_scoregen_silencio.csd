@@ -44,7 +44,7 @@ local duration = 0.5
 local insno = 1
 local scoretime = 0.5
 
-for i = 1, 200 do
+for i = 1, 400 do
     scoretime = scoretime + interval
     y1 = c * y * (1 - y) * 4
     y = y1
@@ -79,9 +79,10 @@ end
             ; Simple FM instrument.
             ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 khz         =           cpsmidinn(p4)
-kamplitude  =           ampdb(p5) * 0.1
-kcarrier    =           3
-kmodulator  =           0.44
+kgain       invalue     "kgain"
+kamplitude  =           ampdb(p5) * kgain
+kcarrier    invalue     "kcarrier"
+kmodulator  invalue     "kmodulator"
             ; Intensity sidebands.
 kindex      line        0, p3, 20	
 isine       ftgenonce   1, 0, 16384, 10, 1
@@ -93,10 +94,10 @@ asignal     foscili     kamplitude, khz, kcarrier, kmodulator, kindex, isine
 S4          getcfg	4
 iresult     strcmp     S4, "1"
             if iresult != 0 then
-            prints "Off-line performance, post-processing will be performed.\n"
+            prints     "Off-line renderin: post-processing will be performed.\n"
             lua_iopcall "postprocess"
             else
-            prints "Real-time performance, no post-processing will be performed.\n"
+            prints     "Real-time rendering: no post-processing will be performed.\n"
             endif
             endin
             
@@ -111,10 +112,10 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>696</x>
- <y>55</y>
- <width>650</width>
- <height>546</height>
+ <x>779</x>
+ <y>779</y>
+ <width>151</width>
+ <height>137</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
@@ -122,23 +123,201 @@ e 4.0
   <g>46</g>
   <b>255</b>
  </bgcolor>
- <bsbObject version="2" type="BSBVSlider">
-  <objectName>slider1</objectName>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
   <x>5</x>
-  <y>5</y>
-  <width>20</width>
-  <height>100</height>
-  <uuid>{89b5f0f0-2a91-4bd5-b64d-f9ba35e57494}</uuid>
+  <y>6</y>
+  <width>146</width>
+  <height>50</height>
+  <uuid>{ff229e77-bbc5-40fd-a416-6ece90f927eb}</uuid>
   <visible>true</visible>
   <midichan>0</midichan>
-  <midicc>-3</midicc>
+  <midicc>0</midicc>
+  <label>kgain</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="background">
+   <r>170</r>
+   <g>170</g>
+   <b>127</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>5</borderradius>
+  <borderwidth>6</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBHSlider">
+  <objectName>kgain</objectName>
+  <x>9</x>
+  <y>33</y>
+  <width>138</width>
+  <height>20</height>
+  <uuid>{a5d72fc6-9c45-4d42-b9cc-195e9fd9748d}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.00000000</value>
+  <value>0.10869565</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
+ </bsbObject>
+ <bsbObject version="2" type="BSBDisplay">
+  <objectName>kgain</objectName>
+  <x>68</x>
+  <y>6</y>
+  <width>79</width>
+  <height>20</height>
+  <uuid>{6e42a5d1-f37d-4ca5-abf2-9d39d383c809}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>0.109</label>
+  <alignment>right</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>5</x>
+  <y>59</y>
+  <width>146</width>
+  <height>78</height>
+  <uuid>{e958825f-6f31-4566-b6a3-8753db34d8d8}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>kcarrier(x) and kmodulator (y)</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="background">
+   <r>170</r>
+   <g>170</g>
+   <b>127</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>5</borderradius>
+  <borderwidth>6</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBController">
+  <objectName>kcarrier</objectName>
+  <x>10</x>
+  <y>76</y>
+  <width>97</width>
+  <height>56</height>
+  <uuid>{75981d5e-a027-4302-8652-adc45bff59d9}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <objectName2>kmodulator</objectName2>
+  <xMin>0.00000000</xMin>
+  <xMax>5.00000000</xMax>
+  <yMin>0.00000000</yMin>
+  <yMax>5.00000000</yMax>
+  <xValue>4.38144330</xValue>
+  <yValue>1.60714286</yValue>
+  <type>crosshair</type>
+  <pointsize>1</pointsize>
+  <fadeSpeed>0.00000000</fadeSpeed>
+  <mouseControl act="press">jump</mouseControl>
+  <color>
+   <r>0</r>
+   <g>234</g>
+   <b>0</b>
+  </color>
+  <randomizable mode="both" group="0">false</randomizable>
+  <bgcolor>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </bgcolor>
+ </bsbObject>
+ <bsbObject version="2" type="BSBDisplay">
+  <objectName>kcarrier</objectName>
+  <x>106</x>
+  <y>76</y>
+  <width>44</width>
+  <height>20</height>
+  <uuid>{546eedac-356c-4274-bace-f3d70f31be7f}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>4.381</label>
+  <alignment>right</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBDisplay">
+  <objectName>kmodulator</objectName>
+  <x>106</x>
+  <y>112</y>
+  <width>44</width>
+  <height>20</height>
+  <uuid>{25b06aca-60cd-4e38-be6e-3549e4115cdf}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>1.607</label>
+  <alignment>right</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
  </bsbObject>
 </bsbPanel>
 <bsbPresets>
