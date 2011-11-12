@@ -36,7 +36,7 @@ score:setDirectory('D:/Dropbox/music/')
 
 -- Compute a score using the logistic equation.
 
-local c = .93849
+local c = .9849
 local y = 0.5
 local y1 = 0.5
 local interval = 0.25
@@ -112,16 +112,16 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>779</x>
- <y>779</y>
- <width>151</width>
- <height>137</height>
+ <x>501</x>
+ <y>55</y>
+ <width>845</width>
+ <height>289</height>
  <visible>true</visible>
  <uuid/>
- <bgcolor mode="nobackground">
-  <r>231</r>
-  <g>46</g>
-  <b>255</b>
+ <bgcolor mode="background">
+  <r>50</r>
+  <g>77</g>
+  <b>24</b>
  </bgcolor>
  <bsbObject version="2" type="BSBLabel">
   <objectName/>
@@ -243,8 +243,8 @@ e 4.0
   <xMax>5.00000000</xMax>
   <yMin>0.00000000</yMin>
   <yMax>5.00000000</yMax>
-  <xValue>4.38144330</xValue>
-  <yValue>1.60714286</yValue>
+  <xValue>1.23711340</xValue>
+  <yValue>3.75000000</yValue>
   <type>crosshair</type>
   <pointsize>1</pointsize>
   <fadeSpeed>0.00000000</fadeSpeed>
@@ -271,7 +271,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>4.381</label>
+  <label>1.237</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -300,7 +300,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>1.607</label>
+  <label>3.750</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>

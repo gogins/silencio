@@ -2332,6 +2332,13 @@ function Chord:notes(time_, duration_, channel_, velocity_, pan_)
     return notes_
 end
 
+function Chord:toScore(score, time_, duration_, channel_, velocity_, pan_)
+    for voice, key in ipairs(self) do
+        score:append(self:note(voice, time_, duration_, channel_, velocity_, pan_))
+    end
+    return score
+end
+
 -- If the event is a note, moves its pitch
 -- to the closest pitch of the chord.
 -- If octaveEquivalence is true (the default),
