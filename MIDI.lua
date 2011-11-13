@@ -1,8 +1,16 @@
 #!/usr/bin/lua
 --require 'DataDumper'   -- http://lua-users.org/wiki/DataDumper
 local M = {} -- public interface
-M.Version = '4.8'
-M.VersionDate = '10jan2011'
+M.Version = '5.6'
+M.VersionDate = '26jan2011'
+-- 20111111 5.6 fix patch 45 and 46 in Number2patch, should be Pizz and Harp
+-- 20110115 5.5 add mix_opus_tracks()
+-- 20110126 5.4 "previous message repeated N times" to save space on stderr
+-- 20110126 5.3 robustness fix if one note_on and multiple note_offs
+-- 20110125 5.2 opus2score terminates unended notes at the end of the track
+-- 20110124 5.1 the warnings in midi2opus display track_num
+-- 20110122 5.0 sysex2midimode.get pythonism eliminated
+-- 20110119 4.9 copyright_text_event "time" item was missing
 -- 20110110 4.8 note_on with velocity=0 treated as a note-off
 -- 20110109 4.7 many global vars localised, passes lualint :-)
 -- 20110108 4.6 duplicate int2sevenbits removed, passes lualint -r
@@ -26,11 +34,33 @@ local sysex2midimode = {
 	["\126\127\09\03\247"] = 2,
 }
 
+local previous_warning = '' -- 5.4
+local previous_times = 0    -- 5.4
+local function clean_up_warnings() -- 5.4
+	-- Call this before returning from any publicly callable function
+	-- whenever there's a possibility that a warning might have been printed
+	-- by the function, or by any private functions it might have called.
+	if previous_times > 1 then
+		io.stderr:write('  previous message repeated '
+		 ..previous_times..' times\n')
+	elseif previous_times > 0 then
+		io.stderr:write('  previous message repeated\n')
+	end
+	previous_times = 0
+	previous_warning = ''
+end
 local function warn(str)
-	io.stderr:write(str,'\n')
+	if str == previous_warning then -- 5.4
+		previous_times = previous_times + 1
+	else
+		clean_up_warnings()
+		io.stderr:write(str,'\n')
+		previous_warning = str
+	end
 end
 
 local function die(str)
+	clean_up_warnings()
 	io.stderr:write(str,'\n')
 	os.exit(1)
 end
@@ -298,8 +328,8 @@ The options:
 			-- Defined text events ------
 			elseif command == 1 then
 				E = {'text_event', time, string.sub(trackdata,i,i+length-1)}
-			elseif command == 2 then
-				E = {'copyright_text_event', string.sub(trackdata,i,i+length-1)}
+			elseif command == 2 then  -- 4.9
+				E = {'copyright_text_event', time, string.sub(trackdata,i,i+length-1)}
 			elseif command == 3 then
 				E = {'track_name',time, string.sub(trackdata,i,i+length-1)}
 			elseif command == 4 then
@@ -683,8 +713,6 @@ local function _encode(events_lol)
 			else
 				if not unknown_callback then
 					warn("Unknown event: "..tostring(event))
-					-- To surpress complaint here, just set
-					--  'unknown_callback' => sub { return () }
 				end
 				break
 			end
@@ -785,8 +813,8 @@ M.Number2patch = readOnly{   -- General MIDI patch numbers:
 [42]='Cello',
 [43]='Contrabass',
 [44]='Tremolo Strings',
-[45]='Orchestral Strings',
-[46]='Orchestral Strings',
+[45]='Pizzicato Strings',
+[46]='Orchestral Harp',
 [47]='Timpani',
 [48]='String Ensemble 1',
 [49]='String Ensemble 2',
@@ -1016,6 +1044,9 @@ function M.merge_scores(scores)
 	return output_score
 end
 
+function M.mix_opus_tracks(input_tracks) -- 5.5
+end
+
 function M.mix_scores(input_scores)
 	local output_score = {1000, {}}
 	for ks,input_score in ipairs(consistentise_ticks(input_scores)) do -- 3.6
@@ -1040,6 +1071,7 @@ function M.midi2opus(s)
 	local id = string.sub(s, i, i+3); i = i+4
 	if id ~= 'MThd' then
 		warn("midi2opus: midi starts with "..id.." instead of 'MThd'")
+		clean_up_warnings()
 		return {1000,{},}
 	end
 	-- h:short; H:unsigned short; i:int; I:unsigned int;
@@ -1053,25 +1085,29 @@ function M.midi2opus(s)
 	local ticks           = twobytes2int(string.sub(s,i,i+1)); i = i+2
 	if length ~= 6 then
 		warn("midi2opus: midi header length was "..tostring(length).." instead of 6")
+		clean_up_warnings()
 		return {1000,{},}
 	end
 	local my_opus = {ticks,}
-
+	local track_num = 1   -- 5.1
 	while i < #s-8 do
 		local track_type   = string.sub(s, i, i+3); i = i+4
 		if track_type ~= 'MTrk' then
-			warn('midi2opus: Warning: track_type is '..track_type.." instead of 'MTrk'")
+			warn('midi2opus: Warning: track #'..track_num..' type is '..track_type.." instead of 'MTrk'")
 		end
 		local track_length = fourbytes2int(string.sub(s,i,i+3)); i = i+4
 		if track_length > #s then
-			warn('midi2opus: track_length '..track_length..' is too large')
-			return {}
+			warn('midi2opus: track #'..track_num..' length '..track_length..' is too large')
+			clean_up_warnings()
+			return my_opus  -- 4.9
 		end
 		local my_midi_track = string.sub(s, i, i+track_length-1) -- 4.7
 		i = i+track_length
 		local my_track = _decode(my_midi_track) -- 4.7
 		my_opus[#my_opus+1] = my_track
+		track_num = track_num + 1   -- 5.1
 	end
+	clean_up_warnings()
 	return my_opus
 end
 
@@ -1117,6 +1153,7 @@ function M.opus2midi(opus)
 		-- should really do an array and then concat...
 		my_midi = my_midi .. 'MTrk' .. int2fourbytes(#events) .. events
 	end
+	clean_up_warnings()
 	return my_midi
 end
 
@@ -1136,12 +1173,17 @@ function M.opus2score(opus)
 				local cha = opus_event[3]  -- 4.0
 				local pitch = opus_event[4]
 				local key = cha*128 + pitch  -- 4.0
-				if chapitch2note_on_events[key] then
-					local new_e = table.remove(chapitch2note_on_events[key], 1)
+				local pending_notes = chapitch2note_on_events[key] -- 5.3
+				if pending_notes and #pending_notes > 0 then
+					local new_e = table.remove(pending_notes, 1)
 					new_e[3] = ticks_so_far - new_e[2]
 					score_track[#score_track+1] = new_e
+				elseif pitch > 127 then
+					warn('opus2score: note_off with no note_on, bad pitch='
+					 ..tostring(pitch))
 				else
-					warn('note_off without a note_on, cha='..tostring(cha)..' pitch='..tostring(pitch))
+					warn('opus2score: note_off with no note_on cha='
+					 ..tostring(cha)..' pitch='..tostring(pitch))
 				end
 			elseif opus_event[1] == 'note_on' then
 				local cha = opus_event[3]  -- 4.0
@@ -1159,10 +1201,21 @@ function M.opus2score(opus)
 				score_track[#score_track+1] = new_e
 			end
 		end
+		-- check for unterminated notes (Oisín) -- 5.2
+		for chapitch,note_on_events in pairs(chapitch2note_on_events) do
+			for k,new_e in ipairs(note_on_events) do
+				new_e[3] = ticks_so_far - new_e[2]
+				score_track[#score_track+1] = new_e
+				--warn("adding unterminated note: {'"..new_e[1].."', "..new_e[2]
+				-- ..', '..new_e[3]..', '..new_e[4]..', '..new_e[5]..'}')
+				warn("opus2score: note_on with no note_off cha="..new_e[4]
+				 ..' pitch='..new_e[5]..'; adding note_off at end')
+			end
+		end
 		score[#score+1] = score_track
 		itrack = itrack + 1
 	end
-	-- should check for unterminated notes ?
+	clean_up_warnings()
 	return score
 end
 
@@ -1224,6 +1277,7 @@ function M.score2opus(score)
 		opus[#opus+1] = sorted_events
 		itrack = itrack + 1
 	end
+	clean_up_warnings()
 	return opus
 end
 
@@ -1347,7 +1401,7 @@ function M.score2stats(opus_or_score)
 				end
 			elseif event[1] == 'sysex_f0' then
 				if sysex2midimode[event[3]] then
-				table.insert(general_midi_mode, sysex2midimode.get(event[3]))
+				table.insert(general_midi_mode,sysex2midimode[event[3]]) -- 5.0
 				end
 			end
 			if is_a_score then
@@ -1408,6 +1462,7 @@ function M.segment(...)
 	if my_type == 'opus' then
 		-- more difficult (disconnecting note_on's from their note_off's)...
 		warn("segment: opus format is not supported\n")
+		clean_up_warnings()
 		return new_score
 	end
 	tracks = dict(tracks)  -- convert list to lookup
@@ -1450,6 +1505,7 @@ function M.segment(...)
 			end
 		end
 	end
+	clean_up_warnings()
 	return new_score
 end
 
@@ -1473,6 +1529,7 @@ function M.timeshift(...)
 	if my_type == '' then return new_score end
 	if my_type == 'opus' then
 		warn("timeshift: opus format is not supported\n")
+		clean_up_warnings()
 		return new_score
 	end
 	if shift ~= nil and start_time ~= nil then
@@ -1510,7 +1567,7 @@ function M.timeshift(...)
 		earliest = 0
 	end
 	if shift == nil then
-			shift = start_time - earliest
+		shift = start_time - earliest
 	elseif (earliest + shift) < 0 then
 		start_time = 0
 		shift = 0 - earliest
@@ -1544,6 +1601,7 @@ function M.timeshift(...)
 			i = i + 1
 		end
 	end
+	clean_up_warnings()
 	return new_score
 end
 
@@ -1560,6 +1618,7 @@ function M.to_millisecs(old_opus)
 		local k; for k,old_event in ipairs(old_opus[itrack]) do
 			if old_event[1] == 'note' then
 				warn('to_millisecs needs an opus, not a score')
+				clean_up_warnings()
 				return {1000,{},}
 			end
 			local new_event = copy(old_event) -- 4.7
@@ -1576,6 +1635,7 @@ function M.to_millisecs(old_opus)
 		new_opus[#new_opus+1] = new_track
 		itrack = itrack + 1
 	end
+	clean_up_warnings()
 	return new_opus
 end
 
@@ -1676,6 +1736,16 @@ If the scores differ in their "ticks" parameter,
 they will all get converted to millisecond-tick format.
 merge_scores attempts to resolve channel-conflicts,
 but there are of course only 15 available channels...
+
+=item I<mix_opus_tracks> (tracks)
+
+Mixes an array of opus tracks into one track.
+A mixed track cannot be un-mixed.
+It is assumed that the tracks share the same I<ticks> parameter
+and the same tempo.
+Mixing score-tracks is trivial (just insert all the events into one array).
+Mixing opus-tracks is only slightly harder,
+but it's common enough that a dedicated function is useful.
 
 =item I<mix_scores> (array_of_scores)
 
@@ -1928,14 +1998,23 @@ within a score (see SYNOPSIS)
 
 =head1 DOWNLOAD
 
-This module will soon be available as a LuaRock...
+This module is available as a LuaRock in
+http://luarocks.org/repositories/rocks/index.html#midi
+so you should be able to install it with the command:
+B<sudo luarocks install midi>
 
-The source is available in
+The source is in
 http://www.pjb.com.au/comp/lua/MIDI.lua
-for you to install in your LUA_PATH
+for you to install by hand in your LUA_PATH
 
 The test script used during development is
 http://www.pjb.com.au/comp/lua/test_mi.lua
+which requires the DataDumper module.
+
+You should be able to install the luaposix module with:
+B<sudo luarocks install luaposix>
+or, on debian, with:
+B<sudo aptitude install liblua5.1-posix1>
 
 =head1 AUTHOR
 
