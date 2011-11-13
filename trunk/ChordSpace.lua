@@ -746,6 +746,16 @@ function Chord:getPan(voice)
     return self.pan[voice]
 end
 
+function Chord:count(pitch)
+    local n = 0
+    for voice = 1, #self do
+        if self[voice] == pitch then
+            n = n + 1
+        end
+    end
+    return n
+end
+
 -- Redefines the metamethod to implement value semantics
 -- for ==, for the pitches in this only.
 
@@ -1707,6 +1717,14 @@ function Chord:eOPTTI()
     return self:eRPTTI(ChordSpace.OCTAVE)
 end
 
+function Chord:name()
+    local chordName = ChordSpace.namesForChords[self:__hash()]
+    if chordName == nil then
+        chordName = ''
+    end
+    return chordName
+end
+
 -- Returns a formatted string with information about the chord.
 
 function Chord:information()
@@ -1716,10 +1734,7 @@ function Chord:information()
     local epcs = self:epcs():eP()
     local eopti = self:eOPTI():et()
     local eOP = self:eOP()
-    local chordName = ChordSpace.namesForChords[eOP:__hash()]
-    if chordName == nil then
-        chordName = ''
-    end
+    chordName = eOP:name()
     return string.format([[pitches:  %s  %s
 I:        %s
 eO:       %s  iseO:    %s
@@ -2240,8 +2255,8 @@ function ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
             return d1
         end
     end
-    local v1 = ChordSpace.voiceleading(source, d1):ep()
-    local v2 = ChordSpace.voiceleading(source, d2):ep()
+    local v1 = ChordSpace.voiceleading(source, d1):eP()
+    local v2 = ChordSpace.voiceleading(source, d2):eP()
     for voice = #v1, 1, -1 do
         if v1[voice] < v2[voice] then
             return d1
@@ -2294,7 +2309,7 @@ end
 -- as in the body of Voicings.
 
 function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
-    local destinations = destination:Voicings(range)
+    local destinations = ChordSpace.octavewiseRevoicings(destination, range)
     local closest = ChordSpace.voiceleadingClosest(source, destinations, range, avoidParallels)
     return closest
 end
@@ -2305,18 +2320,13 @@ end
 -- chord are nil.
 
 function Chord:note(voice_, time_, duration_, channel_, velocity_, pan_)
-    time_ = time_ or 0
-    duration_ = duration_ or 0.25
-    channel_ = channel_ or 1
-    velocity_ = velocity_ or 80
-    pan_ = pan_ or 0
     local note_ = Event:new()
     note_[TIME] = time_
-    note_[DURATION] = self.duration[voice_] or duration_
-    note_[CHANNEL] = self.channel[voice_] or channel_
+    note_[DURATION] = duration_ or self.duration[voice_]
+    note_[CHANNEL] = channel_ or self.channel[voice_] 
     note_[KEY] = self[voice_]
-    note_[VELOCITY] = self.velocity[voice_] or velocity_
-    note_[PAN] = self.pan[voice_] or pan_
+    note_[VELOCITY] = velocity_ or self.velocity[voice_]
+    note_[PAN] = pan_ or self.pan[voice_]
     return note_
 end
 
@@ -2391,6 +2401,10 @@ end
 -- if not the specified values are used.
 
 function ChordSpace.insert(score, chord, time_, duration, channel, velocity, pan)
+    duration = duration or 1
+    channel = channel or 0
+    velocity = velocity or 70
+    pan = pan or 0
     -- print(score, chord, time_, duration, channel, velocity, pan)
     for voice = 1, #chord do
         local event = chord:note(voice, time_, duration, channel, velocity, pan)
@@ -2459,6 +2473,34 @@ function ChordSpace.octavewisePermutations(voices, range)
     local zero = Chord:new()
     zero:resize(voices)
     local odometer = zero:clone()
+    -- Enumerate the permutations.
+    -- iterator[1] is the most significant voice, and
+    -- iterator[N] is the least significant voice.
+    voicing = 0
+    while true do
+        voicings[voicing] = odometer:clone()
+        odometer[voices] = odometer[voices] + ChordSpace.OCTAVE
+         -- "Carry" octaves.
+        for voice = voices, 2, - 1 do
+            if odometer[voice] > range then
+                odometer[voice] = zero[voice]
+                odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
+            end
+        end
+        if odometer[1] > range then
+            break
+        end
+        voicing = voicing + 1
+    end
+    return voicings
+end
+
+function ChordSpace.octavewiseRevoicings(chord, range)
+    range = range or ChordSpace.OCTAVE
+    local voicings = {}
+    local zero = chord:clone()
+    local voices = #zero
+    local odometer = chord:clone()
     -- Enumerate the permutations.
     -- iterator[1] is the most significant voice, and
     -- iterator[N] is the least significant voice.

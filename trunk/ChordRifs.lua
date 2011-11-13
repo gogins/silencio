@@ -52,16 +52,18 @@ ChordRifs.P           =  2
 ChordRifs.I           =  3
 ChordRifs.T           =  4
 ChordRifs.V           =  5
-ChordRifs.HOMOGENEITY =  6
+ChordRifs.v           =  6
+ChordRifs.HOMOGENEITY =  7
 
 function ChordRifs:new(o)
-    o = o or {iterations = 3, transitions = {}, transformations = {}, attractor = {}, timesteps = 1000}
+    o = o or {iterations = 3, transitions = {}, transformations = {}, attractor = {}, tie = true, voicelead = false, timesteps = 120 * 32}
     setmetatable(o, self)
     self.__index = self
     return o
 end
 
 function ChordRifs:initialize(voices, range, g)
+    self.score = Score:new()
     self.chordSpaceGroup = ChordSpaceGroup:new()
     self.chordSpaceGroup:initialize(voices, range, g)
 end
@@ -76,14 +78,19 @@ function ChordRifs:resize(newsize)
     end
     if newsize > oldsize then
         -- If adding, insert identity transformations as required.
+        if oldsize == 0 then
+            oldsize = 1
+        end
         for i = oldsize, newsize do
-            table.insert(self.transformations, matrix:new(ChordSpace.HOMOGENEITY, 'I'))
+            table.insert(self.transformations, matrix:new(ChordRifs.HOMOGENEITY, 'I'))
         end
         local oldtransitions = self.transitions
-        self.transitions = matrix:new(newsize, newsize)
+        oldsize = #oldtransitions
+        -- Transitions are on by default.
+        self.transitions = matrix:new(newsize, newsize, 1)
         for i = 1, oldsize do
             for j = 1, oldsize do
-                self.transitions[i][j] = oldtransitios[i][j]
+                self.transitions[i][j] = oldtransitions[i][j]
             end
         end
     end
@@ -97,12 +104,6 @@ function ChordRifs:setTransition(i, j, x)
     self.transitions[i][j] = x
 end
 
--- Returns the ith transformation in this.
-
-function ChordRifs:__index(i)
-    return self.transformations[i]
-end
-
 function ChordRifs:iterate(chord, depth, priorIndex)
     if depth == 0 then
         return
@@ -110,7 +111,7 @@ function ChordRifs:iterate(chord, depth, priorIndex)
     depth = depth - 1
     for currentIndex = 1, #self.transitions do
         if self.transitions[currentIndex] ~= 0 then
-            local newchord = self[currentIndex]:mul(chord)
+            local newchord = self.transformations[currentIndex]:mul(chord)
             table.insert(self.attractor, newchord)
             self:iterate(newchord, depth, currentIndex)
         end
@@ -118,7 +119,7 @@ function ChordRifs:iterate(chord, depth, priorIndex)
 end
 
 function chordComparator(a, b)
-    if a[1] < b[1] then
+    if a[1][1] < b[1][1] then
         return true
     end
     return false
@@ -127,59 +128,193 @@ end
 function ChordRifs:collect()
     table.sort(self.attractor, chordComparator)
     self.collected = {}
-    local minimumTime = self.attractor[1][1]
-    local maximumTime = self.attractor[#self.attractor][1]
-    self.timeSlice = (maximumTime - minimumTie) / self.timeSlices
+    local minimumTime = self.attractor[1][1][1]
+    local maximumTime = self.attractor[#self.attractor][1][1]
+    self.timeSlice = (maximumTime - minimumTime) / self.timesteps
     local index = 1
-    for currentSlice = 1, self.timeSlices do
+    for timestep = 1, self.timesteps do
         local slice = {}
-        local sliceBegin = (currentSlice - 1) * self.timeSlice
-        local sliceEnd = currentSlice * self.timeSlice
-        while true do
+        local sliceBegin = (timestep - 1) * self.timeSlice
+        local sliceEnd = timestep * self.timeSlice
+        while index < #self.attractor do
             local chord = self.attractor[index]
-            local chordTime = chord[1]
-            if chordTime >= sliceBegin and chordTime < sliceEnd then
-                table.insert(slice, chord)
-            else
+            local chordTime = chord[1][1]
+            if chordTime >= sliceEnd then
                 break
             end
+            table.insert(slice, chord)
+            index = index + 1
         end
         if #slice > 0 then
-            local collector = matrix:new{sliceBegin, 0, 0, 0, 0, 1}
+            local collector = self:newchord()
+            collector[1][1] = sliceBegin
             for key, value in ipairs(slice) do
                 for i = 2, 5 do
-                    collector[i] = collector[i] + value[i]
+                    collector[i][1] = collector[i][1] + value[i][1]
                 end
             end
             for i = 2, 5 do
-                collector[i] = collector[i] / #slice
+                collector[i][1] = collector[i][1] / #slice
             end        
+            collector[6][1] = 50 + #slice * 2
             table.insert(self.collected, collector)
         end
     end
+    print("Collected: " .. #self.collected .. " distinct chords.")
+end
+
+function ChordRifs:findSize()
+    print('Finding size of attractor...')
+    self.minima = self:newchord()
+    self.maxima = self:newchord()
+    self.ranges = self:newchord()
+    for index = 1, #self.collected do
+        chord = self.collected[index]
+        if index == 1 then
+            for dimension = 1, ChordRifs.HOMOGENEITY do
+                value = chord[dimension][1]
+                self.minima[dimension][1] = value
+                self.maxima[dimension][1] = value
+            end
+        else
+            for dimension = 1, ChordRifs.HOMOGENEITY do
+                value = chord[dimension][1]
+                if self.minima[dimension][1] > value then
+                    self.minima[dimension][1] = value
+                end
+                if self.maxima[dimension][1] < value then
+                    self.maxima[dimension][1] = value
+                end
+            end
+        end
+    end
+    for dimension = 1, ChordRifs.HOMOGENEITY do
+        self.ranges[dimension][1] = self.maxima[dimension][1] - self.minima[dimension][1]
+    end
+    print("Minima:")
+    self.minima:print()
+    print("Maxima:")
+    self.maxima:print()
+    print("Ranges:")
+    self.ranges:print()
 end
 
 function ChordRifs:translate()
-    for timeslice, tPITV in self.collected do
+    -- Initial translation is for 2 minutes.
+    local duration = (((self.ranges[1][1]) * 120) / self.timesteps) * 4
+    local priorChord = nil
+    local chord = nil
+    for timeslice, tPITV in ipairs(self.collected) do
         local time_ = (timeslice - 1) * self.timeSlice
-        local duration = self.timeSlice
-        local chord = self.chordSpaceGroup:toChord(tPITV[2], tPITV[3], tPITV[4], tPITV[5])
-        ChordSpace.insert(self.score, chord, time_, duration)
+        -- Each dimension must be moved to the origin, normalized, 
+        -- rescaled to fit the size of the group, and then rounded to an integer.
+        local t =            ((tPITV[1][1] - self.minima[1][1]) / self.ranges[1][1]) * 120
+        local P = math.floor(((tPITV[2][1] - self.minima[2][1]) / self.ranges[2][1]) * self.chordSpaceGroup.countP)
+        local I = math.floor(((tPITV[3][1] - self.minima[3][1]) / self.ranges[3][1]) * 2)
+        local T = math.floor(((tPITV[4][1] - self.minima[4][1]) / self.ranges[4][1]) * 12)
+        local V = math.floor(((tPITV[5][1] - self.minima[5][1]) / self.ranges[5][1]) * self.chordSpaceGroup.countV)
+        priorChord = chord
+        chord = self.chordSpaceGroup:toChord(P, I, T, V, false)
+        if priorChord ~= nil and self.voicelead == true then
+            chord = ChordSpace.voiceleadingClosestRange(priorChord, chord, self.chordSpaceGroup.range, true)
+        end
+        local velocity = tPITV[6][1]
+        print(string.format('Time: %9.4f  P: %6d  I: %6d  T: %6d  V: %6d  velocity: %9.4f %s', t, P, I, T, V, velocity, chord:name()))
+        ChordSpace.insert(self.score, chord, t, duration, 0.0, velocity)   
     end
-    self.score:tieOverlaps()
+    print(string.format('Before tieing overlaps: %8d notes.', #self.score))
+    if self.tie == true then
+        self.score:tieOverlaps()
+        print(string.format('After tieing overlaps:  %8d notes.', #self.score))
+    end
 end
 
-function ChordRifs:generate()
+function ChordRifs:generate(iterations)
+    print('Generating...')
+    self.iterations = iterations or self.iterations
     self.attractor = {}
-    local chord = matrix:new{0, 0, 0, 0, 0, 1}
+    local chord = self:newchord()
+    print('Iterating ' .. self.iterations .. ' times...')
     self:iterate(chord, self.iterations, 1)
+    print('Generated: ' .. #self.attractor .. ' distinct chords.')
+    print('Merging chords within time slices...')
     self:collect()
+    print('Collected: ' .. #self.collected .. ' distinct chords.')
+    self:findSize()
+    print('Translating collected chords to score...')
     self:translate()
+    print('Finished generating.')
 end
 
-chordRifs = ChordRifs:new()
-chordRifs:initialize(4, 48, 1)
-print(chordRifs.chordSpaceGroup.g)
-chordRifs.chordSpaceGroup:list()
+function ChordRifs:list()
+    for index, transformation in ipairs(self.transformations) do
+        print(string.format("Transformation %4d:", index))
+        transformation:print()
+    end
+    print("Transition matrix:")
+    self.transitions:print()
+end
+
+function ChordRifs:newchord()
+    local chord = matrix:new(ChordRifs.HOMOGENEITY, 1, 0)
+    chord[ChordRifs.HOMOGENEITY][1] = 1
+    return chord
+end
+
+if true then
+
+rifs = ChordRifs:new()
+rifs:initialize(4, 48, 1)
+rifs:resize(3)
+
+-- Time.
+rifs.transformations[1][1][1] = 0.5
+rifs.transformations[2][1][1] = 0.5
+rifs.transformations[3][1][1] = 0.5
+rifs.transformations[1][1][ChordRifs.HOMOGENEITY] = 0
+rifs.transformations[2][1][ChordRifs.HOMOGENEITY] = 1
+rifs.transformations[3][1][ChordRifs.HOMOGENEITY] = 2
+-- Set-class.
+rifs.transformations[1][2][2] = 1
+rifs.transformations[2][2][2] = 1.5
+rifs.transformations[3][2][2] = 1.333333
+rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = 1
+-- Inversion.
+rifs.transformations[1][3][3] = 1
+rifs.transformations[2][3][3] = 0
+rifs.transformations[3][3][3] = -.1
+rifs.transformations[3][3][ChordRifs.HOMOGENEITY] = .1
+-- Transposition.
+rifs.transformations[1][4][4] = 1
+rifs.transformations[2][4][4] = 1
+rifs.transformations[3][4][4] = 1
+rifs.transformations[1][4][ChordRifs.HOMOGENEITY] = 2
+rifs.transformations[2][4][ChordRifs.HOMOGENEITY] = 5
+rifs.transformations[3][4][ChordRifs.HOMOGENEITY] = -7
+-- Revoicing.
+rifs.transformations[1][5][5] = 1
+rifs.transformations[2][5][5] = 1
+rifs.transformations[3][5][5] = 1
+rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = 2
+rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = 3
+rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -3
+
+local chord = ChordRifs:newchord()
+chord:print()
+chord = rifs.transformations[1]:mul(chord)
+chord:print()
+rifs:list()
+--rifs.voicelead = true
+rifs:generate(8)
+for index, chord in ipairs(rifs.score) do
+    chord[KEY] = chord[KEY] + 36
+end
+rifs.score:setDuration(240.0)
+rifs.score:setScale(VELOCITY, 50, 20)
+rifs.score:print()
+rifs.score:renderMidi()
+rifs.score:playPianoteq()
+
+end
 
 return ChordRifs

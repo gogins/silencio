@@ -4,7 +4,7 @@
 </CsOptions>
 <CsInstruments>
 
-sr      = 48000
+sr      = 44100
 ksmps   = 100
 nchnls  = 2
 
@@ -112,8 +112,8 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>501</x>
- <y>55</y>
+ <x>0</x>
+ <y>0</y>
  <width>845</width>
  <height>289</height>
  <visible>true</visible>
@@ -164,7 +164,7 @@ e 4.0
   <midicc>0</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.10869565</value>
+  <value>0.12318841</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -180,7 +180,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>0.109</label>
+  <label>0.123</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -243,8 +243,8 @@ e 4.0
   <xMax>5.00000000</xMax>
   <yMin>0.00000000</yMin>
   <yMax>5.00000000</yMax>
-  <xValue>1.23711340</xValue>
-  <yValue>3.75000000</yValue>
+  <xValue>2.37113402</xValue>
+  <yValue>2.67857143</yValue>
   <type>crosshair</type>
   <pointsize>1</pointsize>
   <fadeSpeed>0.00000000</fadeSpeed>
@@ -271,7 +271,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>1.237</label>
+  <label>2.371</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -300,7 +300,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>3.750</label>
+  <label>2.679</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
