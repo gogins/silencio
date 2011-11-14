@@ -20,8 +20,8 @@ group space. The dimensions of chord group space are:
 (5) Zero-based index of octavewise revoicings within a specified range (V).
 (6) Homogeneity.
 
-Zero-based indexes that wrap around due to an equivalence class are additive 
-cyclical groups, and they can be considered "control knobs" for some symmetry 
+Zero-based indexes that wrap around due to an equivalence class are additive
+cyclical groups, and they can be considered "control knobs" for some symmetry
 in chord space.
 
 A deterministic RIFS is iterated a specified number of times, accumulating a
@@ -34,7 +34,7 @@ One objective of this system is to enable the evolution of pieces by encoding
 their RIFS parameters with Hilbert indexes and exploring the resulting
 parameter space.
 
-For the purposes of this software, a musical score is considered to be a 
+For the purposes of this software, a musical score is considered to be a
 temporal sequence of more or less fleeting chords.
 ]]
 end
@@ -155,7 +155,7 @@ function ChordRifs:collect()
             end
             for i = 2, 5 do
                 collector[i][1] = collector[i][1] / #slice
-            end        
+            end
             collector[6][1] = 50 + #slice * 2
             table.insert(self.collected, collector)
         end
@@ -206,7 +206,7 @@ function ChordRifs:translate()
     local chord = nil
     for timeslice, tPITV in ipairs(self.collected) do
         local time_ = (timeslice - 1) * self.timeSlice
-        -- Each dimension must be moved to the origin, normalized, 
+        -- Each dimension must be moved to the origin, normalized,
         -- rescaled to fit the size of the group, and then rounded to an integer.
         local t =            ((tPITV[1][1] - self.minima[1][1]) / self.ranges[1][1]) * 120
         local P = math.floor(((tPITV[2][1] - self.minima[2][1]) / self.ranges[2][1]) * self.chordSpaceGroup.countP)
@@ -220,7 +220,7 @@ function ChordRifs:translate()
         end
         local velocity = tPITV[6][1]
         print(string.format('Time: %9.4f  P: %6d  I: %6d  T: %6d  V: %6d  velocity: %9.4f %s', t, P, I, T, V, velocity, chord:name()))
-        ChordSpace.insert(self.score, chord, t, duration, 0.0, velocity)   
+        ChordSpace.insert(self.score, chord, t, duration, 0.0, velocity)
     end
     print(string.format('Before tieing overlaps: %8d notes.', #self.score))
     if self.tie == true then
@@ -276,9 +276,9 @@ rifs.transformations[2][1][ChordRifs.HOMOGENEITY] = 1
 rifs.transformations[3][1][ChordRifs.HOMOGENEITY] = 2
 -- Set-class.
 rifs.transformations[1][2][2] = 1
-rifs.transformations[2][2][2] = 1.5
-rifs.transformations[3][2][2] = 1.333333
-rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = 1
+rifs.transformations[2][2][2] = 1
+rifs.transformations[3][2][2] = 0.95
+rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = .1
 -- Inversion.
 rifs.transformations[1][3][3] = 1
 rifs.transformations[2][3][3] = 0
@@ -286,18 +286,18 @@ rifs.transformations[3][3][3] = -.1
 rifs.transformations[3][3][ChordRifs.HOMOGENEITY] = .1
 -- Transposition.
 rifs.transformations[1][4][4] = 1
-rifs.transformations[2][4][4] = 1
+rifs.transformations[2][4][4] = .1
 rifs.transformations[3][4][4] = 1
-rifs.transformations[1][4][ChordRifs.HOMOGENEITY] = 2
-rifs.transformations[2][4][ChordRifs.HOMOGENEITY] = 5
-rifs.transformations[3][4][ChordRifs.HOMOGENEITY] = -7
+rifs.transformations[1][4][ChordRifs.HOMOGENEITY] = .2
+rifs.transformations[2][4][ChordRifs.HOMOGENEITY] = .5
+rifs.transformations[3][4][ChordRifs.HOMOGENEITY] = -.7
 -- Revoicing.
 rifs.transformations[1][5][5] = 1
 rifs.transformations[2][5][5] = 1
 rifs.transformations[3][5][5] = 1
-rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = 2
-rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = 3
-rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -3
+rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = .2
+rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = .3
+rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -.3
 
 local chord = ChordRifs:newchord()
 chord:print()
@@ -305,15 +305,15 @@ chord = rifs.transformations[1]:mul(chord)
 chord:print()
 rifs:list()
 --rifs.voicelead = true
-rifs:generate(8)
+rifs:generate(7)
 for index, chord in ipairs(rifs.score) do
     chord[KEY] = chord[KEY] + 36
 end
 rifs.score:setDuration(240.0)
-rifs.score:setScale(VELOCITY, 50, 20)
+rifs.score:setScale(VELOCITY, 80, 20)
 rifs.score:print()
 rifs.score:renderMidi()
-rifs.score:playPianoteq()
+rifs.score:playMidi()
 
 end
 
