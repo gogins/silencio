@@ -218,9 +218,13 @@ function ChordRifs:translate()
         if priorChord ~= nil and self.voicelead == true then
             chord = ChordSpace.voiceleadingClosestRange(priorChord, chord, self.chordSpaceGroup.range, true)
         end
-        local velocity = tPITV[6][1]
-        print(string.format('Time: %9.4f  P: %6d  I: %6d  T: %6d  V: %6d  velocity: %9.4f %s', t, P, I, T, V, velocity, chord:name()))
-        ChordSpace.insert(self.score, chord, t, duration, 0.0, velocity)
+        if chord ~= nil then
+            local velocity = tPITV[6][1]
+            print(string.format('Time: %9.4f  P: %6d  I: %6d  T: %6d  V: %6d  velocity: %9.4f %s', t, P, I, T, V, velocity, chord:name()))
+            ChordSpace.insert(self.score, chord, t, duration, 0.0, velocity)
+        else
+            print('Chord did not translate.')
+        end
     end
     print(string.format('Before tieing overlaps: %8d notes.', #self.score))
     if self.tie == true then
@@ -268,52 +272,51 @@ rifs:initialize(4, 48, 1)
 rifs:resize(3)
 
 -- Time.
-rifs.transformations[1][1][1] = 0.5
+rifs.transformations[1][1][1] = 0.55
 rifs.transformations[2][1][1] = 0.5
 rifs.transformations[3][1][1] = 0.5
 rifs.transformations[1][1][ChordRifs.HOMOGENEITY] = 0
 rifs.transformations[2][1][ChordRifs.HOMOGENEITY] = 1
 rifs.transformations[3][1][ChordRifs.HOMOGENEITY] = 2
 -- Set-class.
-rifs.transformations[1][2][2] = 1
-rifs.transformations[2][2][2] = 1
+rifs.transformations[1][2][2] = .1
+rifs.transformations[2][2][2] = .1
 rifs.transformations[3][2][2] = 0.95
 rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = .1
 -- Inversion.
-rifs.transformations[1][3][3] = 1
+rifs.transformations[1][3][3] = .11
 rifs.transformations[2][3][3] = 0
 rifs.transformations[3][3][3] = -.1
 rifs.transformations[3][3][ChordRifs.HOMOGENEITY] = .1
 -- Transposition.
-rifs.transformations[1][4][4] = 1
+rifs.transformations[1][4][4] = .1
 rifs.transformations[2][4][4] = .1
-rifs.transformations[3][4][4] = 1
+rifs.transformations[3][4][4] = .1
 rifs.transformations[1][4][ChordRifs.HOMOGENEITY] = .2
 rifs.transformations[2][4][ChordRifs.HOMOGENEITY] = .5
-rifs.transformations[3][4][ChordRifs.HOMOGENEITY] = -.7
 -- Revoicing.
 rifs.transformations[1][5][5] = 1
 rifs.transformations[2][5][5] = 1
 rifs.transformations[3][5][5] = 1
-rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = .2
-rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = .3
-rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -.3
+rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = 1
+rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = 3
+rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -3
 
 local chord = ChordRifs:newchord()
 chord:print()
 chord = rifs.transformations[1]:mul(chord)
 chord:print()
 rifs:list()
---rifs.voicelead = true
+rifs.voicelead = false
 rifs:generate(7)
 for index, chord in ipairs(rifs.score) do
-    chord[KEY] = chord[KEY] + 36
+    chord[KEY] = chord[KEY] + 34
 end
-rifs.score:setDuration(240.0)
-rifs.score:setScale(VELOCITY, 80, 20)
+rifs.score:setDuration(400.0)
+rifs.score:setScale(VELOCITY, 60, 20)
 rifs.score:print()
 rifs.score:renderMidi()
-rifs.score:playMidi()
+rifs.score:playPianoteq()
 
 end
 
