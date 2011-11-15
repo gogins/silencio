@@ -2131,7 +2131,7 @@ function Chord:K(range)
     if #chord < 2 then
         return chord
     end
-    local ep = chord:ep()
+    local ep = chord:eP()
     local x = ep[1] + ep[2]
     return self:I(x)
 end
