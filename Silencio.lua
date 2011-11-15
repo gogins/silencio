@@ -699,8 +699,10 @@ function Score:processArg(args)
         local argz = Silencio.split(args[0], '/')
         local title = argz[#argz]
         self:setTitle(title)
-    else
-        self:setTitle(args[0])
+    else 
+        if platform ~= 'Windows' then
+            self:setTitle(args[0])
+        end
     end
     if #args == 0 then
         args[1] = '--midi'

@@ -1,8 +1,8 @@
 local Silencio = require("Silencio")
 local ChordSpace = require("ChordSpace")
-local Som = require("Som")
+--local Som = require("Som")
 
-Lindenmayer = ScoreSource:new()
+Lindenmayer = {}
 
 function Lindenmayer.help()
 print [[
@@ -80,7 +80,7 @@ Turtle = {}
 
 function Turtle:new(o)
     o = o or {modality = Chord:new(), chord = Chord:new(), voicing = 0, arpeggiation = 0, onset = 1, channel = 1, pan = 1, octaves = 3, intervalSize = 1}
-    o.range = o.octaves * OCTAVE
+    o.range = o.octaves * ChordSpace.OCTAVE
     setmetatable(o, self)
     self.__index = self
     return o
@@ -101,7 +101,8 @@ end
 
 function Lindenmayer:new(o)
     if not o then
-        o = ScoreSource:new()
+        o = {}
+        o.score = Score:new()
         o.axiom = ''
         o.rules = {}
         o.turtle = Turtle:new()
@@ -156,7 +157,7 @@ function Lindenmayer:equivalenceClass(chord, equivalence)
         return chord:eI()
     end
     if equivalence == 'RP' then
-        return chord:eRP(self.octaves * OCTAVE)
+        return chord:eRP(self.octaves * ChordSpace.OCTAVE)
     end
     if equivalence == 'OP' then
         return chord:eOP()
@@ -268,7 +269,7 @@ function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operan
     end
     local chord = self.turtle.chord:clone()    
     print('V Pre: ', chord, self.turtle.voicing)
-    chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.octaves * OCTAVE, true)
+    chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.octaves * ChordSpace.OCTAVE, true)
     if target == 'C' then
         chord = self:equivalenceClass(chord, 'RP')
         self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
