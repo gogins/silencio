@@ -2140,11 +2140,11 @@ end
 -- Only works in equal temperament.
 
 function Chord:Tform(Y, g)
-    local eopx = self:eop()
+    local eopx = self:epcs()
     local i = 0
     while i < ChordSpace.OCTAVE do
         local ty = Y:T(i)
-        local eopty = ty:eop()
+        local eopty = ty:epcs()
         if eopx == eopty then
             return true
         end
@@ -2157,11 +2157,11 @@ end
 -- Only works in equal temperament.
 
 function Chord:Iform(Y, g)
-    local eopx = self:eop()
+    local eopx = self:epcs()
     local i = 0
     while i < ChordSpace.OCTAVE do
         local iy = Y:I(i)
-        local eopiy = iy:eop()
+        local eopiy = iy:epcs()
         if eopx == eopiy then
             return true
         end
@@ -2521,6 +2521,19 @@ function ChordSpace.octavewiseRevoicings(chord, range)
         voicing = voicing + 1
     end
     return voicings
+end
+
+-- Returns the ith arpeggiation, current voice, and corresponding revoicing
+-- of the chord. Positive arpeggiations start with the lowest voice of the
+-- chord and revoice up; negative arpeggiations start with the highest voice
+-- of the chord and revoice down.
+
+function Chord:a(arpeggiation)
+    local chord = self:v(arpeggiation)
+    if arpeggiation < 0 then
+        return chord[#chord], #chord, chord
+    end
+    return chord[1], 1, chord
 end
 
 function ChordSpaceGroup:initialize(voices, range, g)
