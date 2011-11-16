@@ -246,9 +246,9 @@ function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
         ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
     end
     if target == 'I' then
-        chord = self:equivalenceClass(chord, 'RP')
-        local note = chord:note(index, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
-        self.score[#self.score + 1] = note
+        chord = self:equivalenceClass(chord, 'RPI')
+        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
+        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
     end
     if target == 'A' then
         local p, v
@@ -276,9 +276,9 @@ function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operan
         ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
     end
     if target == 'I' then
-        chord = self:equivalenceClass(chord, 'RP')
-        local note = chord:note(index, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
-        self.score[#self.score + 1] = note
+        chord = self:equivalenceClass(chord, 'RPI')
+        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
+        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
     end
     if target == 'A' then
         local p, v
