@@ -5,6 +5,7 @@ LindenmayerPITV = {}
 
 function Lindenmayer.help()
 print [[
+
 L I N D E N M A Y E R   P I T V
 
 Copyright (C) 2010 by Michael Gogins
@@ -12,21 +13,21 @@ This software is licensed under the terms
 of the GNU Lesser General Public License.
 
 The LindenmayerPITV class implements a context-free Lindenmayer system that
-performs operations on four additive cyclical groups P, I, T, and V that
+performs operations on four additive cyclical groups P, I, T, and V which 
 represent respectively set-class, inversion, transposition, and octavewise
 revoicing of chords. Chord duration (d) and dynamic level or MIDI velocity
 (v) also are represented.
 
 An earlier version of this class was found too complex for use. This version
-is intended to expose the basic symmetries of chord space to manipulation
-as clearly and simply as possible.
+is intended to expose the basic symmetries of chord space to programmatic 
+manipulation as clearly and simply as possible.
 
 The turtle state consists of six numbers P, I, T, V, d, and v. These are the
 targets of operations. Time is defined implicity; when the Lindenmayer
-system is evaluated, the time is accmulated from the sequence of chords
+system is evaluated, score time is accmulated from the sequence of chords
 and their durations.
 
-All turtle commands are of the form: target:operation:operand
+All turtle commands are of the form target:operation:operand.
 
 Operations are arithmetical +, -, *, / and assignment =.
 
@@ -52,7 +53,7 @@ v:o:n       Operate on the loudness of the chord (represented as MIDI velocity
 C           Write the current turtle state into the score as a chord.
 L           Write the current turtle state into the score as a chord; or
             rather, use a geometric voice-leading algorithm to find the PITV
-            that has the PIT of the current chord as is as close as possible
+            that has the PIT of the current chord which is as close as possible
             to the PITV of the prior chord.
 [           Push the current state of the turtle onto the top of a stack.
 ]           Pop the current state of the turtle off the top of the stack.
@@ -62,7 +63,7 @@ end
 Turtle = {}
 
 function Turtle:new(o)
-    o = o or {modality = Chord:new(), chord = Chord:new(), voicing = 0, arpeggiation = 0, onset = 1, channel = 1, pan = 1, octaves = 3, intervalSize = 1}
+    o = o or {t = 0, d = 0, P = 0, I = 0, T = 0, V = 0, v = 0, octaves = 5}
     o.range = o.octaves * ChordSpace.OCTAVE
     setmetatable(o, self)
     self.__index = self
@@ -70,16 +71,7 @@ function Turtle:new(o)
 end
 
 function Turtle:__tostring()
-    local text = string.format('C: %s  M: %s  voicing: %f  arpeggiation: %f  onset: %f  channel: %f  loudness: %f  pan: %f',
-    tostring(self.chord),
-    tostring(self.modality),
-    self.voicing,
-    self.arpeggiation,
-    self.onset,
-    self.chord:getChannel() or -1,
-    self.chord:getVelocity() or -1,
-    self.chord:getPan() or -1)
-    return text
+    return string.format('t: %9.4f  d: %9.4f  v: %9.4f  P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f', self.t, self.d, self.v, self.P, self.I, self.T, self.V)
 end
 
 function Lindenmayer:new(o)
@@ -92,461 +84,101 @@ function Lindenmayer:new(o)
         o.priorTurtle = self.turtle
         o.stack = {}
         o.iterations = 3
-        o.merge = true
         o.tieOverlaps = true
         o.avoidParallelFifths = false
-        o.rescaleTimes = false
         o.currentProduction = ''
         o.priorProduction = ''
-        o.octaves = 3
-        o.actions = {}
-        o.actions['['] = self.actionPush
-        o.actions[']'] = self.actionPop
-        o.actions['W'] = self.actionWrite
-        o.actions['V'] = self.actionWriteVoiceleading
-        o.actions['T'] = self.actionTranspose
-        o.actions['I'] = self.actionInvert
-        o.actions['K'] = self.actionContexualInversion
-        o.actions['Q'] = self.actionContextualTransposition
-        o.actions['='] = self.actionAssign
-        o.actions['*'] = self.actionMultiply
-        o.actions['/'] = self.actionDivide
-        o.actions['+'] = self.actionAdd
-        o.actions['-'] = self.actionSubtract
+        o.octaves = 5
+        o.targets = {}
+        o.targets['t'] = self.target_t
+        o.targets['d'] = self.target_d
+        o.targets['v'] = self.target_v
+        o.targets['P'] = self.target_P
+        o.targets['I'] = self.target_I
+        o.targets['T'] = self.target_T
+        o.targets['V'] = self.target_V
+        o.targets['C'] = self.target_C
+        o.targets['L'] = self.target_L
+        o.targets['['] = self.target_push
+        o.targets[']'] = self.target_pop
+        o.operations['='] = self.operation_assign
+        o.operations['+'] = self.operation_add
+        o.operations['-'] = self.operation_subtract
+        o.operations['*'] = self.operation_multiply
+        o.operations['/'] = self.operation_divide
     end
     setmetatable(o, self)
     self.__index = self
     return o
 end
 
-function Lindenmayer:equivalenceClass(chord, equivalence)
-    if equivalence == 'R' then
-        return chord:eR(self.octaves * OCTAVE)
-    end
-    if equivalence == 'O' then
-        return chord:eO()
-    end
-    if equivalence == 'P' then
-        return chord:eP()
-    end
-    if equivalence == 'T' then
-        return chord:eT()
-    end
-    if equivalence == 'I' then
-        return chord:eI()
-    end
-    if equivalence == 'RP' then
-        return chord:eRP(self.octaves * ChordSpace.OCTAVE)
-    end
-    if equivalence == 'OP' then
-        return chord:eOP()
-    end
-    if equivalence == 'OT' then
-        return chord:eOT()
-    end
-    if equivalence == 'OI' then
-        return chord:eOI()
-    end
-    if equivalence == 'OPT' then
-        return chord:eOPTT()
-    end
-    if equivalence == 'OPI' then
-        return chord:eOPI()
-    end
-    if equivalence == 'OPTI' then
-        return chord:eOPTTI()
-    end
+function Lindenmayer:operation_assign(y, x)
+    y = x
+    return y
 end
 
-function Lindenmayer:E(target, opcode, equivalence, operand, index)
-    if target == 'C' or target == 'I' then
-        self.turtle.chord = self:equivalenceClass(self.turtle.chord, equivalence)
-    end
-    if target == 'M' then
-        self.turtle.modality = self:equivalenceClass(self.turtle.modality, equivalence)
-    end
+function Lindenmayer:operation_add(y, x)
+    y = y + x
+    return y
 end
 
-function Lindenmayer:actionPush(target, opcode, equivalence, operand, index)
-    table.insert(self.stack, Silencio.clone(self.turtle))
+function Lindenmayer:operation_subtract(y, x)
+    y = y - x
+    return y
 end
 
-function Lindenmayer:actionPop(target, opcode, equivalence, operand, index)
-    self.turtle = table.remove(self.stack)
+function Lindenmayer:operation_multiply(y, x)
+    y = y * x
+    return y
 end
 
-function Lindenmayer:actionParallel(target, opcode, equivalence, operand, index)
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:nrP()
-    end
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:nrP()
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:operation_divide(y, x)
+    y = y / x
+    return y
 end
 
-function Lindenmayer:actionLettonwechsel(target, opcode, equivalence, operand, index)
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:nrL()
-    end
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:nrL()
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_t(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
-function Lindenmayer:actionRelative(target, opcode, equivalence, operand, index)
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:nrR()
-    end
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:nrR()
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_d(target, operation, operand)
+    self.turtle.d = self.operations[operation](self.turtle.d, operand)
 end
 
-function Lindenmayer:actionDominant(target, opcode, equivalence, operand, index)
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:nrD()
-    end
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:nrD()
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_v(target, operation, operand)
+    self.turtle.v = self.operations[operation](self.turtle.v, operand)
 end
 
-function Lindenmayer:actionWrite(target, opcode, equivalence, operand, index)
-    local chord = self.turtle.chord:clone()
-    print('C Pre: ', chord, self.turtle.voicing)
-    chord = chord:v(self.turtle.voicing)
-    if target == 'C' then
-        chord = self:equivalenceClass(chord, 'RP')
-        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
-        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
-    end
-    if target == 'I' then
-        chord = self:equivalenceClass(chord, 'RPI')
-        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
-        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
-    end
-    if target == 'A' then
-        local p, v
-        p, v, chord = chord:a(self.turtle.arpeggiation)
-        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration(v)
-        chord = self:equivalenceClass(chord, 'RP')
-        local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
-        self.score[#self.score + 1] = note
-    end
-    print('C Post:', chord)
-    print()
-    self.priorChord = chord
+function Lindenmayer:target_P(target, operation, operand)
+    self.turtle.P = self.operations[operation](self.turtle.P, operand)
 end
 
-function Lindenmayer:actionWriteVoiceleading(target, opcode, equivalence, operand, index)
-    if self.priorChord == nil then
-        return self:actionWrite(target, opcode, equivalence, operand, index)
-    end
-    local chord = self.turtle.chord:clone()
-    print('V Pre: ', chord, self.turtle.voicing)
-    chord = ChordSpace.voiceleadingClosestRange(self.priorChord, chord, self.octaves * ChordSpace.OCTAVE, true)
-    if target == 'C' then
-        chord = self:equivalenceClass(chord, 'RP')
-        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
-        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
-    end
-    if target == 'I' then
-        chord = self:equivalenceClass(chord, 'RPI')
-        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration()
-        ChordSpace.insert(self.score, chord, self.turtle.onset, self.turtle.chord:getDuration() + 0.001, self.turtle.channel, self.turtle.pan)
-    end
-    if target == 'A' then
-        local p, v
-        p, v, chord = chord:a(self.turtle.arpeggiation)
-        self.turtle.onset = self.turtle.onset + self.turtle.chord:getDuration(v)
-        chord = self:equivalenceClass(chord, 'RP')
-        local note = chord:note(v, self.turtle.onset, self.turtle.duration, self.turtle.channel, self.turtle.pan)
-        self.score[#self.score + 1] = note
-    end
-    print('V Post:', chord)
-    print()
-    self.priorChord = chord
+function Lindenmayer:target_I(target, operation, operand)
+    self.turtle.I = self.operations[operation](self.turtle.I, operand)
 end
 
-function Lindenmayer:actionTranspose(target, opcode, equivalence, operand, index)
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:T(operand)
-    end
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:T(operand)
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_T(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
-function Lindenmayer:actionInvert(target, opcode, equivalence, operand, index)
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:I(operand)
-    end
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:I(operand)
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_V(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
-function Lindenmayer:actionContexualInversion(target, opcode, equivalence, operand, index)
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:K()
-    end
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:K()
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_C(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
-function Lindenmayer:actionContextualTransposition(target, opcode, equivalence, operand, index)
-    if target == 'M' then
-        self.turtle.modality = self.turtle.modality:Q(operand, self.turtle.modality, self.intervalSize)
-    end
-    if target == 'C' then
-        self.turtle.chord = self.turtle.chord:Q(operand, self.turtle.modality, self.intervalSize)
-    end
-    self:E(target, opcode, equivalence, operand, index)
+function Lindenmayer:target_L(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
--- dckvp    :=*/+-     :            :x       :i
--- VAGtdcvp :=*/+-     :            :x
-
-function Lindenmayer:actionAssign(target, opcode, equivalence, operand, index, stringOperand)
-    if index ~= nil then
-        if target == 'd' then
-            self.turtle.chord.duration[index] = operand
-        end
-        if target == 'c' then
-            self.turtle.chord.channel[index] = operand
-        end
-        if target == 'k' then
-            self.turtle.chord[index] = operand
-        end
-        if target == 'v' then
-            self.turtle.chord.velocity[index] = operand
-        end
-        if target == 'p' then
-            self.turtle.chord.pan[index] = operand
-        end
-    else
-        if target == 'C' then
-            self.turtle.chord = ChordSpace.chordsForNames[stringOperand]
-        end
-        if target == 'M' then
-            self.turtle.modality = ChordSpace.chordsForNames[stringOperand]
-        end
-        if target == 'V' then
-            self.turtle.voicing = operand
-        end
-        if target == 'A' then
-            self.turtle.arpeggiation = operand
-        end
-        if target == 'G' then
-            self.turtle.intervalSize = operand
-        end
-        if target == 't' then
-            self.turtle.onset = operand
-        end
-        if target == 'd' then
-            self.turtle.chord:setDuration(operand)
-        end
-        if target == 'c' then
-            self.turtle.chord:setChannel(operand)
-        end
-        if target == 'v' then
-            self.turtle.chord:setVelocity(operand)
-        end
-        if target == 'p' then
-            self.turtle.chord:setPan(operand)
-        end
-    end
+function Lindenmayer:target_push(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
--- dckvp    :=*/+-     :            :x       :i
--- VAGtdcvp :=*/+-     :            :x
-
-function Lindenmayer:actionMultiply(target, opcode, equivalence, operand, index)
-    if index ~= nil then
-        if target == 'd' then
-            self.turtle.chord.duration[index] = self.turtle.chord.duration[index] * operand
-        end
-        if target == 'c' then
-            self.turtle.chord.channel[index] = self.turtle.chord.channel[index] * operand
-        end
-        if target == 'k' then
-            self.turtle.chord[index] = self.turtle.chord[index] * operand
-        end
-        if target == 'v' then
-            self.turtle.chord.velocity[index] = self.turtle.chord.velocity[index] * operand
-        end
-        if target == 'p' then
-            self.turtle.chord.pan[index] = self.turtle.chord.pan[index] * operand
-        end
-    else
-        if target == 'V' then
-            self.turtle.voicing = self.turtle.voicing * operand
-        end
-        if target == 'A' then
-            self.turtle.arpeggiation = self.turtle.arpeggiation * operand
-        end
-        if target == 'T' then
-            self.turtle.onset = self.turtle.onset * operand
-        end
-        if target == 'G' then
-            self.turtle.intervalSize = self.turtle.intervalSize * operand
-        end
-        if target == 'd' then
-            self.turtle.chord:setDuration(self.turtle.chord:getDuration() * operand)
-        end
-        if target == 'c' then
-            self.turtle.chord:setChannel(self.turtle.chord:getChannel() * operand)
-        end
-        if target == 'v' then
-            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() * operand)
-        end
-        if target == 'p' then
-            self.turtle.chord:setPan(self.turtle.chord:getPan() * operand)
-        end
-    end
-end
-
-function Lindenmayer:actionDivide(target, opcode, equivalence, operand, index)
-    if index ~= nil then
-        if target == 'd' then
-            self.turtle.chord.duration[index] = self.turtle.chord.duration[index] / operand
-        end
-        if target == 'c' then
-            self.turtle.chord.channel[index] = self.turtle.chord.channel[index] / operand
-        end
-        if target == 'k' then
-            self.turtle.chord[index] = self.turtle.chord[index] / operand
-        end
-        if target == 'v' then
-            self.turtle.chord.velocity[index] = self.turtle.chord.velocity[index] / operand
-        end
-        if target == 'p' then
-            self.turtle.chord.pan[index] = self.turtle.chord.pan[index] / operand
-        end
-    else
-        if target == 'V' then
-            self.turtle.voicing = self.turtle.voicing / operand
-        end
-        if target == 'A' then
-            self.turtle.arpeggiation = self.turtle.arpeggiation / operand
-        end
-        if target == 'T' then
-            self.turtle.onset = self.turtle.onset / operand
-        end
-        if target == 'G' then
-            self.turtle.intervalSize = self.turtle.intervalSize / operand
-        end
-        if target == 'd' then
-            self.turtle.chord:setDuration(self.turtle.chord:getDuration() / operand)
-        end
-        if target == 'c' then
-            self.turtle.chord:setChannel(self.turtle.chord:getChannel() / operand)
-        end
-        if target == 'v' then
-            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() / operand)
-        end
-        if target == 'p' then
-            self.turtle.chord:setPan(self.turtle.chord:getPan() / operand)
-        end
-    end
-end
-
-function Lindenmayer:actionAdd(target, opcode, equivalence, operand, index)
-    if index ~= nil then
-        if target == 'd' then
-            self.turtle.chord.duration[index] = self.turtle.chord.duration[index] + operand
-        end
-        if target == 'c' then
-            self.turtle.chord.channel[index] = self.turtle.chord.channel[index] + operand
-        end
-        if target == 'k' then
-            self.turtle.chord[index] = self.turtle.chord[index] + operand
-        end
-        if target == 'v' then
-            self.turtle.chord.velocity[index] = self.turtle.chord.velocity[index] + operand
-        end
-        if target == 'p' then
-            self.turtle.chord.pan[index] = self.turtle.chord.pan[index] + operand
-        end
-    else
-        if target == 'V' then
-            self.turtle.voicing = self.turtle.voicing + operand
-        end
-        if target == 'A' then
-            self.turtle.arpeggiation = self.turtle.arpeggiation + operand
-        end
-        if target == 'T' then
-            self.turtle.onset = self.turtle.onset + operand
-        end
-        if target == 'G' then
-            self.turtle.intervalSize = self.turtle.intervalSize + operand
-        end
-        if target == 'd' then
-            self.turtle.chord:setDuration(self.turtle.chord:getDuration() + operand)
-        end
-        if target == 'c' then
-            self.turtle.chord:setChannel(self.turtle.chord:getChannel() + operand)
-        end
-        if target == 'v' then
-            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() + operand)
-        end
-        if target == 'p' then
-            self.turtle.chord:setPan(self.turtle.chord:getPan() + operand)
-        end
-    end
-end
-
-function Lindenmayer:actionSubtract(target, opcode, equivalence, operand, index)
-    if index ~= nil then
-        if target == 'd' then
-            self.turtle.chord.duration[index] = self.turtle.chord.duration[index] - operand
-        end
-        if target == 'c' then
-            self.turtle.chord.channel[index] = self.turtle.chord.channel[index] - operand
-        end
-        if target == 'k' then
-            self.turtle.chord[index] = self.turtle.chord[index] - operand
-        end
-        if target == 'v' then
-            self.turtle.chord.velocity[index] = self.turtle.chord.velocity[index] - operand
-        end
-        if target == 'p' then
-            self.turtle.chord.pan[index] = self.turtle.chord.pan[index] - operand
-        end
-    else
-        if target == 'V' then
-            self.turtle.voicing = self.turtle.voicing - operand
-        end
-        if target == 'A' then
-            self.turtle.arpeggiation = self.turtle.arpeggiation - operand
-        end
-        if target == 'T' then
-            self.turtle.onset = self.turtle.onset - operand
-        end
-        if target == 'G' then
-            self.turtle.intervalSize = self.turtle.intervalSize - operand
-        end
-        if target == 'd' then
-            self.turtle.chord:setDuration(self.turtle.chord:getDuration() - operand)
-        end
-        if target == 'c' then
-            self.turtle.chord:setChannel(self.turtle.chord:getChannel() - operand)
-        end
-        if target == 'v' then
-            self.turtle.chord:setVelocity(self.turtle.chord:getVelocity() - operand)
-        end
-        if target == 'p' then
-            self.turtle.chord:setPan(self.turtle.chord:getPan() - operand)
-        end
-    end
+function Lindenmayer:target_pop(target, operation, operand)
+    self.turtle.t = self.operations[operation](self.turtle.t, operand)
 end
 
 -- Beginning with the axiom,
@@ -575,7 +207,6 @@ function Lindenmayer:produce()
             end
         end
         self.currentProduction = table.concat(self.currentProduction, ' ')
-        -- print(self.currentProduction)
     end
 end
 
@@ -583,23 +214,19 @@ function Lindenmayer:parseCommand(command)
     local parts = Silencio.split(command, ':')
     local target = parts[1]
     local opcode = parts[2]
-    local equivalence = parts[3]
-    local operand = tonumber(parts[4])
-    local stringOperand = parts[4]
-    local index = tonumber(parts[5])
-    return target, opcode, equivalence, operand, index, stringOperand
+    local operand = parts[3]
+    return target, opcode, operand
 end
-
 
 function Lindenmayer:interpret()
     print('Lindenmayer:interpret...')
     local commands = Silencio.split(self.currentProduction, ' ')
     for index, command in ipairs(commands) do
-        target, opcode, equivalence, operand, index, stringOperand = self:parseCommand(command)
-        local action = self.actions[opcode]
-        if action ~= nil then
+        target, opcode, operand = self:parseCommand(command)
+        local target = self.targets[opcode]
+        if target ~= nil then
             -- print(target, opcode, equivalence, operand, index, stringOperand)
-            action(self, target, opcode, equivalence, operand, index, stringOperand)
+            target(self, target, opcode, operand)
         end
     end
 end
