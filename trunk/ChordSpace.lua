@@ -2444,8 +2444,7 @@ end
 
 -- Orthogonal additive groups for unordered chords of given arity under range
 -- equivalence (RP): prime form or P, inversion or I, transposition or T, and
--- voicing or V. P x I x T = OP, P x I x T x V = RP. There is a bijective
--- mapping between chords in RP and values of P, I, T, V. Therefore, an
+-- voicing or V. P x I x T = OP, P x I x T x V = RP. Therefore, an
 -- operation on P, I, T, or V may be used to independently transform the
 -- respective symmetry of any chord. Some of these operations will reflect
 -- in RP.
@@ -2541,6 +2540,8 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.range = range or 60
     self.g = g or 1
     self.countP = 0
+    self.countI = 2
+    self.countT = ChordSpace.OCTAVE / self.g
     self.countV = 0
     self.indexesForOptis = {}
     self.indexesForVoicings = {}
