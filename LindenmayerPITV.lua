@@ -13,13 +13,13 @@ This software is licensed under the terms
 of the GNU Lesser General Public License.
 
 The LindenmayerPITV class implements a context-free Lindenmayer system that
-performs operations on four additive cyclical groups P, I, T, and V which 
+performs operations on four additive cyclical groups P, I, T, and V which
 represent respectively set-class, inversion, transposition, and octavewise
 revoicing of chords. Chord duration (d) and dynamic level or MIDI velocity
 (v) also are represented.
 
 An earlier version of this class was found too complex for use. This version
-is intended to expose the basic symmetries of chord space to programmatic 
+is intended to expose the basic symmetries of chord space to programmatic
 manipulation as clearly and simply as possible.
 
 The turtle state consists of six numbers P, I, T, V, d, and v. These are the
@@ -42,7 +42,7 @@ P:=:name    Assign the set-class index from a Jazz-style chord name. This may
             involve replacing the chord with its equivalent under
             transpositional and/or inversional equivalence.
 I:o:n       Operate on the zero-based index of inversional equivalence, where
-            inversion is reflection in chord {n,..n} on the unison diagonal 
+            inversion is reflection in chord {n,..n} on the unison diagonal
             of chord space.
 T:o:n       Operate on the zero-based index of transposition within octave
             equivalence.
@@ -102,12 +102,13 @@ function LindenmayerPITV:new(o)
         o.targets['L'] = self.target_L
         o.targets['['] = self.target_push
         o.targets[']'] = self.target_pop
+        o.operations = {}
         o.operations['='] = self.operation_assign
         o.operations['+'] = self.operation_add
         o.operations['-'] = self.operation_subtract
         o.operations['*'] = self.operation_multiply
         o.operations['/'] = self.operation_divide
-        o.chordSpaceGroup = ChordSpaceGroup()
+        o.chordSpaceGroup = ChordSpaceGroup:new()
     end
     setmetatable(o, self)
     self.__index = self
@@ -115,11 +116,12 @@ function LindenmayerPITV:new(o)
 end
 
 function LindenmayerPITV:initialize(voices, octaves, g)
+    print('LindenmayerPITV:initialize...')
     self.chordSpaceGroup:initialize(voices, octaves, g)
 end
 
 function LindenmayerPITV:operation_assign(y, x)
-    y = x 
+    y = x
     return y
 end
 
@@ -197,7 +199,7 @@ function LindenmayerPITV:target_C(target, operation, operand)
     else
         self.priorChord = self.chord
     end
-    self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)  
+    self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)
     self.chord.setDuration(self.turtle.d)
     self.chord.setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
@@ -210,7 +212,7 @@ function LindenmayerPITV:target_L(target, operation, operand)
     else
         self.priorChord = self.chord
     end
-    self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)  
+    self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)
     if self.priorChord ~= nil then
         self.chord = ChordSpace.voiceleadingClosestRange(self.priorChord, self.chord, self.octaves * ChordSpace.OCTAVE, true)
     end
@@ -270,6 +272,7 @@ function LindenmayerPITV:interpret()
     local commands = Silencio.split(self.currentProduction, ' ')
     for index, command in ipairs(commands) do
         target, opcode, operand = self:parseCommand(command)
+        print(target, opcode, operand)
         local target = self.targets[opcode]
         if target ~= nil then
             -- print(target, opcode, equivalence, operand, index, stringOperand)
@@ -283,7 +286,16 @@ function LindenmayerPITV:generate()
     self:produce()
     self:interpret()
     if self.tieOverlaps == true then
-        print('LindenmayerPITV: tieing notes...')
+        print('LindenmayerPITV:tieing notes...')
         self.score:tieOverlaps(true)
     end
+end
+
+if true then
+    lindenmayer = LindenmayerPITV:new()
+    lindenmayer:initialize(4, 60, 1)
+    lindenmayer.axiom = 'P:=:15 v:=:80 d:=:1 a'
+    lindenmayer.rules['a'] = 'a C T:+:1 V:+:3 a L T:-:1 a C'
+    lindenmayer:generate()
+    lindenmayer.score:print()
 end
