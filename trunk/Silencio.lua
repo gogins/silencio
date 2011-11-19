@@ -375,7 +375,7 @@ end
 
 function Score:saveSco()
     print(string.format("Saving \"%s\" as Csound score file...", self:getScoFilename()))
-    file = io.open(self:getScoFilename(), "w")
+    local file = io.open(self:getScoFilename(), "w")
     for i, event in ipairs(self) do
         file:write(event:csoundIStatement().."\n")
     end
@@ -404,7 +404,7 @@ function Score:renderMidi(patchChanges)
         table.insert(track, i, midiscoreevent)
     end
     local midiscore = {TICKS_PER_BEAT, track}
-    midisequence = MIDI.score2midi(midiscore)
+    local midisequence = MIDI.score2midi(midiscore)
     file = io.open(self:getMidiFilename(), "w")
     file:write(midisequence)
     file:close()

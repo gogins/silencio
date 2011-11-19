@@ -64,8 +64,7 @@ end
 Turtle = {}
 
 function Turtle:new(o)
-    o = o or {t = 0, d = 0, v = 0, P = 0, I = 0, T = 0, V = 0, octaves = 5}
-    o.range = o.octaves * ChordSpace.OCTAVE
+    o = o or {t = 0, d = 0, v = 0, P = 0, I = 0, T = 0, V = 0}
     setmetatable(o, self)
     self.__index = self
     return o
@@ -109,6 +108,8 @@ function LindenmayerPITV:new(o)
         o.operations['*'] = self.operation_multiply
         o.operations['/'] = self.operation_divide
         o.chordSpaceGroup = ChordSpaceGroup:new()
+        o.duration = 120
+        o.bass = 36
     end
     setmetatable(o, self)
     self.__index = self
@@ -121,7 +122,9 @@ function LindenmayerPITV:initialize(voices, octaves, g)
 end
 
 function LindenmayerPITV:operation_assign(y, x)
+    print(y, x)
     y = x
+    print(y, x)
     return y
 end
 
@@ -146,23 +149,27 @@ function LindenmayerPITV:operation_divide(y, x)
 end
 
 function LindenmayerPITV:target_t(target, operation, operand)
-    self.turtle.t = self.operations[operation](self.turtle.t, operand)
+    local function_ = self.operations[operation]
+    self.turtle.t = function_(self, self.turtle.t, operand)
 end
 
 function LindenmayerPITV:target_d(target, operation, operand)
-    self.turtle.d = self.operations[operation](self.turtle.d, operand)
+    local function_ = self.operations[operation]
+    self.turtle.d = function_(self, self.turtle.d, operand)
 end
 
 function LindenmayerPITV:target_v(target, operation, operand)
-    self.turtle.v = self.operations[operation](self.turtle.v, operand)
+    local function_ = self.operations[operation]
+    self.turtle.v = function_(self, self.turtle.v, operand)
 end
 
 function LindenmayerPITV:target_P(target, operation, operand)
     if type(operand) == 'string' then
-        local p, i, t, v = chordSpaceGroup.fromChord(operand)
+        local p, i, t, v = self.chordSpaceGroup.fromChord(operand)
         self.turtle.P = p
     else
-        self.turtle.P = self.operations[operation](self.turtle.P, operand) % self.chordSpaceGroup.countP
+        local function_ = self.operations[operation]
+        self.turtle.P = function_(self, self.turtle.P, operand) % self.chordSpaceGroup.countP
     end
 end
 
@@ -171,7 +178,8 @@ function LindenmayerPITV:target_I(target, operation, operand)
         local p, i, t, v = chordSpaceGroup.fromChord(operand)
         self.turtle.I = i
     else
-        self.turtle.I = self.operations[operation](self.turtle.I, operand) % self.chordSpaceGroup.countI
+        local function_ = self.operations[operation]
+        self.turtle.I = function_(self, self.turtle.I, operand) % self.chordSpaceGroup.countI
     end
 end
 
@@ -180,7 +188,8 @@ function LindenmayerPITV:target_T(target, operation, operand)
         local p, i, t, v = chordSpaceGroup.fromChord(operand)
         self.turtle.T = t
     else
-        self.turtle.T = self.operations[operation](self.turtle.T, operand) % self.chordSpaceGroup.countT
+        local function_ = self.operations[operation]
+        self.turtle.T = function_(self, self.turtle.T, operand) % self.chordSpaceGroup.countT
     end
 end
 
@@ -189,7 +198,8 @@ function LindenmayerPITV:target_V(target, operation, operand)
         local p, i, t, v = chordSpaceGroup.fromChord(operand)
         self.turtle.V = v
     else
-        self.turtle.V = self.operations[operation](self.turtle.V, operand) % self.chordSpaceGroup.countV
+        local function_ = self.operations[operation]
+        self.turtle.V = function_(self, self.turtle.V, operand) % self.chordSpaceGroup.countV
     end
 end
 
@@ -200,8 +210,8 @@ function LindenmayerPITV:target_C(target, operation, operand)
         self.priorChord = self.chord
     end
     self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)
-    self.chord.setDuration(self.turtle.d)
-    self.chord.setVelocity(self.turtle.v)
+    self.chord:setDuration(self.turtle.d)
+    self.chord:setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
     self.onset = self.onset + self.turtle.d
 end
@@ -216,8 +226,8 @@ function LindenmayerPITV:target_L(target, operation, operand)
     if self.priorChord ~= nil then
         self.chord = ChordSpace.voiceleadingClosestRange(self.priorChord, self.chord, self.octaves * ChordSpace.OCTAVE, true)
     end
-    self.chord.setDuration(self.turtle.d)
-    self.chord.setVelocity(self.turtle.v)
+    self.chord:setDuration(self.turtle.d)
+    self.chord:setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
     self.onset = self.onset + self.turtle.d
 end
@@ -272,11 +282,17 @@ function LindenmayerPITV:interpret()
     local commands = Silencio.split(self.currentProduction, ' ')
     for index, command in ipairs(commands) do
         target, opcode, operand = self:parseCommand(command)
-        print(target, opcode, operand)
-        local target = self.targets[opcode]
-        if target ~= nil then
-            -- print(target, opcode, equivalence, operand, index, stringOperand)
-            target(self, target, opcode, operand)
+        local function_ = self.targets[target]
+        if function_ ~= nil then
+            local value = nil
+            if operand ~= nil then
+                value = tonumber(operand)
+                if value == nil then
+                    value = operand
+                end
+            end
+            function_(self, target, opcode, value)
+            print(self.turtle)
         end
     end
 end
@@ -289,13 +305,21 @@ function LindenmayerPITV:generate()
         print('LindenmayerPITV:tieing notes...')
         self.score:tieOverlaps(true)
     end
+    self.score:setDuration(self.duration)
+    local bass, range = self.score:findScale(KEY)
+    self.score:setScale(KEY, self.bass, range)
 end
 
 if true then
     lindenmayer = LindenmayerPITV:new()
     lindenmayer:initialize(4, 60, 1)
-    lindenmayer.axiom = 'P:=:15 v:=:80 d:=:1 a'
-    lindenmayer.rules['a'] = 'a C T:+:1 V:+:3 a L T:-:1 a C'
+    lindenmayer.chordSpaceGroup:printChords()
+    lindenmayer.axiom = 'P:=:8 v:=:80 d:=:1 a'
+    lindenmayer.rules['a'] = 'a L T:+:2 a T:+:2 L a T:+:2 L a V:+:7 L T:+:5 L a I:+:1 a '
+    lindenmayer.iterations = 3
     lindenmayer:generate()
+    lindenmayer.score:setTitle('LindenmayerPITVTest')
     lindenmayer.score:print()
+    lindenmayer.score:renderMidi()
+    lindenmayer.score:playPianoteq()
 end

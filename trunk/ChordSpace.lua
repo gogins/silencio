@@ -4,6 +4,7 @@ local ChordSpace = {}
 
 function ChordSpace.help()
 print [[
+
 C H O R D S P A C E
 
 Copyright 2010, 2011 by Michael Gogins.
@@ -2555,7 +2556,15 @@ function ChordSpaceGroup:initialize(voices, range, g)
         self.indexesForVoicings[voicing:__hash()] = index
         self.countV = self.countV + 1
     end
+    print(string.format('ChordSpaceGroup.voices: %8d', self.voices))
+    print(string.format('ChordSpaceGroup.range : %8d', self.range))
+    print(string.format('ChordSpaceGroup.g     : %13.4f', self.g))
+    print(string.format('ChordSpaceGroup.countP: %8d', self.countP))
+    print(string.format('ChordSpaceGroup.countI: %8d', self.countI))
+    print(string.format('ChordSpaceGroup.countT: %8d', self.countT))
+    print(string.format('ChordSpaceGroup.countV: %8d', self.countV))
 end
+
 
 -- Returns the chord for the indices of prime form, inversion,
 -- transposition, and voicing. The chord is not in RP; rather, each voice of
@@ -2674,6 +2683,12 @@ function ChordSpaceGroup:list()
     end
     for index, voicing in pairs(self.voicingsForIndexes) do
         print(string.format('voicing index: %5d  voicing: %s  index from voicing: %5d', index, tostring(voicing), self.indexesForVoicings[voicing:__hash()]))
+    end
+end
+
+function ChordSpaceGroup:printChords()
+    for index, opti in pairs(self.optisForIndexes) do
+        print(string.format('index: %5d  opti: %s %s', index, tostring(opti), opti:name()))    
     end
 end
 
