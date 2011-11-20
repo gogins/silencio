@@ -209,7 +209,11 @@ function LindenmayerPITV:target_C(target, operation, operand)
     else
         self.priorChord = self.chord
     end
-    self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)
+    local p = math.floor(self.turtle.P + 0.5)
+    local i = math.floor(self.turtle.I + 0.5)
+    local t = math.floor(self.turtle.T + 0.5)
+    local v = math.floor(self.turtle.V + 0.5)
+    self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
@@ -222,7 +226,11 @@ function LindenmayerPITV:target_L(target, operation, operand)
     else
         self.priorChord = self.chord
     end
-    self.chord = self.chordSpaceGroup:toChord(self.turtle.P, self.turtle.I, self.turtle.T, self.turtle.V)
+    local p = math.floor(self.turtle.P + 0.5)
+    local i = math.floor(self.turtle.I + 0.5)
+    local t = math.floor(self.turtle.T + 0.5)
+    local v = math.floor(self.turtle.V + 0.5)
+    self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
     if self.priorChord ~= nil then
         self.chord = ChordSpace.voiceleadingClosestRange(self.priorChord, self.chord, self.octaves * ChordSpace.OCTAVE, true)
     end
@@ -312,10 +320,11 @@ end
 
 if true then
     lindenmayer = LindenmayerPITV:new()
-    lindenmayer:initialize(4, 60, 1)
+    lindenmayer:initialize(5, 60, 1)
+    lindenmayer.duration = 240
     lindenmayer.chordSpaceGroup:printChords()
-    lindenmayer.axiom = 'P:=:8 v:=:80 d:=:1 a'
-    lindenmayer.rules['a'] = 'a L T:+:2 a T:+:2 L a T:+:2 L a V:+:7 L T:+:5 L a I:+:1 a '
+    lindenmayer.axiom = 'P:=:153 v:=:80 V:=:3004 d:=:1 a'
+    lindenmayer.rules['a'] = 'a L T:+:5 a T:+:2 C a T:+:2 L a V:+:25 C V:+:25 C L T:+:5 L a I:+:1 T:-:7 a '
     lindenmayer.iterations = 3
     lindenmayer:generate()
     lindenmayer.score:setTitle('LindenmayerPITVTest')

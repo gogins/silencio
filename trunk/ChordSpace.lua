@@ -1964,6 +1964,27 @@ end
 table.sort(ChordSpace.chordsForNames)
 table.sort(ChordSpace.namesForChords)
 
+-- Increment a chord voicewise through chord space,
+-- from a low point on the unison diagonal through a high point 
+-- on the unison diagonal. g is the generator of transposition.
+-- It may be necessary to set the chord to the low point to start.
+
+function ChordSpace.next(odometer, low, high, g)
+    local voices = #odometer
+    odometer[voices] = odometer[voices] + g
+     -- "Carry."
+    for voice = voices, 2, -1 do
+        if odometer[voice] > high then
+            odometer[voice] = low
+            odometer[voice - 1] = odometer[voice - 1] + g
+        end
+    end
+    if odometer[1] > high then
+        return false
+    end
+    return true
+end
+
 function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     g = g or 1
     local equivalenceMapper = nil
@@ -1985,26 +2006,18 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     if equivalence == 'OPTTI' then
         equivalenceMapper = Chord.iseOPTTI
     end
-    -- Enumerate all chords in O.
-    local chordset = ChordSpace.allChordsInRange(voices, -(ChordSpace.OCTAVE + 1), ChordSpace.OCTAVE + 1)
-    -- Select only those O chords that are within the complete
-    -- equivalence class.
     local equivalentChords = {}
-    for hash, equivalentChord in pairs(chordset) do
-        if equivalenceMapper(equivalentChord) then
+    -- Enumerate all chords in [-O, O].
+    local odometer = ChordSpace.iterator(voices, -13)
+    while ChordSpace.next(odometer, -13, 13, g) == true do
+        local eP = odometer:eP()
+        if equivalenceMapper(eP) then
             --print(hash, equivalentChord, equivalentChord:__hash())
-            table.insert(equivalentChords, equivalentChord)
+            ChordSpace.setInsert(equivalentChords, eP)
         end
     end
-    -- Sort the chords and create a table with a zero-based index.
-    table.sort(equivalentChords)
-    local zeroBasedChords = {}
-    local index = 0
-    for key, chord in pairs(equivalentChords) do
-        --print('index:', index, 'chord:', chord, chord:eop(), 'layer:', chord:layer())
-        table.insert(zeroBasedChords, index, chord)
-        index = index + 1
-    end
+    local equivalentChords = ChordSpace.sortedSet(equivalentChords)
+    local zeroBasedChords = ChordSpace.zeroBasedSet(equivalentChords)
     return zeroBasedChords, equivalentChords
 end
 
@@ -2018,26 +2031,6 @@ function ChordSpace.iterator(voices, first)
         odometer[voice] = first
     end
     return odometer
-end
-
--- Iterates to the next chord in R within the range [first, last);
--- returns true if there is a chord remaining or false otherwise.
--- g is the generator of transposition.
-
-function ChordSpace.next(odometer, first, last, g)
-    g = g or 1
-    if odometer[1] < last then
-        odometer[#odometer] = odometer[#odometer] + g
-        -- "Carry" voices across range.
-        for voice = #odometer, 2, -1 do
-            if odometer[voice] >= last then
-                odometer[voice] = first
-                odometer[voice - 1] = odometer[voice - 1] + g
-            end
-        end
-        return true
-    end
-    return false
 end
 
 -- Returns a collection of all chords for the specified number of voices in a
@@ -2293,26 +2286,21 @@ function ChordSpace.voiceleadingCloser(source, d1, d2, avoidParallels)
     return ChordSpace.voiceleadingSimpler(source, d1, d2, avoidParallels)
 end
 
--- Returns which of the destinations has the closest voice-leading
--- from the source, optionally avoiding parallel fifths.
-
-function ChordSpace.voiceleadingClosest(source, destinations, avoidParallels)
-    local d = destinations[1]
-    for i = 2, #destinations do
-        d = ChordSpace.voiceleadingCloser(source, d, destinations[i], avoidParallels)
-    end
-    return d
-end
-
 -- Returns the voicing of the destination which has the closest voice-leading
 -- from the source within the range, optionally avoiding parallel fifths.
--- TODO: Do not collect all voicings, but test them individually in a loop
--- as in the body of Voicings.
 
 function ChordSpace.voiceleadingClosestRange(source, destination, range, avoidParallels)
-    local destinations = ChordSpace.octavewiseRevoicings(destination, range)
-    local closest = ChordSpace.voiceleadingClosest(source, destinations, range, avoidParallels)
-    return closest
+    local destinationeOP = destination:eOP()
+    local d = destinationeOP:clone()
+    local odometer = source:origin()
+    while ChordSpace.next(odometer, 0, range, ChordSpace.OCTAVE) == true do
+        local revoicing = odometer:clone()
+        for voice = 1, #revoicing do
+            revoicing[voice] = revoicing[voice] + destinationeOP[voice]
+        end
+        d = ChordSpace.voiceleadingCloser(source, d, revoicing, avoidParallels)
+    end
+    return d
 end
 
 -- Creates a complete Silencio "note on" event for the
@@ -2464,63 +2452,40 @@ function ChordSpaceGroup:new(o)
     return o
 end
 
--- Returns all permutations of octaves for the indicated
--- number of voices within the indicated range.
-
-function ChordSpace.octavewisePermutations(voices, range)
+function ChordSpace.octavewiseRevoicings(chord, range)
     range = range or ChordSpace.OCTAVE
-    local voicings = {}
-    local zero = Chord:new()
-    zero:resize(voices)
-    local odometer = zero:clone()
+    local voices = #chord
+    local odometer = chord:origin()
     -- Enumerate the permutations.
     -- iterator[1] is the most significant voice, and
     -- iterator[N] is the least significant voice.
-    voicing = 0
-    while true do
-        voicings[voicing] = odometer:clone()
-        odometer[voices] = odometer[voices] + ChordSpace.OCTAVE
-         -- "Carry" octaves.
-        for voice = voices, 2, - 1 do
-            if odometer[voice] > range then
-                odometer[voice] = zero[voice]
-                odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
-            end
-        end
-        if odometer[1] > range then
-            break
-        end
-        voicing = voicing + 1
+    local voicings = 0
+    while ChordSpace.next(odometer, 0, range, ChordSpace.OCTAVE) == true do
+        voicings = voicings + 1
     end
     return voicings
 end
 
-function ChordSpace.octavewiseRevoicings(chord, range)
-    range = range or ChordSpace.OCTAVE
-    local voicings = {}
-    local zero = chord:clone()
-    local voices = #zero
-    local odometer = chord:clone()
+function ChordSpace.octavewiseRevoicing(chord, index, range)
+    local voices = #chord
+    local odometer = chord:origin()
+    local eop = chord:eOP()
     -- Enumerate the permutations.
     -- iterator[1] is the most significant voice, and
     -- iterator[N] is the least significant voice.
-    voicing = 0
-    while true do
-        voicings[voicing] = odometer:clone()
-        odometer[voices] = odometer[voices] + ChordSpace.OCTAVE
-         -- "Carry" octaves.
-        for voice = voices, 2, - 1 do
-            if odometer[voice] > range then
-                odometer[voice] = zero[voice]
-                odometer[voice - 1] = odometer[voice - 1] + ChordSpace.OCTAVE
-            end
-        end
+    local voicings = 0
+    for v = 1, index do
+        ChordSpace.next(odometer, 0, range, ChordSpace.OCTAVE)
+        -- Wrap around?
         if odometer[1] > range then
-            break
+            odometer = chord:origin()
         end
-        voicing = voicing + 1
+        voicings = voicings + 1
     end
-    return voicings
+    for voice = 1, #chord do
+        odometer[voice] = odometer[voice] + eop[voice]
+    end
+    return odometer
 end
 
 -- Returns the ith arpeggiation, current voice, and corresponding revoicing
@@ -2543,18 +2508,14 @@ function ChordSpaceGroup:initialize(voices, range, g)
     self.countP = 0
     self.countI = 2
     self.countT = ChordSpace.OCTAVE / self.g
-    self.countV = 0
+    local chord = Chord:new()
+    chord:resize(voices)
+    self.countV = ChordSpace.octavewiseRevoicings(chord, self.range)
     self.indexesForOptis = {}
-    self.indexesForVoicings = {}
     self.optisForIndexes = ChordSpace.allOfEquivalenceClass(voices, 'OPTTI')
     for index, optti in pairs(self.optisForIndexes) do
         self.indexesForOptis[optti:__hash()] = index
         self.countP = self.countP + 1
-    end
-    self.voicingsForIndexes = ChordSpace.octavewisePermutations(voices, range)
-    for index, voicing in pairs(self.voicingsForIndexes) do
-        self.indexesForVoicings[voicing:__hash()] = index
-        self.countV = self.countV + 1
     end
     print(string.format('ChordSpaceGroup.voices: %8d', self.voices))
     print(string.format('ChordSpaceGroup.range : %8d', self.range))
@@ -2600,18 +2561,12 @@ function ChordSpaceGroup:toChord(P, I, T, V, printme)
     if printme then
         print('toChord:   op:       ', op)
     end
-    local voicing = self.voicingsForIndexes[V]
-    if printme then
-        print('toChord:   voicing:  ', voicing)
-    end
-    local revoicing = op:clone()
-    for voice = 1, #op do
-        revoicing[voice] = op[voice] + voicing[voice]
-    end
+    V = V % self.countV
+    local revoicing = ChordSpace.octavewiseRevoicing(op, V, self.range)
     if printme then
         print('toChord:   revoicing:', revoicing)
     end
-    return revoicing, opti, op, voicing
+    return revoicing, opti, op
 end
 
 -- Returns the indices of prime form, inversion, transposition,
