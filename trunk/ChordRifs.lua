@@ -268,7 +268,7 @@ end
 if true then
 
 rifs = ChordRifs:new()
-rifs:initialize(4, 48, 1)
+rifs:initialize(5, 60, 1)
 rifs:resize(3)
 
 -- Time.
@@ -280,7 +280,7 @@ rifs.transformations[2][1][ChordRifs.HOMOGENEITY] = 1
 rifs.transformations[3][1][ChordRifs.HOMOGENEITY] = 2
 -- Set-class.
 rifs.transformations[1][2][2] = .1
-rifs.transformations[2][2][2] = .1
+rifs.transformations[2][2][2] = .01
 rifs.transformations[3][2][2] = 0.95
 rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = .1
 -- Inversion.
@@ -289,7 +289,7 @@ rifs.transformations[2][3][3] = 0
 rifs.transformations[3][3][3] = -.1
 rifs.transformations[3][3][ChordRifs.HOMOGENEITY] = .1
 -- Transposition.
-rifs.transformations[1][4][4] = .1
+rifs.transformations[1][4][4] = .01
 rifs.transformations[2][4][4] = .1
 rifs.transformations[3][4][4] = .1
 rifs.transformations[1][4][ChordRifs.HOMOGENEITY] = .2
