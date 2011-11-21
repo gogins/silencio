@@ -122,9 +122,7 @@ function LindenmayerPITV:initialize(voices, octaves, g)
 end
 
 function LindenmayerPITV:operation_assign(y, x)
-    print(y, x)
     y = x
-    print(y, x)
     return y
 end
 
@@ -217,6 +215,7 @@ function LindenmayerPITV:target_C(target, operation, operand)
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
+    print(string.format('C: %s %s', tostring(self.chord), self.chord:eOP():name()))
     self.onset = self.onset + self.turtle.d
 end
 
@@ -237,6 +236,7 @@ function LindenmayerPITV:target_L(target, operation, operand)
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
+    print(string.format('L: %s %s', tostring(self.chord), self.chord:eOP():name()))
     self.onset = self.onset + self.turtle.d
 end
 
@@ -323,8 +323,8 @@ if true then
     lindenmayer:initialize(5, 60, 1)
     lindenmayer.duration = 240
     lindenmayer.chordSpaceGroup:printChords()
-    lindenmayer.axiom = 'P:=:153 v:=:80 V:=:3004 d:=:1 a'
-    lindenmayer.rules['a'] = 'a L T:+:5 a T:+:2 C a T:+:2 L a V:+:25 C V:+:25 C L T:+:5 L a I:+:1 T:-:7 a '
+    lindenmayer.axiom = 'P:=:153 v:=:80 V:=:9999 d:=:1 a T:+:5 P:+:20 a T:+:5 P:-:20 a'
+    lindenmayer.rules['a'] = 'a L T:+:5 a T:+:2 L a T:+:2 V:+:25 C I:+:1 L V:+:25 L L T:+:2 L [ I:=:0 P:=:71 L ] T:-:7 a I:+:1'
     lindenmayer.iterations = 3
     lindenmayer:generate()
     lindenmayer.score:setTitle('LindenmayerPITVTest')

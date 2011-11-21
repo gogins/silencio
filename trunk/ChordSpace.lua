@@ -2008,9 +2008,10 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     end
     local equivalentChords = {}
     -- Enumerate all chords in [-O, O].
-    local odometer = ChordSpace.iterator(voices, -13)
-    while ChordSpace.next(odometer, -13, 13, g) == true do
-        local eP = odometer:eP()
+    local iterator = ChordSpace.iterator(voices, -13)
+    print('iterator:', tostring(iterator))
+    while ChordSpace.next(iterator, -13, 13, g) == true do
+        local eP = iterator:eP()
         if equivalenceMapper(eP) then
             --print(hash, equivalentChord, equivalentChord:__hash())
             ChordSpace.setInsert(equivalentChords, eP)
@@ -2043,9 +2044,9 @@ function ChordSpace.allChordsInRange(voices, first, last, g)
     g = g or 1
     -- Enumerate all chords in the range.
     local chordset = {}
-    local odometer = ChordSpace.iterator(voices, first)
-    while ChordSpace.next(odometer, first, last, g) do
-        local chord = odometer:clone()
+    local iterator = ChordSpace.iterator(voices, first)
+    while ChordSpace.next(iterator, first, last, g) do
+        local chord = iterator:clone()
         chordset[chord:__hash()] = chord
     end
     return ChordSpace.sortedSet(chordset)
