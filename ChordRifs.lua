@@ -3,7 +3,7 @@ ChordRifs = {}
 function ChordRifs.help()
 print [[
 
-R E C U R R E N T   I T E R A T E D   F U N C T I O N  
+R E C U R R E N T   I T E R A T E D   F U N C T I O N
 S Y S T E M S   I N   C H O R D   S P A C E
 
 Copyright (C) 2010 by Michael Gogins
@@ -264,61 +264,6 @@ function ChordRifs:newchord()
     local chord = matrix:new(ChordRifs.HOMOGENEITY, 1, 0)
     chord[ChordRifs.HOMOGENEITY][1] = 1
     return chord
-end
-
-if true then
-
-rifs = ChordRifs:new()
-rifs:initialize(5, 60, 1)
-rifs:resize(3)
-
--- Time.
-rifs.transformations[1][1][1] = 0.55
-rifs.transformations[2][1][1] = 0.5
-rifs.transformations[3][1][1] = 0.5
-rifs.transformations[1][1][ChordRifs.HOMOGENEITY] = 0
-rifs.transformations[2][1][ChordRifs.HOMOGENEITY] = 1
-rifs.transformations[3][1][ChordRifs.HOMOGENEITY] = 2
--- Set-class.
-rifs.transformations[1][2][2] = .1
-rifs.transformations[2][2][2] = .1
-rifs.transformations[3][2][2] = 0.95
-rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = .1
--- Inversion.
-rifs.transformations[1][3][3] = .11
-rifs.transformations[2][3][3] = 0
-rifs.transformations[3][3][3] = -.1
-rifs.transformations[3][3][ChordRifs.HOMOGENEITY] = .1
--- Transposition.
-rifs.transformations[1][4][4] = .01
-rifs.transformations[2][4][4] = .1
-rifs.transformations[3][4][4] = .1
-rifs.transformations[1][4][ChordRifs.HOMOGENEITY] = .2
-rifs.transformations[2][4][ChordRifs.HOMOGENEITY] = .5
--- Revoicing.
-rifs.transformations[1][5][5] = 1
-rifs.transformations[2][5][5] = 1
-rifs.transformations[3][5][5] = 1
-rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = 1
-rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = .03
-rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -.3
-
-local chord = ChordRifs:newchord()
-chord:print()
-chord = rifs.transformations[1]:mul(chord)
-chord:print()
-rifs:list()
-rifs.voicelead = false
-rifs:generate(7)
-for index, chord in ipairs(rifs.score) do
-    chord[KEY] = chord[KEY] + 34
-end
-rifs.score:setDuration(400.0)
-rifs.score:setScale(VELOCITY, 60, 20)
---rifs.score:print()
-rifs.score:renderMidi()
-rifs.score:playPianoteq()
-
 end
 
 return ChordRifs
