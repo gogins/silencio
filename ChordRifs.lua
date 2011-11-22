@@ -3,7 +3,8 @@ ChordRifs = {}
 function ChordRifs.help()
 print [[
 
-C H O R D   R I F S
+R E C U R R E N T   I T E R A T E D   F U N C T I O N  
+S Y S T E M S   I N   C H O R D   S P A C E
 
 Copyright (C) 2010 by Michael Gogins
 This software is licensed under the terms
@@ -280,7 +281,7 @@ rifs.transformations[2][1][ChordRifs.HOMOGENEITY] = 1
 rifs.transformations[3][1][ChordRifs.HOMOGENEITY] = 2
 -- Set-class.
 rifs.transformations[1][2][2] = .1
-rifs.transformations[2][2][2] = .01
+rifs.transformations[2][2][2] = .1
 rifs.transformations[3][2][2] = 0.95
 rifs.transformations[2][2][ChordRifs.HOMOGENEITY] = .1
 -- Inversion.
@@ -299,8 +300,8 @@ rifs.transformations[1][5][5] = 1
 rifs.transformations[2][5][5] = 1
 rifs.transformations[3][5][5] = 1
 rifs.transformations[1][5][ChordRifs.HOMOGENEITY] = 1
-rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = 3
-rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -3
+rifs.transformations[2][5][ChordRifs.HOMOGENEITY] = .03
+rifs.transformations[3][5][ChordRifs.HOMOGENEITY] = -.3
 
 local chord = ChordRifs:newchord()
 chord:print()
@@ -314,7 +315,7 @@ for index, chord in ipairs(rifs.score) do
 end
 rifs.score:setDuration(400.0)
 rifs.score:setScale(VELOCITY, 60, 20)
-rifs.score:print()
+--rifs.score:print()
 rifs.score:renderMidi()
 rifs.score:playPianoteq()
 
