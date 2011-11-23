@@ -84,9 +84,9 @@ kamplitude  =           ampdb(p5) * kgain
 kcarrier    invalue     "kcarrier"
 kmodulator  invalue     "kmodulator"
             ; Intensity sidebands.
-kindex      line        0, p3, 20	
+kindex      transeg     1, p3, -5, 0.01	
 isine       ftgenonce   1, 0, 16384, 10, 1
-asignal     foscili     kamplitude, khz, kcarrier, kmodulator, kindex, isine
+asignal     foscili     kamplitude * kindex, khz, kcarrier, kmodulator, 20* kindex, isine
             outs        asignal, asignal
             endin
             
@@ -112,10 +112,10 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>0</x>
- <y>0</y>
- <width>845</width>
- <height>289</height>
+ <x>695</x>
+ <y>55</y>
+ <width>651</width>
+ <height>467</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="background">
@@ -243,8 +243,8 @@ e 4.0
   <xMax>5.00000000</xMax>
   <yMin>0.00000000</yMin>
   <yMax>5.00000000</yMax>
-  <xValue>2.37113402</xValue>
-  <yValue>2.67857143</yValue>
+  <xValue>2.21649485</xValue>
+  <yValue>1.07142857</yValue>
   <type>crosshair</type>
   <pointsize>1</pointsize>
   <fadeSpeed>0.00000000</fadeSpeed>
@@ -271,7 +271,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>2.371</label>
+  <label>2.216</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -300,7 +300,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>2.679</label>
+  <label>1.071</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
