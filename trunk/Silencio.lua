@@ -548,7 +548,7 @@ function Score:renderCsound()
     self:saveOrc()
     self:saveSco()
     os.execute(self.preCsoundCommands)
-    local command = string.format('csound --old-parser -g -m231 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
+    local command = string.format('csound -g -m227 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
     os.execute(command)
     os.execute(self.postCsoundCommands)
     self:postProcess()
@@ -863,7 +863,7 @@ function Score:sendToCsound()
 end
 
 function Score:display()
-    if ScoreView then
+    if ScoreView and ScoreView.display then
         ScoreView.display(self)
     else
         print('ScoreView.display(score) not available: check for OpenGL and glfw.')

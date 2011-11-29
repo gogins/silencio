@@ -2391,10 +2391,6 @@ end
 -- if not the specified values are used.
 
 function ChordSpace.insert(score, chord, time_, duration, channel, velocity, pan)
-    duration = duration or 1
-    channel = channel or 0
-    velocity = velocity or 70
-    pan = pan or 0
     -- print(score, chord, time_, duration, channel, velocity, pan)
     for voice = 1, #chord do
         local event = chord:note(voice, time_, duration, channel, velocity, pan)
