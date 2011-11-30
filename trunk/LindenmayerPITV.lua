@@ -200,6 +200,9 @@ function LindenmayerPITV:target_C(target, operation, operand)
     local t = math.floor(self.turtle.T + 0.5)
     local v = math.floor(self.turtle.V + 0.5)
     self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
+    for i = 1, #self.chord do
+        self.chord.channel[i] = i - 1
+    end
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
     ChordSpace.insert(self.score, self.chord, self.onset)
@@ -220,6 +223,9 @@ function LindenmayerPITV:target_L(target, operation, operand)
     self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
     if self.priorChord ~= nil then
         self.chord = ChordSpace.voiceleadingClosestRange(self.priorChord, self.chord, self.octaves * ChordSpace.OCTAVE, true)
+    end
+    for i = 1, #self.chord do
+        self.chord.channel[i] = i - 1
     end
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
@@ -306,22 +312,4 @@ function LindenmayerPITV:generate()
     self.score:setScale(KEY, self.bass, range)
 end
 
---[[
-if true then
-    lindenmayer = LindenmayerPITV:new()
-    lindenmayer:initialize(4, 60, 1)
-    lindenmayer.duration = 400
-    lindenmayer.chordSpaceGroup:printChords()
-    lindenmayer.axiom = 'P=8 v=80 V=999 d=1 a T+5 a T+5 a'
-    lindenmayer.rules['a'] = 'a L T+2 a T+5 L L a T+2 C I+1 L V+1 C V-2 L L T+2 L [ I=0 P=71 L ] T-7 a I+1 '
-    lindenmayer.rules['a'] = 'a L [ I+1 C C C C ] T+2 d-.02 a T+5 L L a d+.02 T+2 C I+1 L V+1 C V-2 L L T+2 L [ I=0 P=71 L ] T-7 a I+1 '
-    lindenmayer.rules['C'] = 'C V-1 C V-1 C V-1 '
-    lindenmayer.iterations = 4
-    lindenmayer:generate()
-    lindenmayer.score:setTitle('LindenmayerPITVTest')
-    lindenmayer.score:print()
-    lindenmayer.score:renderMidi()
-    lindenmayer.score:playPianoteq()
-end
---]]
 return LindenmayerPITV
