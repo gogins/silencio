@@ -484,6 +484,9 @@ function Score:playWav(inBackground)
     if platform == 'Android' then
         android.startActivity('android.intent.action.VIEW', 'file:///'..self:getNormalizedSoundfileName(), 'audio/x-wav')
     end
+    if platform == 'Windows' then
+        assert(os.execute(string.format('wmplayer.exe %s %s', self:getNormalizedSoundfileName(), background)))
+    end
 end
 
 function Score:setOrchestra(orchestra)
