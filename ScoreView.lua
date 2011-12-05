@@ -19,7 +19,7 @@ local ffi =         require("ffi")
 local gl =          require("gl")
 local glu =         require("glu")
 local glfw =        require("glfw")
---local Silencio =    require("Silencio")
+local Silencio =    require("Silencio")
 
 tx = 0
 ty = 0
@@ -498,7 +498,6 @@ function ScoreViewer:drawNote(note)
     gl.glEnd()
     gl.glPopMatrix()
 end
-
 
 function ScoreView.display(score_)
     print('BEGAN ScoreView.display()...')

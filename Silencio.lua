@@ -156,7 +156,12 @@ else
     print('jit not found.')
 end
 
-local result, ScoreView = pcall(require, "ScoreView")
+local haveScoreView, ScoreView = pcall(require, "ScoreView")
+if haveScoreView == true then
+    print('ScoreView found.')
+else
+    print('ScoreView not found.')
+end
 
 TIME        =  1
 DURATION    =  2
@@ -551,7 +556,7 @@ function Score:renderCsound()
     self:saveOrc()
     self:saveSco()
     os.execute(self.preCsoundCommands)
-    local command = string.format('csound -g -m227 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
+    local command = string.format('csound -m227 -W -f -R -K -r 48000 -k 375 --midi-key=4 --midi-velocity=5 -o %s %s %s', self:getOutputSoundfileName(), self:getOrcFilename(), self:getScoFilename())
     os.execute(command)
     os.execute(self.postCsoundCommands)
     self:postProcess()
@@ -750,6 +755,9 @@ function Score:processArg(args)
         if argument == '--fomus' then
             self:renderFomus(self.fomusParts, self.fomusHeader)
         end
+        if argument == '--display' then
+            self:display()
+        end
         if argument == '--csound' then
             self:renderCsound()
             self:playWav()
@@ -760,9 +768,6 @@ function Score:processArg(args)
         end
         if argument == '--playwav' then
             self:playWav()
-        end
-        if argument == '--display' then
-            self:display()
         end
     end
 end
