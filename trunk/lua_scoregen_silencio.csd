@@ -39,8 +39,8 @@ score:setDirectory('D:/Dropbox/music/')
 local c = .9849
 local y = 0.5
 local y1 = 0.5
-local interval = 0.25
-local duration = 0.5
+local interval = 0.125
+local duration = 0.75
 local insno = 1
 local scoretime = 0.5
 
@@ -54,7 +54,7 @@ for i = 1, 400 do
 end
 -- This note invokes postprocessing.
 -- It must be the last note in the piece and come after all sounds have died away.
-score:append(scoretime + 5, 1.0, 144.0, 1.0)
+csoundApi.csoundInputMessage(csound, string.format("i 2 %9.4f 5", scoretime + 5)) 
 score:sendToCsound()
 }}
 
@@ -99,12 +99,13 @@ iresult     strcmp     S4, "1"
             else
             prints     "Real-time rendering: no post-processing will be performed.\n"
             endif
+            exitnow
             endin
             
 </CsInstruments>
 
 <CsScore>
-i 2 51 2
+f 0 [60*100]
 e 4.0
 </CsScore>
 
@@ -112,10 +113,10 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>695</x>
- <y>55</y>
- <width>651</width>
- <height>467</height>
+ <x>0</x>
+ <y>0</y>
+ <width>540</width>
+ <height>415</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="background">
@@ -243,8 +244,8 @@ e 4.0
   <xMax>5.00000000</xMax>
   <yMin>0.00000000</yMin>
   <yMax>5.00000000</yMax>
-  <xValue>2.21649485</xValue>
-  <yValue>1.07142857</yValue>
+  <xValue>1.23711340</xValue>
+  <yValue>0.00000000</yValue>
   <type>crosshair</type>
   <pointsize>1</pointsize>
   <fadeSpeed>0.00000000</fadeSpeed>
@@ -271,7 +272,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>2.216</label>
+  <label>1.237</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -300,7 +301,7 @@ e 4.0
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>1.071</label>
+  <label>0.000</label>
   <alignment>right</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
