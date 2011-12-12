@@ -113,10 +113,10 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>0</x>
- <y>0</y>
- <width>540</width>
- <height>415</height>
+ <x>72</x>
+ <y>179</y>
+ <width>400</width>
+ <height>200</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="background">

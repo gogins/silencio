@@ -1470,10 +1470,10 @@ function Chord:iseRPT(range)
 end
 
 function Chord:iseRPTT(range)
-    if not self:iseR(range) then
+    if not self:iseP() then
         return false
     end
-    if not self:iseP() then
+    if not self:iseR(range) then
         return false
     end
     if not self:iseTT() then
@@ -2011,10 +2011,11 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local iterator = ChordSpace.iterator(voices, -13)
     print('iterator:', tostring(iterator))
     while ChordSpace.next(iterator, -13, 13, g) == true do
-        local eP = iterator:eP()
-        if equivalenceMapper(eP) then
-            --print(hash, equivalentChord, equivalentChord:__hash())
-            ChordSpace.setInsert(equivalentChords, eP)
+        if iterator:iseP() == true then
+            local eP = iterator:clone()
+            if equivalenceMapper(eP) then
+                ChordSpace.setInsert(equivalentChords, eP)
+            end
         end
     end
     local equivalentChords = ChordSpace.sortedSet(equivalentChords)
