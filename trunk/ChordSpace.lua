@@ -1,4 +1,6 @@
 local Silencio = require("Silencio")
+local metalua_serialize = require("metalua_serialize")
+local io = require("io")
 
 local ChordSpace = {}
 
@@ -509,9 +511,9 @@ TODO:
 
 --  Display the fundamental domains in the viewer much more clearly.
 
---  Display various temperament systems to see how harmony might work with 
+--  Display various temperament systems to see how harmony might work with
     voiceleading around the central diagonal. Alternatively, set up columns
-    or lattices of chords that are in interesting relations, and see how they 
+    or lattices of chords that are in interesting relations, and see how they
     sound and work together.
 
 --  Implement Rachel Hall, "Linear Contextual Transformations," 2009,
@@ -1965,7 +1967,7 @@ table.sort(ChordSpace.chordsForNames)
 table.sort(ChordSpace.namesForChords)
 
 -- Increment a chord voicewise through chord space,
--- from a low point on the unison diagonal through a high point 
+-- from a low point on the unison diagonal through a high point
 -- on the unison diagonal. g is the generator of transposition.
 -- It may be necessary to set the chord to the low point to start.
 
@@ -2314,7 +2316,7 @@ function Chord:note(voice_, time_, duration_, channel_, velocity_, pan_)
     local note_ = Event:new()
     note_[TIME] = time_
     note_[DURATION] = duration_ or self.duration[voice_]
-    note_[CHANNEL] = channel_ or self.channel[voice_] 
+    note_[CHANNEL] = channel_ or self.channel[voice_]
     note_[KEY] = self[voice_]
     note_[VELOCITY] = velocity_ or self.velocity[voice_]
     note_[PAN] = pan_ or self.pan[voice_]
@@ -2524,6 +2526,12 @@ function ChordSpaceGroup:initialize(voices, range, g)
     print(string.format('ChordSpaceGroup.countV: %8d', self.countV))
 end
 
+function ChordSpaceGroup:save(filename)
+    local text = serialize(self)
+    local writer = io.open(filename, 'w+')
+    writer:write(text)
+    writer:close()
+end
 
 -- Returns the chord for the indices of prime form, inversion,
 -- transposition, and voicing. The chord is not in RP; rather, each voice of
@@ -2641,7 +2649,7 @@ end
 
 function ChordSpaceGroup:printChords()
     for index, opti in pairs(self.optisForIndexes) do
-        print(string.format('index: %5d  opti: %s %s', index, tostring(opti), opti:name()))    
+        print(string.format('index: %5d  opti: %s %s', index, tostring(opti), opti:name()))
     end
 end
 
