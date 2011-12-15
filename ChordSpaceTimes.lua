@@ -9,7 +9,7 @@ local exitAfterFailureCount = 3
 local failureCount = 0
 local printOP = false
 local printChordSpaceGroup = true
-local voicesToTest = 7
+local voicesToTest = 4
 
 print([[
 
@@ -27,7 +27,8 @@ for voices = 2, voicesToTest do
     local ended = os.clock()
     print(string.format('ChordSpaceGroup of %2d voices took %9.4f seconds to create.', voices, (ended - began)))
     local began1 = os.clock()
-    local filename = 'ChordSpaceGroup' .. tostring(voices) .. '.txt'
+    local filename = string.format('ChordSpaceGroup_V%d_R%d_g%.5f.lua', chordSpaceGroup.voices, chordSpaceGroup.range, chordSpaceGroup.g)
+    print('Saving:', filename)
     chordSpaceGroup:save(filename)
     local ended1 = os.clock()
     local began2 = os.clock()
