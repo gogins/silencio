@@ -2011,7 +2011,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
     local equivalentChords = {}
     -- Enumerate all chords in [-O, O].
     local iterator = ChordSpace.iterator(voices, -13)
-    print('iterator:', tostring(iterator))
+    -- print('iterator:', tostring(iterator))
     while ChordSpace.next(iterator, -13, 13, g) == true do
         if iterator:iseP() == true then
             local eP = iterator:clone()
@@ -2517,13 +2517,7 @@ function ChordSpaceGroup:initialize(voices, range, g)
         self.indexesForOptis[optti:__hash()] = index
         self.countP = self.countP + 1
     end
-    print(string.format('ChordSpaceGroup.voices: %8d', self.voices))
-    print(string.format('ChordSpaceGroup.range : %8d', self.range))
-    print(string.format('ChordSpaceGroup.g     : %13.4f', self.g))
-    print(string.format('ChordSpaceGroup.countP: %8d', self.countP))
-    print(string.format('ChordSpaceGroup.countI: %8d', self.countI))
-    print(string.format('ChordSpaceGroup.countT: %8d', self.countT))
-    print(string.format('ChordSpaceGroup.countV: %8d', self.countV))
+    self:list()
 end
 
 function ChordSpaceGroup:save(filename)
@@ -2531,6 +2525,20 @@ function ChordSpaceGroup:save(filename)
     local writer = io.open(filename, 'w+')
     writer:write(text)
     writer:close()
+end
+
+function ChordSpaceGroup.load(filename)
+    local reader = io.open(filename)
+    local text = reader:read("*all")
+    -- What's deserialized is a function, which needs to be called.
+    local object = loadstring(text)()
+    -- Fix up metatable.
+    local chordSpaceGroup = ChordSpaceGroup:new(object)
+    -- Fix up metatables of chords too.
+    for index, opti in pairs(chordSpaceGroup.optisForIndexes) do
+        chordSpaceGroup.optisForIndexes[index] = Chord:new(opti)
+    end
+    return chordSpaceGroup
 end
 
 -- Returns the chord for the indices of prime form, inversion,
@@ -2635,15 +2643,31 @@ function ChordSpaceGroup:fromChord(chord, printme)
     return P, I, T, V
 end
 
-function ChordSpaceGroup:list()
-    for index, opti in pairs(self.optisForIndexes) do
-        print(string.format('index: %5d  opti: %s  index from opti: %s', index, tostring(opti), self.indexesForOptis[opti:__hash()]))
+function ChordSpaceGroup:list(listheader, listopttis, listvoicings)
+    listheader = listheader or true
+    listopttis = listopttis or false
+    listvoicings = listvoicings or false
+    if listheader then
+        print(string.format('ChordSpaceGroup.voices: %8d', self.voices))
+        print(string.format('ChordSpaceGroup.range : %8d', self.range))
+        print(string.format('ChordSpaceGroup.g     : %13.4f', self.g))
+        print(string.format('ChordSpaceGroup.countP: %8d', self.countP))
+        print(string.format('ChordSpaceGroup.countI: %8d', self.countI))
+        print(string.format('ChordSpaceGroup.countT: %8d', self.countT))
+        print(string.format('ChordSpaceGroup.countV: %8d', self.countV))
     end
-    for index = 0, #self.optisForIndexes - 1 do
-        print(string.format('opti from index: %s  index:  %5d', tostring(self.optisForIndexes[index]), index))
+    if listopttis then
+        for index, opti in pairs(self.optisForIndexes) do
+            print(string.format('index: %5d  opti: %s  index from opti: %s', index, tostring(opti), self.indexesForOptis[opti:__hash()]))
+        end
+        for index = 0, #self.optisForIndexes - 1 do
+            print(string.format('opti from index: %s  index:  %5d', tostring(self.optisForIndexes[index]), index))
+        end
     end
-    for index, voicing in pairs(self.voicingsForIndexes) do
-        print(string.format('voicing index: %5d  voicing: %s  index from voicing: %5d', index, tostring(voicing), self.indexesForVoicings[voicing:__hash()]))
+    if listvoicings then
+        for index, voicing in pairs(self.voicingsForIndexes) do
+            print(string.format('voicing index: %5d  voicing: %s  index from voicing: %5d', index, tostring(voicing), self.indexesForVoicings[voicing:__hash()]))
+        end
     end
 end
 
