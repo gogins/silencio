@@ -1,71 +1,43 @@
 --------------------------------------------------------------------------------
--- Metalua
--- Summary: Table-to-source serializer
---------------------------------------------------------------------------------
---
--- Copyright (c) 2008-2009, Fabien Fleutot <metalua@gmail.com>.
---
--- This software is released under the MIT Licence, see licence.txt
--- for details.
---
---------------------------------------------------------------------------------
---
 -- Serialize an object into a source code string. This string, when passed as
 -- an argument to loadstring()(), returns an object structurally identical
--- to the original one. 
---
--- The following are supported:
---
+-- to the original one. The following are currently supported:
 -- * strings, numbers, booleans, nil
---
 -- * functions without upvalues
---
--- * tables thereof. There is no restriction on keys; recursive and shared
---   sub-tables are handled correctly.
---
--- Caveat: metatables and environments aren't saved; this might or might not
---         be what you want.
+-- * tables thereof. Tables can have shared part, but can't be recursive yet.
+-- Caveat: metatables and environments aren't saved.
 --------------------------------------------------------------------------------
 
 local no_identity = { number=1, boolean=1, string=1, ['nil']=1 }
 
 function serialize (x)
-   
+
    local gensym_max =  0  -- index of the gensym() symbol generator
    local seen_once  = { } -- element->true set of elements seen exactly once in the table
    local multiple   = { } -- element->varname set of elements seen more than once
    local nested     = { } -- transient, set of elements currently being traversed
-   local nest_points  = { }
+   local nest_points = { }
    local nest_patches = { }
-   
-   -- Generate fresh indexes to store new sub-tables:
+
    local function gensym()
       gensym_max = gensym_max + 1 ;  return gensym_max
    end
-   
+
    -----------------------------------------------------------------------------
-   -- `nest_points' are places where a (recursive) table appears within
-   -- itself, directly or not.  for instance, all of these chunks
-   -- create nest points in table `x':
+   -- nest_points are places where a table appears within itself, directly or not.
+   -- for instance, all of these chunks create nest points in table x:
+   -- "x = { }; x[x] = 1", "x = { }; x[1] = x", "x = { }; x[1] = { y = { x } }".
+   -- To handle those, two tables are created by mark_nest_point:
+   -- * nest_points [parent] associates all keys and values in table parent which
+   --   create a nest_point with boolean `true'
+   -- * nest_patches contain a list of { parent, key, value } tuples creating
+   --   a nest point. They're all dumped after all the other table operations
+   --   have been performed.
    --
-   -- "x = { }; x[x] = 1"
-   -- "x = { }; x[1] = x"
-   -- "x = { }; x[1] = { y = { x } }".
-   --
-   -- To handle those, two tables are created by `mark_nest_point()':
-   --
-   -- * `nest_points [parent]' associates all keys and values in table
-   --   parent which create a nest_point with boolean `true'
-   --
-   -- * `nest_patches' contains a list of `{ parent, key, value }'
-   --   tuples creating a nest point. They're all dumped after all the
-   --   other table operations have been performed.
-   --
-   -- `mark_nest_point (p, k, v)' fills tables `nest_points' and
-   -- `nest_patches' with informations required to remember that
-   -- key/value `(k,v)' creates a nest point in parent table `p'. It
-   -- also marks `p' as occuring multiple times, since several
-   -- references to it will be required in order to patch the nest
+   -- mark_nest_point (p, k, v) fills tables nest_points and nest_patches with
+   -- informations required to remember that key/value (k,v) create a nest point
+   -- in table parent. It also marks `parent' as occuring multiple times, since
+   -- several references to it will be required in order to patch the nest
    -- points.
    -----------------------------------------------------------------------------
    local function mark_nest_point (parent, k, v)
@@ -80,16 +52,16 @@ function serialize (x)
       table.insert (nest_patches, { parent, k, v })
       seen_once [parent], multiple [parent]  = nil, true
    end
-   
+
    -----------------------------------------------------------------------------
-   -- 1st pass, list the tables and functions which appear more than once in `x'
+   -- First pass, list the tables and functions which appear more than once in x
    -----------------------------------------------------------------------------
    local function mark_multiple_occurences (x)
       if no_identity [type(x)] then return end
       if     seen_once [x]     then seen_once [x], multiple [x] = nil, true
       elseif multiple  [x]     then -- pass
       else   seen_once [x] = true end
-      
+
       if type (x) == 'table' then
          nested [x] = true
          for k, v in pairs (x) do
@@ -109,11 +81,11 @@ function serialize (x)
    -- mutually recursive functions:
    local dump_val, dump_or_ref_val
 
-   ------------------------------------------------------------------------------
-   -- if `x' occurs multiple times, dump the local var rather than the
+   --------------------------------------------------------------------
+   -- if x occurs multiple times, dump the local var rather than the
    -- value. If it's the first time it's dumped, also dump the content
    -- in localdefs.
-   ------------------------------------------------------------------------------            
+   --------------------------------------------------------------------
    function dump_or_ref_val (x)
       if nested[x] then return 'false' end -- placeholder for recursive reference
       if not multiple[x] then return dump_val (x) end
@@ -127,9 +99,9 @@ function serialize (x)
    end
 
    -----------------------------------------------------------------------------
-   -- 2nd pass, dump the object; subparts occuring multiple times are dumped
-   -- in local variables, which can then be referenced multiple times;
-   -- care is taken to dump local vars in an order which repect dependencies.
+   -- Second pass, dump the object; subparts occuring multiple times are dumped
+   -- in local variables which can be referenced multiple times;
+   -- care is taken to dump locla vars in asensible order.
    -----------------------------------------------------------------------------
    function dump_val(x)
       local  t = type(x)
@@ -164,30 +136,26 @@ function serialize (x)
          error ("Can't serialize data of type "..t)
       end
    end
-          
-   -- Patch the recursive table entries:
+
    local function dump_nest_patches()
       for _, entry in ipairs(nest_patches) do
          local p, k, v = unpack (entry)
          assert (multiple[p])
-         local set = dump_or_ref_val (p) .. "[" .. dump_or_ref_val (k) .. "] = " .. 
+         local set = dump_or_ref_val (p) .. "[" .. dump_or_ref_val (k) .. "] = " ..
             dump_or_ref_val (v) .. " -- rec "
          table.insert (localdefs, set)
       end
    end
-   
+
    mark_multiple_occurences (x)
    local toplevel = dump_or_ref_val (x)
    dump_nest_patches()
 
    if next (localdefs) then
-      -- Dump local vars containing shared or recursive parts,
-      -- then the main table using them.
       return "local _={ }\n" ..
-         table.concat (localdefs, "\n") .. 
+         table.concat (localdefs, "\n") ..
          "\nreturn " .. toplevel
    else
-      -- No shared part, straightforward dump:
       return "return " .. toplevel
    end
 end
