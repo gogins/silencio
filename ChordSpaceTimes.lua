@@ -10,6 +10,7 @@ local failureCount = 0
 local printOP = false
 local printChordSpaceGroup = true
 local voicesToTest = 4
+local range = 60
 
 print([[
 
@@ -23,13 +24,13 @@ and load them for later uses.
 for voices = 2, voicesToTest do
     local began = os.clock()
     local chordSpaceGroup = ChordSpaceGroup:new()
-    chordSpaceGroup:initialize(voices, 48, timeit)
+    chordSpaceGroup:initialize(voices, range)
     local ended = os.clock()
     print(string.format('ChordSpaceGroup of %2d voices took %9.4f seconds to create.', voices, (ended - began)))
     local began1 = os.clock()
-    local filename = string.format('ChordSpaceGroup_V%d_R%d_g%.5f.lua', chordSpaceGroup.voices, chordSpaceGroup.range, chordSpaceGroup.g)
+    local filename = ChordSpace.createFilename(chordSpaceGroup.voices, chordSpaceGroup.range, chordSpaceGroup.g, '.lua')
     print('Saving:', filename)
-    chordSpaceGroup:save(filename)
+    chordSpaceGroup:save()
     local ended1 = os.clock()
     local began2 = os.clock()
     print(string.format('ChordSpaceGroup of %2d voices took %9.4f seconds to serialize.', voices, (ended1 - began1)))
