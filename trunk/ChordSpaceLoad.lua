@@ -2,7 +2,7 @@ require "Silencio"
 ChordSpace = require("ChordSpace")
 local matrix = require("matrix")
 local os = require("os")
-local voicesToTest = 4
+local voicesToTest = 7
 
 print([[
 
@@ -15,9 +15,7 @@ and load them for later uses.
 
 for voices = 2, voicesToTest do
     local began = os.clock()
-    local filename = string.format('ChordSpaceGroup-V%d-R%d-g%.5f.lua', voices, 48, 1.0)
-    print('Loading:', filename)
-    local deserialized = ChordSpaceGroup.load(filename)
-    deserialized:list()
+    chordSpaceGroup = ChordSpace.load(voices, 48, 1)
+    chordSpaceGroup:list()
     print()
 end
