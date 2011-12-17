@@ -106,7 +106,7 @@ function LindenmayerPITVA:new(o)
         o.targets['A'] = self.target_A
         o.targets['C'] = self.target_C
         o.targets['L'] = self.target_L
-        o.targets['N'] = self.target_L
+        o.targets['N'] = self.target_N
         o.targets['['] = self.target_push
         o.targets[']'] = self.target_pop
         o.operations = {}
@@ -123,10 +123,10 @@ function LindenmayerPITVA:new(o)
     return o
 end
 
-function LindenmayerPITVA:initialize(voices, octaves, g)
+function LindenmayerPITVA:initialize(voices, range, g)
     print('LindenmayerPITVA:initialize...')
-    self.chordSpaceGroup:initialize(voices, octaves, g)
-    self.countA = voices * octaves
+    self.chordSpaceGroup:initialize(voices, range, g)
+    self.countA = voices *  math.floor(range / ChordSpace.OCTAVE + 0.5)
 end
 
 function LindenmayerPITVA:operation_assign(y, x)
@@ -223,8 +223,14 @@ function LindenmayerPITVA:target_C(target, operation, operand)
     end
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
+    local oldsize = #self.score
     ChordSpace.insert(self.score, self.chord, self.turtle.t)
-    print(string.format('C: %s %s', tostring(self.chord), self.chord:eOP():name()))
+    local newsize = #self.score
+    print(string.format('C: %s', self.chord:eOP():name()))
+    for i = oldsize, newsize do
+        print(tostring(self.score[i]))
+    end
+    
     self.turtle.t = self.turtle.t + self.turtle.d
 end
 
@@ -245,8 +251,13 @@ function LindenmayerPITVA:target_L(target, operation, operand)
     end
     self.chord:setDuration(self.turtle.d)
     self.chord:setVelocity(self.turtle.v)
+    local oldsize = #self.score
     ChordSpace.insert(self.score, self.chord, self.turtle.t)
-    print(string.format('L: %s %s', tostring(self.chord), self.chord:eOP():name()))
+    local newsize = #self.score
+    for i = oldsize, newsize do
+        print(tostring(self.score[i]))
+    end
+    print(string.format('L: %s', self.chord:eOP():name()))
     self.turtle.t = self.turtle.t + self.turtle.d
 end
 
@@ -259,12 +270,14 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     local t = math.floor(self.turtle.T + 0.5)
     local v = math.floor(self.turtle.V + 0.5)
     self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
-    local voice = self.turtle.A % self.chordSpaceGroup.voices
-    local octave = math.floor(self.turtle.A / self.voicesc)
-    local key = self.chord[voice] + octave * ChordSpace.OCTAVE
+    local voice = (self.turtle.A % self.chordSpaceGroup.voices) + 1
+    print('voice:', voice)
+    local octave = math.floor(self.turtle.A / self.chordSpaceGroup.voices)
+    print('octave:', octave)
+    local key = self.chord[voice] + (octave * ChordSpace.OCTAVE)
     local note = Event:new{self.turtle.t, self.turtle.d, 144, self.turtle.i, key, self.turtle.v, 0, 0, 0, 0, 1}
     self.score.append(note)
-    print(string.format('N: %s', tostring(note))
+    print(string.format('N:\n%s', tostring(note)))
     self.turtle.t = self.turtle.t + self.turtle.d
 end
 
@@ -344,6 +357,30 @@ function LindenmayerPITVA:generate()
     self.score:setDuration(self.duration)
     local bass, range = self.score:findScale(KEY)
     self.score:setScale(KEY, self.bass, range)
+end
+
+if true then
+    lindenmayer = LindenmayerPITVA:new()
+    score = lindenmayer.score
+    lindenmayer:initialize(4, 48, 1)
+    lindenmayer.chordSpaceGroup:printChords()
+    lindenmayer.axiom = 'P=8 v=15 V=99 d=1 I+1 [ a B a ] t+16 T+5 A+4 a B a '
+    lindenmayer.rules['a'] = 'a C B B L L d-.05 a C L C C L v+4 C a C v-4 d+.05 C I+1 L V+1 C V-12 L C C L T+2 V-1 C C L  I=0 P=71 L L  T-7 C L L L L I+1 '
+    lindenmayer.rules['C'] = 'C d+.25 B d-.25 '
+    lindenmayer.rules['B'] = 't+1 [ A+5 N N N B ] N A-1 N A+3 N A-1 B N A+2 '
+
+    lindenmayer.iterations = 3
+    lindenmayer.duration = 242
+    lindenmayer:generate()
+    -- lindenmayer.score:print()
+    lindenmayer.score:setArtist('Michael_Gogins')
+    lindenmayer.score:setCopyright('Copr_2010_Michael_Gogins')
+    lindenmayer.score:setAlbum('Silencio')
+    lindenmayer.score:setMidiPatches({{'patch_change', 1, 0,16},{'patch_change', 1, 1,1}, {'patch_change', 1, 2,1} })
+    lindenmayer.score:setFomusParts({'Cembalom', 'Gong', 'Fife'})
+    start, scoretime = lindenmayer.score:findScale(TIME)
+    score:renderMidi()
+    score:playPianoteq()
 end
 
 return LindenmayerPITVA
