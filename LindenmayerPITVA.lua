@@ -369,8 +369,8 @@ if true then
     --lindenmayer.rules['C'] = 'C d+.25 B d-.25 '
     lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
 
-    lindenmayer.axiom = 'P=8 v=30 V=88 d=1 I+1 T+5 A+4 a '
-    lindenmayer.rules['a'] = 'a  B B   a      v+4  a  v-4  I+1  V+1  V-12     T+2 V-1    I=0 P=71   T-7 B B      I+1 '
+    lindenmayer.axiom = 'P=8 v=40 V=88 d=1 I+1 T+5 A+4 a '
+    lindenmayer.rules['a'] = 'a  B B   a      v+4  a  v-4  I+1  C V+1  C V-12     T+2 V-1    I=0 P=71   T-7 B B   L L   I+1 '
     --lindenmayer.rules['C'] = ' d+.25 B d-.25 '
     lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
 
