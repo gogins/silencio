@@ -230,7 +230,7 @@ function LindenmayerPITVA:target_C(target, operation, operand)
     for i = oldsize, newsize do
         print(tostring(self.score[i]))
     end
-    
+
     self.turtle.t = self.turtle.t + self.turtle.d
 end
 
@@ -276,8 +276,8 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     --print('octave:', octave)
     local key = self.chord[voice] + (octave * ChordSpace.OCTAVE)
     local note = Event:new{self.turtle.t, self.turtle.d, 144, self.turtle.i, key, self.turtle.v, 0, 0, 0, 0, 1}
-    self.score.append(note)
-    print(string.format('N:\n%s', tostring(note)))
+    self.score:append(note)
+    print(string.format('N:\n%s', tostring(self.score[#self.score])))
     self.turtle.t = self.turtle.t + self.turtle.d
 end
 
@@ -364,15 +364,21 @@ if true then
     score = lindenmayer.score
     lindenmayer:initialize(4, 48, 1)
     lindenmayer.chordSpaceGroup:printChords()
-    lindenmayer.axiom = 'P=8 v=15 V=88 d=1 I+1 T+5 A+4 a '
+    lindenmayer.axiom = 'P=8 v=25 V=88 d=1 I+1 T+5 A+4 a '
     lindenmayer.rules['a'] = 'a C B B L L a C L C C L v+4 C a C v-4 C I+1 L V+1 C V-12 L C C L T+2 V-1 C C L I=0 P=71 L L T-7 B B C L L L L I+1 '
     --lindenmayer.rules['C'] = 'C d+.25 B d-.25 '
     lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
 
-    lindenmayer.iterations = 4
+    lindenmayer.axiom = 'P=8 v=30 V=88 d=1 I+1 T+5 A+4 a '
+    lindenmayer.rules['a'] = 'a  B B   a      v+4  a  v-4  I+1  V+1  V-12     T+2 V-1    I=0 P=71   T-7 B B      I+1 '
+    --lindenmayer.rules['C'] = ' d+.25 B d-.25 '
+    lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
+
+    lindenmayer.iterations = 5
     lindenmayer.duration = 300
     lindenmayer:generate()
-    -- lindenmayer.score:print()
+    print("Generated score:")
+    lindenmayer.score:print()
     lindenmayer.score:setArtist('Michael_Gogins')
     lindenmayer.score:setCopyright('Copr_2010_Michael_Gogins')
     lindenmayer.score:setAlbum('Silencio')
