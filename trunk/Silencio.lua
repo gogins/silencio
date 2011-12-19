@@ -361,7 +361,7 @@ end
 -- otherwise the parameters are assumed to be the fields for an Event.
 
 function Score:append(time_, duration, status, channel, key, velocity, pan, depth, height, phase)
-    if duration then
+    if duration ~= nil then
         local event = Event:new{time_, duration, status, channel, key, velocity, pan, depth, height, phase, 1}
         table.insert(self, event)
     else
@@ -707,7 +707,7 @@ function Score:processArg(args)
         local argz = Silencio.split(args[0], '/')
         local title = argz[#argz]
         self:setTitle(title)
-    else 
+    else
         if platform ~= 'Windows' then
             self:setTitle(args[0])
         end
