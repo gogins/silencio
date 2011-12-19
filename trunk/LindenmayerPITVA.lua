@@ -271,9 +271,9 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     local v = math.floor(self.turtle.V + 0.5)
     self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
     local voice = (self.turtle.A % self.chordSpaceGroup.voices) + 1
-    print('voice:', voice)
+    --print('voice:', voice)
     local octave = math.floor(self.turtle.A / self.chordSpaceGroup.voices)
-    print('octave:', octave)
+    --print('octave:', octave)
     local key = self.chord[voice] + (octave * ChordSpace.OCTAVE)
     local note = Event:new{self.turtle.t, self.turtle.d, 144, self.turtle.i, key, self.turtle.v, 0, 0, 0, 0, 1}
     self.score.append(note)
@@ -341,7 +341,7 @@ function LindenmayerPITVA:interpret()
                 end
             end
             function_(self, target, opcode, value)
-            print(self.turtle)
+            --print(self.turtle)
         end
     end
 end
@@ -350,13 +350,13 @@ function LindenmayerPITVA:generate()
     print('LindenmayerPITVA:generate...')
     self:produce()
     self:interpret()
+    local bass, range = self.score:findScale(KEY)
+    self.score:setScale(KEY, self.bass, range)
     if self.tieOverlaps == true then
         print('LindenmayerPITVA:tieing notes...')
         self.score:tieOverlaps(true)
     end
     self.score:setDuration(self.duration)
-    local bass, range = self.score:findScale(KEY)
-    self.score:setScale(KEY, self.bass, range)
 end
 
 if true then
@@ -364,13 +364,13 @@ if true then
     score = lindenmayer.score
     lindenmayer:initialize(4, 48, 1)
     lindenmayer.chordSpaceGroup:printChords()
-    lindenmayer.axiom = 'P=8 v=15 V=99 d=1 I+1 [ a B a ] t+16 T+5 A+4 a B a '
-    lindenmayer.rules['a'] = 'a C B B L L d-.05 a C L C C L v+4 C a C v-4 d+.05 C I+1 L V+1 C V-12 L C C L T+2 V-1 C C L  I=0 P=71 L L  T-7 C L L L L I+1 '
-    lindenmayer.rules['C'] = 'C d+.25 B d-.25 '
-    lindenmayer.rules['B'] = 't+1 [ A+5 N N N B ] N A-1 N A+3 N A-1 B N A+2 '
+    lindenmayer.axiom = 'P=8 v=15 V=88 d=1 I+1 T+5 A+4 a '
+    lindenmayer.rules['a'] = 'a C B B L L a C L C C L v+4 C a C v-4 C I+1 L V+1 C V-12 L C C L T+2 V-1 C C L I=0 P=71 L L T-7 B B C L L L L I+1 '
+    --lindenmayer.rules['C'] = 'C d+.25 B d-.25 '
+    lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
 
-    lindenmayer.iterations = 3
-    lindenmayer.duration = 242
+    lindenmayer.iterations = 4
+    lindenmayer.duration = 300
     lindenmayer:generate()
     -- lindenmayer.score:print()
     lindenmayer.score:setArtist('Michael_Gogins')
@@ -379,6 +379,7 @@ if true then
     lindenmayer.score:setMidiPatches({{'patch_change', 1, 0,16},{'patch_change', 1, 1,1}, {'patch_change', 1, 2,1} })
     lindenmayer.score:setFomusParts({'Cembalom', 'Gong', 'Fife'})
     start, scoretime = lindenmayer.score:findScale(TIME)
+    print('start:', start, 'scoretime:', scoretime)
     score:renderMidi()
     score:playPianoteq()
 end
