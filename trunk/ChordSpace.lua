@@ -510,6 +510,12 @@ Hashing will need clamping. That might need a global g.
 
 TODO:
 
+--  Redo basic unit tests to ensure nothing has been broken.
+
+--  Compute and save a chord space group file if the requested group does not
+    exist; always load a chord space group from a file. This saves simply
+    oodles of time.
+
 --  Display the fundamental domains in the viewer much more clearly.
 
 --  Display various temperament systems to see how harmony might work with
@@ -2530,7 +2536,7 @@ function ChordSpace.createFilename(voices, range, g, extension)
 end
 
 function ChordSpace.load(voices, range, g)
-    local filename = ChordSpace.createFilename(voices, 48, 1)
+    local filename = ChordSpace.createFilename(voices, range, 1)
     print('Loading:', filename)
     local deserialized = ChordSpaceGroup.load(filename)
     return deserialized
