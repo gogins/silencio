@@ -359,10 +359,10 @@ function LindenmayerPITVA:generate()
     self.score:setDuration(self.duration)
 end
 
-if false then
+if true then
     lindenmayer = LindenmayerPITVA:new()
     score = lindenmayer.score
-    lindenmayer:initialize(5, 48, 1)
+    lindenmayer:initialize(4, 48, 1)
     --lindenmayer.chordSpaceGroup:printChords()
     lindenmayer.axiom = 'P=8 v=25 V=88 d=1 I+1 T+5 A+4 a '
     lindenmayer.rules['a'] = 'a C B B L L a C L C C L v+4 C a C v-4 C I+1 L V+1 C V-12 L C C L T+2 V-1 C C L I=0 P=71 L L T-7 B B C L L L L I+1 '
@@ -370,11 +370,11 @@ if false then
     lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
 
     lindenmayer.axiom = 'P=8 v=40 V=88 d=1 I+1 T+5 A+4 a '
-    lindenmayer.rules['a'] = 'a  B B   a      v+4  a  v-4  I+1  C V+1  C V-12     T+2 V-1    I=0 P=71   T-7 B B   L L   I+1 '
+    --lindenmayer.rules['a'] = 'a  B B   a      v+4  a  v-4  I+1  C V+1  C V-12     T+2 V-1    I=0 P=71   T-7 B B   L L   I+1 '
     --lindenmayer.rules['C'] = ' d+.25 B d-.25 '
     lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
 
-    lindenmayer.iterations = 3
+    lindenmayer.iterations = 4
     lindenmayer.duration = 300
     lindenmayer:generate()
     print("Generated score:")
@@ -386,6 +386,7 @@ if false then
     lindenmayer.score:setFomusParts({'Cembalom', 'Gong', 'Fife'})
     start, scoretime = lindenmayer.score:findScale(TIME)
     print('start:', start, 'scoretime:', scoretime)
+    score:setScale(INSTRUMENT, 0, 0)
     score:renderMidi()
     score:playPianoteq()
 end
