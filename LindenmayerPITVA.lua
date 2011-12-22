@@ -126,7 +126,7 @@ end
 
 function LindenmayerPITVA:initialize(voices, range, g)
     print('LindenmayerPITVA:initialize...')
-    self.chordSpaceGroup = ChordSpace.load(voices, range, g)
+    self.chordSpaceGroup = ChordSpace.createChordSpaceGroup(voices, range, g)
     self.countA = voices *  math.floor(range / ChordSpace.OCTAVE + 0.5)
 end
 
@@ -371,12 +371,12 @@ if true then
     lindenmayer = LindenmayerPITVA:new()
     score = lindenmayer.score
     lindenmayer:initialize(7, 48, 1)
-    --lindenmayer.chordSpaceGroup:printChords()
-    lindenmayer.axiom = 'P=8 v=25 V=88 d=1 I+1 T+5 A+4 a B a'
-    lindenmayer.rules['a'] = 'a -C B B -L -L a -C -L -C -C -L v+4 -C a -C v-4 -C I+1 -L V+1 -C V-12 L -C -C -L T+2 V-1 -C -C -L I=0 P=71 L L T-7 B B -C -L -L -L -L I+1 '
-    lindenmayer.rules['B'] = '[ t+2 A+6 N N N N B B ] N N A+1 N N A+2 N N A+1 N N A+2 B B '
+    lindenmayer.chordSpaceGroup:printNamedChords()
+    lindenmayer.axiom = 'P=57 v=25 V=88 d=1 I+1 T+5 A+4 a B a'
+    lindenmayer.rules['a'] = 'B T+5 B I+1 B N A+1 B a '
+    lindenmayer.rules['B'] = '[ A+4 N N N N B B ] N N A+1 N N A-2 N N A+3 N N A-1 B B '
 
-    lindenmayer.iterations = 4
+    lindenmayer.iterations = 5
     lindenmayer.duration = 100
     --lindenmayer.verbose = true
     lindenmayer:generate()

@@ -2535,6 +2535,23 @@ function ChordSpace.createFilename(voices, range, g, extension)
     return filename
 end
 
+-- Loads the group if found, creates and saves it otherwise.
+
+function ChordSpace.createChordSpaceGroup(voices, range, g)
+    local filename = ChordSpace.createFilename(voices, range, 1)
+    local file, message, error = io.open(filename, 'r')
+    if file == nil then
+        print(string.format('File "%s" not found, creating...', filename))
+        chordSpaceGroup = ChordSpaceGroup:new()
+        chordSpaceGroup:initialize(voices, range, g)
+        chordSpaceGroup:save()
+        return chordSpaceGroup
+    else
+        print(string.format('Loading ChordSpaceGroup from file "%s"...', filename))
+        return ChordSpace.load(voices, range, g)
+    end
+end
+
 function ChordSpace.load(voices, range, g)
     local filename = ChordSpace.createFilename(voices, range, 1)
     print('Loading:', filename)
@@ -2697,6 +2714,15 @@ end
 function ChordSpaceGroup:printChords()
     for index, opti in pairs(self.optisForIndexes) do
         print(string.format('index: %5d  opti: %s %s', index, tostring(opti), opti:name()))
+    end
+end
+
+function ChordSpaceGroup:printNamedChords()
+    for index, opti in pairs(self.optisForIndexes) do
+        local name = opti:name()
+        if name ~= '' then
+            print(string.format('index: %5d  opti: %s %s', index, tostring(opti), opti:name()))
+        end
     end
 end
 
