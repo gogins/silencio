@@ -15,8 +15,8 @@ of the GNU Lesser General Public License.
 The LindenmayerPITVA class implements a context-free Lindenmayer system that
 performs operations on five additive cyclical groups P, I, T, V, and A which
 represent respectively set-class, inversion, transposition, octavewise
-revoicing, and arpeggiation of chords. Time (t), time step (s), duration (d), 
-instrument choice (i), and dynamic level or MIDI velocity (v) also are 
+revoicing, and arpeggiation of chords. Time (t), time step (s), duration (d),
+instrument choice (i), and dynamic level or MIDI velocity (v) also are
 represented.
 
 An earlier version of this class was found too complex for use. This version
@@ -30,7 +30,7 @@ target [operation [operand] ].
 Operations are arithmetical +, -, and assignment =.
 
 Operands are signed real numbers. The results of operations on P, I, T, V,
-and A wrap around their equivalence class. The results of operations on t, s, 
+and A wrap around their equivalence class. The results of operations on t, s,
 d, i, and v do not wrap around and may need to be rescaled to be musically
 meaningful.
 
@@ -374,7 +374,7 @@ function LindenmayerPITVA:generate()
     self.score:setDuration(self.duration)
 end
 
-if true then
+if false then
     lindenmayer = LindenmayerPITVA:new()
     score = lindenmayer.score
     lindenmayer:initialize(7, 48, 1)
