@@ -15,22 +15,23 @@ of the GNU Lesser General Public License.
 The LindenmayerPITVA class implements a context-free Lindenmayer system that
 performs operations on five additive cyclical groups P, I, T, V, and A which
 represent respectively set-class, inversion, transposition, octavewise
-revoicing, and arpeggiation of chords. Time (t), duration (d), instrument
-choice (i), and dynamic level or MIDI velocity (v) also are represented.
+revoicing, and arpeggiation of chords. Time (t), time step (s), duration (d), 
+instrument choice (i), and dynamic level or MIDI velocity (v) also are 
+represented.
 
 An earlier version of this class was found too complex for use. This version
 is intended to expose the basic symmetries of chord space to programmatic
 manipulation as clearly and simply as possible.
 
-The turtle state consists of the numbers P, I, T, V, A, t, d, i, and v.
+The turtle state consists of the numbers P, I, T, V, A, t, s, d, i, and v.
 These are the targets of operations. All turtle commands are of the form
 target [operation [operand] ].
 
 Operations are arithmetical +, -, and assignment =.
 
 Operands are signed real numbers. The results of operations on P, I, T, V,
-and A wrap around their equivalence class. The results of operations on t, d,
-i, and v do not wrap around and may need to be rescaled to be musically
+and A wrap around their equivalence class. The results of operations on t, s, 
+d, i, and v do not wrap around and may need to be rescaled to be musically
 meaningful.
 
 The syntax of turtle commands (target:operation:operand) is:
@@ -69,14 +70,14 @@ end
 Turtle = {}
 
 function Turtle:new(o)
-    o = o or {t = 0, d = 0, i = 0, v = 0, P = 0, I = 0, T = 0, V = 0, A = 0}
+    o = o or {t = 0, s = 0, d = 0, i = 0, v = 0, P = 0, I = 0, T = 0, V = 0, A = 0}
     setmetatable(o, self)
     self.__index = self
     return o
 end
 
 function Turtle:__tostring()
-    return string.format('t: %9.4f  d: %9.4f  v: %9.4f  P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f', self.t, self.d, self.v, self.P, self.I, self.T, self.V)
+    return string.format('t: %9.5f  d: %9.4f  s: %9.4f  v: %9.4f  P: %9.4f  I: %9.4f  T: %9.4f  V: %9.4f  A: %9.4f', self.t, self.s, self.d, self.v, self.P, self.I, self.T, self.V, self.A)
 end
 
 function LindenmayerPITVA:new(o)
@@ -97,6 +98,7 @@ function LindenmayerPITVA:new(o)
         o.octaves = 5
         o.targets = {}
         o.targets['t'] = self.target_t
+        o.targets['s'] = self.target_s
         o.targets['d'] = self.target_d
         o.targets['i'] = self.target_i
         o.targets['v'] = self.target_v
@@ -150,9 +152,14 @@ function LindenmayerPITVA:target_t(target, operation, operand)
     self.turtle.t = function_(self, self.turtle.t, operand)
 end
 
-function LindenmayerPITVA:target_d(target, operation, operand)
+function LindenmayerPITVA:target_s(target, operation, operand)
     local function_ = self.operations[operation]
     self.turtle.d = function_(self, self.turtle.d, operand)
+end
+
+function LindenmayerPITVA:target_d(target, operation, operand)
+    local function_ = self.operations[operation]
+    self.turtle.s = function_(self, self.turtle.s, operand)
 end
 
 function LindenmayerPITVA:target_i(target, operation, operand)
@@ -233,7 +240,7 @@ function LindenmayerPITVA:target_C(target, operation, operand)
             print(tostring(self.score[i]))
         end
     end
-    self.turtle.t = self.turtle.t + self.turtle.d
+    self.turtle.t = self.turtle.t + self.turtle.s
 end
 
 function LindenmayerPITVA:target_L(target, operation, operand)
@@ -262,7 +269,7 @@ function LindenmayerPITVA:target_L(target, operation, operand)
             print(tostring(self.score[i]))
         end
     end
-    self.turtle.t = self.turtle.t + self.turtle.d
+    self.turtle.t = self.turtle.t + self.turtle.s
 end
 
 function LindenmayerPITVA:target_N(target, operation, operand)
@@ -284,7 +291,7 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     if self.verbose then
         print(string.format('N:\n%s', tostring(self.score[#self.score])))
     end
-    self.turtle.t = self.turtle.t + self.turtle.d
+    self.turtle.t = self.turtle.t + self.turtle.s
 end
 
 function LindenmayerPITVA:target_push(target, operation, operand)
@@ -372,12 +379,12 @@ if true then
     score = lindenmayer.score
     lindenmayer:initialize(7, 48, 1)
     lindenmayer.chordSpaceGroup:printNamedChords()
-    lindenmayer.axiom = 'P=57 v=25 V=88 d=1 I+1 T+5 A+4 a B a'
-    lindenmayer.rules['a'] = 'B T+5 B I+1 B N A+1 B a '
-    lindenmayer.rules['B'] = '[ A+4 N N N N B B ] N N A+1 N N A-2 N N A+3 N N A-1 B B '
+    lindenmayer.axiom = 'P=57 v=25 V=50 s=.95 d=1 I+1 T+5 A+4 a B a'
+    lindenmayer.rules['a'] = 'B T+5 B B N A+1 B I+1 a B '
+    lindenmayer.rules['B'] = '[ s=1 A+4 N N N N A-9 B B ] N N A+1 N N A-2 N N A+3 N N A-1 B B '
 
-    lindenmayer.iterations = 5
-    lindenmayer.duration = 100
+    lindenmayer.iterations = 4
+    lindenmayer.duration = 240
     --lindenmayer.verbose = true
     lindenmayer:generate()
     lindenmayer.score:setArtist('Michael_Gogins')
