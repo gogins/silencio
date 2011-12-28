@@ -47,10 +47,13 @@ T o n       Operate on the zero-based index of transposition within octave
             equivalence.
 V o n       Operate on the zero-based index of octavewise revoicings within
             the permitted range of pitches.
-V o n       Operate on the zero-based index of arpeggiation within
+A o n       Operate on the zero-based index of arpeggiation within
             the permitted range of pitches.
+R           Write a rest one time step long.
 t o n       Operate on the time of the chord.
 d o n       Operate on the duration of the chord.
+s o n       Operate on the "staccato" (s < 1) or "legato" (s > 1) of the chord 
+            or note.
 i o n       Operate on the instrument assignment for the chord.
 v o n       Operate on the loudness of the chord (represented as MIDI velocity
             in the interval [0, 127].
@@ -110,12 +113,15 @@ function LindenmayerPITVA:new(o)
         o.targets['C'] = self.target_C
         o.targets['L'] = self.target_L
         o.targets['N'] = self.target_N
+        o.targets['R'] = self.target_R
         o.targets['['] = self.target_push
         o.targets[']'] = self.target_pop
         o.operations = {}
         o.operations['='] = self.operation_assign
         o.operations['+'] = self.operation_add
         o.operations['-'] = self.operation_subtract
+        o.operations['*'] = self.operation_multiply
+        o.operations['/'] = self.operation_divide
         o.chordSpaceGroup = ChordSpaceGroup:new()
         o.duration = 120
         o.bass = 36
@@ -144,6 +150,16 @@ end
 
 function LindenmayerPITVA:operation_subtract(y, x)
     y = y - x
+    return y
+end
+
+function LindenmayerPITVA:operation_multiply(y, x)
+    y = y * x
+    return y
+end
+
+function LindenmayerPITVA:operation_divide(y, x)
+    y = y / x
     return y
 end
 
@@ -291,6 +307,13 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     self.score:append(note)
     if self.verbose then
         print(string.format('N:\n%s', tostring(self.score[#self.score])))
+    end
+    self.turtle.t = self.turtle.t + self.turtle.s
+end
+
+function LindenmayerPITVA:target_R(target, operation, operand)
+    if self.chord == nil then
+        self.priorChord = self.chord
     end
     self.turtle.t = self.turtle.t + self.turtle.s
 end
