@@ -256,7 +256,7 @@ function LindenmayerPITVA:target_C(target, operation, operand)
             print(tostring(self.score[i]))
         end
     end
-    self.turtle.t = self.turtle.t + self.turtle.d * self.turtle.s
+    self.turtle.t = self.turtle.t + self.turtle.d
 end
 
 function LindenmayerPITVA:target_L(target, operation, operand)
@@ -285,7 +285,7 @@ function LindenmayerPITVA:target_L(target, operation, operand)
             print(tostring(self.score[i]))
         end
     end
-    self.turtle.t = self.turtle.t + self.turtle.s
+    self.turtle.t = self.turtle.t + self.turtle.d
 end
 
 function LindenmayerPITVA:target_N(target, operation, operand)
@@ -308,14 +308,14 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     if self.verbose then
         print(string.format('N:\n%s', tostring(self.score[#self.score])))
     end
-    self.turtle.t = self.turtle.t + self.turtle.s
+    self.turtle.t = self.turtle.t + self.turtle.d
 end
 
 function LindenmayerPITVA:target_R(target, operation, operand)
     if self.chord == nil then
         self.priorChord = self.chord
     end
-    self.turtle.t = self.turtle.t + self.turtle.s
+    self.turtle.t = self.turtle.t + self.turtle.d
 end
 
 function LindenmayerPITVA:target_push(target, operation, operand)
