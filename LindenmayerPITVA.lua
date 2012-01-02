@@ -52,7 +52,7 @@ A o n       Operate on the zero-based index of arpeggiation within
 R           Write a rest one time step long.
 t o n       Operate on the time of the chord.
 d o n       Operate on the duration of the chord.
-s o n       Operate on the "staccato" (s < 1) or "legato" (s > 1) of the chord 
+s o n       Operate on the "staccato" (s < 1) or "legato" (s > 1) of the chord
             or note.
 i o n       Operate on the instrument assignment for the chord.
 v o n       Operate on the loudness of the chord (represented as MIDI velocity
@@ -170,12 +170,12 @@ end
 
 function LindenmayerPITVA:target_s(target, operation, operand)
     local function_ = self.operations[operation]
-    self.turtle.d = function_(self, self.turtle.d, operand)
+    self.turtle.s = function_(self, self.turtle.s, operand)
 end
 
 function LindenmayerPITVA:target_d(target, operation, operand)
     local function_ = self.operations[operation]
-    self.turtle.s = function_(self, self.turtle.s, operand)
+    self.turtle.d = function_(self, self.turtle.d, operand)
 end
 
 function LindenmayerPITVA:target_i(target, operation, operand)
@@ -298,10 +298,12 @@ function LindenmayerPITVA:target_N(target, operation, operand)
     local v = math.floor(self.turtle.V + 0.5)
     self.chord = self.chordSpaceGroup:toChord(p, i, t, v)
     local voice = (self.turtle.A % self.chordSpaceGroup.voices) + 1
-    --print('voice:', voice)
     local octave = math.floor(self.turtle.A / self.chordSpaceGroup.voices)
-    --print('octave:', octave)
-    local key = self.chord[voice] + (octave * ChordSpace.OCTAVE)
+    local pc = self.chord[voice]
+    local key = pc + (octave * ChordSpace.OCTAVE)
+    if self.verbose then
+        print(string.format('A: %5d  voice: %4d  pc: %4d  octave: %4d  key: %4d', self.turtle.A, voice, pc, octave, key))
+    end
     local d = self.turtle.d * self.turtle.s
     local note = Event:new{self.turtle.t, d, 144, self.turtle.i, key, self.turtle.v, 0, 0, 0, 0, 1}
     self.score:append(note)

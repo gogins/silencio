@@ -178,6 +178,21 @@ HEIGHT      =  9
 PHASE       = 10
 HOMOGENEITY = 11
 
+dimensions = {}
+dimensions[TIME        ] = "Time"
+dimensions[DURATION    ] = "Duration"
+dimensions[STATUS      ] = "Status"
+dimensions[INSTRUMENT  ] = "Instrument"
+dimensions[PITCH       ] = "Pitch"
+dimensions[LOUDNESS    ] = "Loudness"
+dimensions[PAN         ] = "Pan"
+dimensions[DEPTH       ] = "Depth"
+dimensions[HEIGHT      ] = "Height"
+dimensions[PHASE       ] = "Phase"
+dimensions[HOMOGENEITY ] = "Homogeneity"
+
+
+
 local eventSortOrder = {TIME, DURATION, STATUS, CHANNEL, KEY, VELOCITY, PAN, DEPTH, HEIGHT, PHASE, HOMOGENEITY}
 
 -- Unfortunately, MIDI.lua doesn't know how to use more than 1 meta length
@@ -604,10 +619,26 @@ function Score:findScales()
     return {minima, ranges}
 end
 
+function Score:printStats()
+    print(string.format('%11s: %s', 'Title', self:getTitle()))
+    print(string.format('%11s: %s', 'Artist', self:getArtist()))
+    print(string.format('%11s: %d', 'Events', #self))
+    local scales = self:findScales()
+    local minima = scales[1]
+    local ranges = scales[2]
+    for i = 1, #minima do
+        print(string.format('%11s: min: %9.4f  range: %9.4f', dimensions[i], minima[i], ranges[i]))
+    end
+end
+
 function Score:print()
+    print()
+    self:printStats()
+    print()
     for i, event in ipairs(self) do
         print(i, event)
     end
+    print()
 end
 
 function Score:setScale(dimension, minimum, range)
