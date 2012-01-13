@@ -5,9 +5,7 @@ local ffi = require('ffi')
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so')
 print('cmix:', cmix)
 ffi.cdef[[
-void ff_create();
-void ff_create2(double tsr, int tnchans);
-void ff_create6(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
+void ff_create(bool ismain, const char *dsoPath, double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
 double ff_cmdval(const char *name);
 double ff_cmdval_d(const char *name, int n_args, double p0, ...);
 double ff_cmdval_s(const char *name, int n_args, const char* p0, ...);
@@ -21,10 +19,10 @@ void ff_destroy();
 unsigned int sleep(unsigned int seconds);
 ]]
 
-cmix.ff_create6(44100, 2, 128, "device=hw:1", nil, nil)
+cmix.ff_create(true, '/home/mkg/RTcmix/shlib/:/home/mkg/RTcmix/lib/', 44100, 2, 128, "device=hw:1", nil, nil)
 ffi.C.sleep(1)
 cmix.ff_printOn()
-cmix.ff_cmd_s("load", 1, "STRUM")
+cmix.ff_cmd_s("load", 1, "home/mkg/RTcmix/shlib/libSTRUM.so")
 cmix.ff_cmd_d("makegen", 7, 1.0, 24.0, 1000.0, 0.0, 1.0, 1.0, 1.0);
 cmix.ff_cmd_d("makegen", 11, 2.0, 24.0, 1000.0, 0.0, 0.0, 0.05, 1.0, 0.95, 1.0, 1.0, 0.0);
 cmix.ff_cmd_d("STRUM", 7, 0.0, 1.0, 0.1, 106.0, 25.0, 5000.0, 0.5);
