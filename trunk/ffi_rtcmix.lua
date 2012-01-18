@@ -46,7 +46,7 @@ local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 -- Now we are ready to actually use RTcmix in the usual way.
 -- It seems to be necessary to pass the device selection to the creator.
 
-cmix.ffi_create(44100, 2, 4096, 'device=plughw:1', nil, nil)
+cmix.ffi_create(44100, 2, 4096, 'device=plughw', nil, nil)
 ffi.C.sleep(1)
 cmix.ffi_printOn()
 

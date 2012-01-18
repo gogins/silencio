@@ -158,8 +158,93 @@ extern "C"
  */
 #include <Instrument.h>
 #include <cstring>
+#include <map>
+#include <omp.h>
+#include <pthread.h>
 #include <string>
+#include <sys/types.h>
+#include <sys/syscall.h>
 #include <vector>
+
+extern "C"
+{
+#include <lua/lua.h>
+#include <lua/lauxlib.h>
+#include <lua/lualib.h>
+}
+
+
+struct keys_t
+{
+    keys_t() : init_key(0), run_key(0) {}
+    int init_key;
+    int run_key;
+};
+
+keys_t &manageLuaReferenceKeys(const lua_State *L, const std::string &opcode, char operation = 'O')
+{
+    static std::map<const lua_State *, std::map<std::string, keys_t> > luaReferenceKeys;
+    keys_t *keys = 0;
+#pragma omp critical(lc_getrefkey)
+    {
+        switch(operation)
+        {
+        case 'O':
+        {
+            keys = &luaReferenceKeys[L][opcode];
+        }
+        break;
+        case 'C':
+        {
+
+            luaReferenceKeys.erase(L);
+        }
+        break;
+        }
+    }
+    return *keys;
+}
+
+/**
+ * Associate Lua states with threads.
+ */
+lua_State *manageLuaState(char operation = 'O')
+{
+    static std::map<int, lua_State *> luaStatesForThreads;
+    lua_State *L = 0;
+#pragma omp critical(lc_manageLuaState)
+    {
+        int threadId = pthread_self();
+        switch(operation)
+        {
+        case 'O':
+        {
+            if (luaStatesForThreads.find(threadId) == luaStatesForThreads.end())
+            {
+                L = lua_open();
+                luaL_openlibs(L);
+                luaStatesForThreads[threadId] = L;
+            }
+            else
+            {
+                L = luaStatesForThreads[threadId];
+            }
+        }
+        break;
+        case 'C':
+        {
+            L = luaStatesForThreads[threadId];
+            if (L)
+            {
+                manageLuaReferenceKeys(L, "", 'C');
+            }
+            luaStatesForThreads.erase(threadId);
+        }
+        break;
+        }
+    }
+    return L;
+}
 
 struct LuaInstrumentState
 {
@@ -271,8 +356,8 @@ Instrument *makeLUAINST()
 	return luainst;
 }
 
-void rtprofile()
-{
-	RT_INTRO("LUAINST", makeLUAINST);
-}
+//void rtprofile()
+//{
+//	RT_INTRO("LUAINST", makeLUAINST);
+//}
 
