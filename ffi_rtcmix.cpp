@@ -20,7 +20,7 @@ static RTcmix *ffi_cmix = 0;
 extern "C"
 {
     
-  // These declarations can be copied into your LuaJIT FFI cdefs.
+  // These declarations should be copied into your LuaJIT FFI cdefs.
 
   void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
   double ffi_cmdval(const char *name);
@@ -32,8 +32,27 @@ extern "C"
   void ffi_printOff();
   void ffi_close();
   void ffi_destroy();
-  int LUA_EXEC(const char *luacode, void *L);
-  int LUA_INTRO(const char *NAME, const char *luacode, void *L);
+  int LUA_EXEC(const char *luacode);
+  int LUA_INTRO(const char *NAME, const char *luacode);
+
+  struct LuaInstrumentState
+ {
+    char *name;
+    double *parameters;
+    int parameterCount;
+    int frameCount;
+    int inputChannelCount;
+    float *input;
+    int outputChannelCount;
+    float *output;
+    int branch;
+    // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
+    // which contains state that specifically belongs to an instance of a Lua 
+    // instrument. If such state exists, the NAME_init function must declare 
+    // and define an instance of a C structure containing all elements of that 
+    // state, and set this pointer to the address of that structure.
+    void *instanceState;
+  };
 
   void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3)
   {
@@ -200,41 +219,26 @@ keys_t &manageLuaReferenceKeys(const lua_State *L, const std::string &name)
 /**
  * Associate Lua states with threads.
  */
-lua_State *manageLuaState(lua_State *L = 0)
+lua_State *manageLuaState()
 {
   static std::map<int, lua_State *> luaStatesForThreads;
+  lua_State *L = 0;
 #pragma omp critical(lc_manageLuaState)
   {
     int threadId = pthread_self();
     if (luaStatesForThreads.find(threadId) == luaStatesForThreads.end())
       {
-	if (!L) {
 	  L = lua_open();
 	  luaL_openlibs(L);
-	}
-	luaStatesForThreads[threadId] = L;
-      }
+          luaStatesForThreads[threadId] = L;
+      }  
+    else
+    {
+	  L = luaStatesForThreads[threadId];
+    }	    
   }
   return L;
 }
-
-struct LuaInstrumentState
-{
-  char *name;
-  double *parameters;
-  int parameterCount;
-  int frameCount;
-  int inputChannelCount;
-  float *input;
-  int outputChannelCount;
-  float *output;
-  int branch;
-  // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
-  // which contains instance-specific state. NAME_init must create an 
-  // instance of this structure, initialize it, and set this pointer 
-  // to the address of that structure.
-  void *instanceState;
-};
 
 extern "C" 
 {
@@ -255,14 +259,14 @@ extern "C"
    * created and associated with the calling 
    * thread.
    */
-  int LUA_EXEC(const char *luacode, void *L_)
+  int LUA_EXEC(const char *luacode)
   {
     static bool registered = false;
     if (!registered) {
       UG_INTRO("LUA_EXEC", LUA_EXEC);
       registered = true;
     }
-    lua_State *L = manageLuaState((lua_State *)L_);
+    lua_State *L = manageLuaState();
     int result = luaL_dostring(L, luacode);
     if (result == 0)
       {
@@ -278,8 +282,7 @@ extern "C"
   double lua_exec(float *p, int n, double *pp)
   {
     const char *luacode = DOUBLE_TO_STRING(pp[0]);
-    void *L = (void *)(size_t) pp[1];
-    return (double) LUA_EXEC(luacode, L);
+    return (double) LUA_EXEC(luacode);
   }
 
   /**
@@ -305,9 +308,9 @@ extern "C"
    * be executed. This can be used to install or require 
    * arbitrary Lua modules.
    */
-  int LUA_INTRO(const char *NAME, const char *luacode, void *L_)
+  int LUA_INTRO(const char *NAME, const char *luacode)
   {
-    lua_State *L = manageLuaState((lua_State *)L_);
+    lua_State *L = manageLuaState();
     advise("LUA_INTRO", "lua_State: 0x%p\n", L);
     advise("LUA_INTRO", "Executing Lua code:\n%s\n", luacode);
     int result = luaL_dostring(L, luacode);
@@ -343,8 +346,7 @@ extern "C"
   {
     const char *NAME = DOUBLE_TO_STRING(pp[0]);
     const char *luacode = DOUBLE_TO_STRING(pp[1]);
-    void *L = (void *)(size_t) pp[2];
-    return (double) LUA_INTRO(NAME, luacode, L);
+    return (double) LUA_INTRO(NAME, luacode);
   }
 }
 

@@ -17,25 +17,43 @@ local ffi = require('ffi')
 
 ffi.cdef[[
 
-// RTCmix functions.
+// RTCmix types.
 
-void *	  ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
-double 	  ffi_cmdval(const char *name);
-double 	  ffi_cmdval_d(const char *name, int n_args, double p0, ...);
-double 	  ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
-void *	  ffi_cmd_d(const char *name, int n_args, double p0, ...);
-void *	  ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
-void 	  ffi_printOn();
-void 	  ffi_printOff();
-void 	  ffi_close();
-void 	  ffi_destroy();
-void 	  option_dump(void);
-void	  advise(const char *name, const char *format, ...);
-void	  warn(const char *name, const char *format, ...);
-void	  rterror(const char *name, const char *format, ...);
-void	  die(const char *name, const char *format, ...);
-int	  LUA_EXEC(const char *luacode, double L);
-int	  LUA_INTRO(const char *NAME, const char *luacode, double L);
+  void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
+  double ffi_cmdval(const char *name);
+  double ffi_cmdval_d(const char *name, int n_args, double p0, ...);
+  double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
+  void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
+  void ffi_printOn();
+  void ffi_printOff();
+  void ffi_close();
+  void ffi_destroy();
+  int advise(const char*, const char *,...);
+  int warn(const char*, const char *,...);
+  int rterror(const char*, const char *,...);
+  int die(const char*, const char *,...);
+  int LUA_EXEC(const char *luacode);
+  int LUA_INTRO(const char *NAME, const char *luacode);
+
+  struct LuaInstrumentState
+ {
+    char *name;
+    double *parameters;
+    int parameterCount;
+    int frameCount;
+    int inputChannelCount;
+    float *input;
+    int outputChannelCount;
+    float *output;
+    int branch;
+    // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
+    // which contains state that specifically belongs to an instance of a Lua 
+    // instrument. If such state exists, the NAME_init function must declare 
+    // and define an instance of a C structure containing all elements of that 
+    // state, and set this pointer to the address of that structure.
+    void *instanceState;
+  };
 
 // Operating system and runtime library functions.
 
@@ -81,27 +99,71 @@ print[[
 This is a string, printed by executing a multi-line chunk of Lua code inside RTcmix.
 
 And, it should be a multi-line string. This is done by nesting different levels of 'long brackets.'
-]]]=], 0)
+]]]=])
 print()
 cmix.advise('ffi_rtcmix.lua', 'Done.')
 
 print('Now for the piece de resistance -- a synthesizer written in Lua!')
 
-cmix.LUA_INTRO("LUA_OSC", [[
+cmix.LUA_INTRO("LUA_OSC", [=[
 local ffi = require('ffi')
 -- The Lua virtual machine used by Instruments is not the same as the 
--- one that is running the RTcmix performance.
+-- one that is running the RTcmix performance, so stuff has to be declared again.
+ffi.cdef[[
+
+// RTCmix types.
+
+  void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
+  double ffi_cmdval(const char *name);
+  double ffi_cmdval_d(const char *name, int n_args, double p0, ...);
+  double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
+  void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
+  void ffi_printOn();
+  void ffi_printOff();
+  void ffi_close();
+  void ffi_destroy();
+  int LUA_EXEC(const char *luacode);
+  int LUA_INTRO(const char *NAME, const char *luacode);
+
+  struct LuaInstrumentState
+ {
+    char *name;
+    double *parameters;
+    int parameterCount;
+    int frameCount;
+    int inputChannelCount;
+    float *input;
+    int outputChannelCount;
+    float *output;
+    int branch;
+    // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
+    // which contains state that specifically belongs to an instance of a Lua 
+    // instrument. If such state exists, the NAME_init function must declare 
+    // and define an instance of a C structure containing all elements of that 
+    // state, and set this pointer to the address of that structure.
+    void *instanceState;
+  };
+
+// Operating system and runtime library functions.
+
+unsigned int sleep(unsigned int seconds);
+
+]]
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 print('RTcmix again, from inside RTcmix:', cmix)
 print('Hello from inside LUA_INTRO.')
 
 function LUA_OSC_init(state)
+	print('Hello from inside LUA_OSC_init()...')
 end
 
 function LUA_OSC_run(state)
 end
 
-]], 0)
+]=])
+
+cmix.ffi_cmd_d("LUAINST", 7, 7.0, 1.0, 0.1, "LUA_OSC", 53.0, 25.0, 5000.0, 0.5)
 
 print()
 
