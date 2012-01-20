@@ -32,11 +32,13 @@ extern "C"
   void ffi_printOff();
   void ffi_close();
   void ffi_destroy();
+  int LUA_EXEC(const char *luacode, void *L);
+  int LUA_INTRO(const char *NAME, const char *luacode, void *L);
 
   void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3)
   {
     if (ffi_cmix) {
-      printf("Deleting existing RTcmix object.\n");
+      advise("ffi_create", "Deleting existing RTcmix object.\n");
       delete ffi_cmix;
       ffi_cmix = 0;
     }
@@ -177,7 +179,6 @@ extern "C"
 #include <lua/lualib.h>
 }
 
-
 struct keys_t
 {
   keys_t() : init_key(0), run_key(0) {}
@@ -185,26 +186,13 @@ struct keys_t
   int run_key;
 };
 
-keys_t &manageLuaReferenceKeys(const lua_State *L, const std::string &name, char operation = 'O')
+keys_t &manageLuaReferenceKeys(const lua_State *L, const std::string &name)
 {
   static std::map<const lua_State *, std::map<std::string, keys_t> > luaReferenceKeys;
   keys_t *keys = 0;
 #pragma omp critical(lc_getrefkey)
   {
-    switch(operation)
-      {
-      case 'O':
-        {
-	  keys = &luaReferenceKeys[L][name];
-        }
-        break;
-      case 'C':
-        {
-
-	  luaReferenceKeys.erase(L);
-        }
-        break;
-      }
+    keys = &luaReferenceKeys[L][name];
   }
   return *keys;
 }
@@ -212,39 +200,19 @@ keys_t &manageLuaReferenceKeys(const lua_State *L, const std::string &name, char
 /**
  * Associate Lua states with threads.
  */
-lua_State *manageLuaState(char operation = 'O')
+lua_State *manageLuaState(lua_State *L = 0)
 {
   static std::map<int, lua_State *> luaStatesForThreads;
-  lua_State *L = 0;
 #pragma omp critical(lc_manageLuaState)
   {
     int threadId = pthread_self();
-    switch(operation)
+    if (luaStatesForThreads.find(threadId) == luaStatesForThreads.end())
       {
-      case 'O':
-        {
-	  if (luaStatesForThreads.find(threadId) == luaStatesForThreads.end())
-            {
-	      L = lua_open();
-	      luaL_openlibs(L);
-	      luaStatesForThreads[threadId] = L;
-            }
-	  else
-            {
-	      L = luaStatesForThreads[threadId];
-            }
-        }
-        break;
-      case 'C':
-        {
-	  L = luaStatesForThreads[threadId];
-	  if (L)
-            {
-	      manageLuaReferenceKeys(L, "", 'C');
-            }
-	  luaStatesForThreads.erase(threadId);
-        }
-        break;
+	if (!L) {
+	  L = lua_open();
+	  luaL_openlibs(L);
+	}
+	luaStatesForThreads[threadId] = L;
       }
   }
   return L;
@@ -268,100 +236,116 @@ struct LuaInstrumentState
   void *instanceState;
 };
 
-/**
- * Execute any arbitrary Lua code using
- * the embedded LuaJIT virtual machine.
- * Such code can call back into RTcmix 
- * using the RTcmix FFI functions.
- */
-int LUA_EXEC(const char *luacode)
+extern "C" 
 {
-  static bool registered = false;
-  if (!registered) {
-    UG_INTRO("LUA_EXEC", LUA_EXEC);
-    registered = true;
+  /**
+   * Execute any arbitrary Lua code using
+   * the embedded LuaJIT virtual machine.
+   * Such code can call back into RTcmix 
+   * using the RTcmix FFI functions.
+   * 
+   * 'Long brackets' can be used to 
+   * enclose multi-line strings. And,
+   * multi-line strings can be enclosed
+   * in other multi-line strings by nesting,
+   * e.g. [[ Outer text [=[ Inner text ]=]]].
+   * 
+   * If the Lua virtual machine is passed, 
+   * it is used; if 0 is passed, it will be 
+   * created and associated with the calling 
+   * thread.
+   */
+  int LUA_EXEC(const char *luacode, void *L_)
+  {
+    static bool registered = false;
+    if (!registered) {
+      UG_INTRO("LUA_EXEC", LUA_EXEC);
+      registered = true;
+    }
+    lua_State *L = manageLuaState((lua_State *)L_);
+    int result = luaL_dostring(L, luacode);
+    if (result == 0)
+      {
+	advise("LUA_EXEC",  "Succeeded: %d\n", result);
+      }
+    else
+      {
+	rterror("LUA_EXEC",  "Failed with: %d\n", result);
+      }
+    return result;
   }
-  lua_State *L = manageLuaState();
-  int result = luaL_dostring(L, luacode);
-  if (result == 0)
-    {
-      printf("LUA_EXEC result: %d\n", result);
-    }
-  else
-    {
-      printf("LUA_EXEC failed with: %d\n", result);
-    }
-  return result;
-}
 
-double lua_exec(float *p, int n, double *pp)
-{
-  const char *luacode = DOUBLE_TO_STRING(pp[0]);
-  return (double) LUA_EXEC(luacode);
-}
+  double lua_exec(float *p, int n, double *pp)
+  {
+    const char *luacode = DOUBLE_TO_STRING(pp[0]);
+    void *L = (void *)(size_t) pp[1];
+    return (double) LUA_EXEC(luacode, L);
+  }
 
-/**
- * Register a Lua instrument with RTcmix as NAME.
- * NAME must be defined in the Lua code and consists
- * of the following:
- * (1) A LuaJIT FFI cdef that declares the type of 
- *     a NAME C structure containing all state for the 
- *     the instrument. This can be as elaborate as one 
- *     likes, contain arrays and pointers, etc.
- * (2) A Lua NAME_init(LuaInstrumentState) function
- *     that creates and initializes an instance of 
- *     the NAME structure, then assigns its address
- *     to the LuaInstrumentState.instanceState pointer.
- *     This is what associates the Lua instrument 
- *     instance that does all the actual work, with 
- *     the RTCmix C++ LUAINST instance that is 
- *     created and managed by RTcmix.
- * (3) A Lua NAME_run(LuaInstrumentState) function
- *     that performs the same work as a regular 
- *     RTcmix Instrument::run function.
- * Note that any other Lua code in the text also will 
- * be executed. This can be used to install or require 
- * arbitrary Lua modules.
- */
-int LUA_INTRO(const char *NAME, const char *luacode)
-{
-  int result = 0;
-  lua_State *L = manageLuaState();
-  printf("LUA_INTRO: Executing Lua code:\n%s\n", luacode);
-  result = luaL_dostring(L, luacode);
-  if (result == 0)
-    {
-      keys_t &keys = manageLuaReferenceKeys(L, NAME);
-      printf("LUA_INTRO: Registered instrument: %s\n", NAME);
-      char init_function[0x100];
-      std::snprintf(init_function, 0x100, "%s_init", NAME);
-      lua_getglobal(L, init_function);
-      if (!lua_isnil(L, 1))
-	{
-	  keys.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
-	  lua_pop(L, 1);
-	}
-      char run_function[0x100];
-      std::snprintf(run_function, 0x100, "%s_run", NAME);
-      lua_getglobal(L, run_function);
-      if (!lua_isnil(L, 1))
-	{
-	  keys.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
-	  lua_pop(L, 1);
-	}
-      else
-	{
-	  printf("LUA_INTRO: Failed with: %d\n", result);
-        }
-    }
-  return result;
-}
+  /**
+   * Register a Lua instrument with RTcmix as NAME.
+   * NAME must be defined in the Lua code and consists
+   * of the following:
+   * (1) A LuaJIT FFI cdef that declares the type of 
+   *     a NAME C structure containing all state for the 
+   *     the instrument. This can be as elaborate as one 
+   *     likes, contain arrays and pointers, etc.
+   * (2) A Lua NAME_init(LuaInstrumentState) function
+   *     that creates and initializes an instance of 
+   *     the NAME structure, then assigns its address
+   *     to the LuaInstrumentState.instanceState pointer.
+   *     This is what associates the Lua instrument 
+   *     instance that does all the actual work, with 
+   *     the RTCmix C++ LUAINST instance that is 
+   *     created and managed by RTcmix.
+   * (3) A Lua NAME_run(LuaInstrumentState) function
+   *     that performs the same work as a regular 
+   *     RTcmix Instrument::run function.
+   * Note that any other Lua code in the text also will 
+   * be executed. This can be used to install or require 
+   * arbitrary Lua modules.
+   */
+  int LUA_INTRO(const char *NAME, const char *luacode, void *L_)
+  {
+    lua_State *L = manageLuaState((lua_State *)L_);
+    advise("LUA_INTRO", "lua_State: 0x%p\n", L);
+    advise("LUA_INTRO", "Executing Lua code:\n%s\n", luacode);
+    int result = luaL_dostring(L, luacode);
+    if (result == 0)
+      {
+	keys_t &keys = manageLuaReferenceKeys(L, NAME);
+	advise("LUA_INTRO", "Registering instrument: %s...\n", NAME);
+	char init_function[0x100];
+	std::snprintf(init_function, 0x100, "%s_init", NAME);
+	lua_getglobal(L, init_function);
+	if (!lua_isnil(L, 1))
+	  {
+	    keys.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
+	    lua_pop(L, 1);
+	  }
+	char run_function[0x100];
+	std::snprintf(run_function, 0x100, "%s_run", NAME);
+	lua_getglobal(L, run_function);
+	if (!lua_isnil(L, 1))
+	  {
+	    keys.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
+	    lua_pop(L, 1);
+	  }
+      }
+    else
+      {
+	warn("LUA_INTRO", "Failed with: %d\n", result);
+      }
+    return result;
+  }
 
-double lua_intro(float *p, int n, double *pp)
-{
-  const char *NAME = DOUBLE_TO_STRING(pp[0]);
-  const char *luacode = DOUBLE_TO_STRING(pp[1]);
-  return (double) LUA_INTRO(NAME, luacode);
+  double lua_intro(float *p, int n, double *pp)
+  {
+    const char *NAME = DOUBLE_TO_STRING(pp[0]);
+    const char *luacode = DOUBLE_TO_STRING(pp[1]);
+    void *L = (void *)(size_t) pp[2];
+    return (double) LUA_INTRO(NAME, luacode, L);
+  }
 }
 
 /**
@@ -436,7 +420,7 @@ public:
     lua_pushlightuserdata(L, &state);
     if (lua_pcall(L, 1, 1, 0) != 0)
       {
-	printf("Lua error in \"%s_init\": %s.\n", state.name, lua_tostring(L, -1));
+	rterror("LUAINST", "Lua error in \"%s_init\": %s.\n", state.name, lua_tostring(L, -1));
       }
     int result = lua_tonumber(L, -1);
     lua_pop(L, 1);
@@ -464,7 +448,7 @@ public:
       lua_pushlightuserdata(L, &state);
       if (lua_pcall(L, 1, 1, 0) != 0)
 	{
-	  printf("Lua error in \"%s_run\": %s.\n", state.name, lua_tostring(L, -1));
+	  rterror("LUAINST", "Lua error in \"%s_run\": %s.\n", state.name, lua_tostring(L, -1));
 	}
       int result = lua_tonumber(L, -1);
       lua_pop(L, 1);

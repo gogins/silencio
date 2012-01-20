@@ -29,7 +29,13 @@ void 	  ffi_printOn();
 void 	  ffi_printOff();
 void 	  ffi_close();
 void 	  ffi_destroy();
-void option_dump(void);
+void 	  option_dump(void);
+void	  advise(const char *name, const char *format, ...);
+void	  warn(const char *name, const char *format, ...);
+void	  rterror(const char *name, const char *format, ...);
+void	  die(const char *name, const char *format, ...);
+int	  LUA_EXEC(const char *luacode, double L);
+int	  LUA_INTRO(const char *NAME, const char *luacode, double L);
 
 // Operating system and runtime library functions.
 
@@ -69,8 +75,34 @@ cmix.ffi_cmd_d("SFLUTE", 7, 7.0, 1.0, 0.1, 53.0, 25.0, 5000.0, 0.5)
 -- Give the RTcmix performance thread time to do its work.
 
 ffi.C.sleep(8)
+cmix.LUA_EXEC([=[
+print[[
+
+This is a string, printed by executing a multi-line chunk of Lua code inside RTcmix.
+
+And, it should be a multi-line string. This is done by nesting different levels of 'long brackets.'
+]]]=], 0)
 print()
-print('Done.')
+cmix.advise('ffi_rtcmix.lua', 'Done.')
+
+print('Now for the piece de resistance -- a synthesizer written in Lua!')
+
+cmix.LUA_INTRO("LUA_OSC", [[
+local ffi = require('ffi')
+-- The Lua virtual machine used by Instruments is not the same as the 
+-- one that is running the RTcmix performance.
+local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
+print('RTcmix again, from inside RTcmix:', cmix)
+print('Hello from inside LUA_INTRO.')
+
+function LUA_OSC_init(state)
+end
+
+function LUA_OSC_run(state)
+end
+
+]], 0)
+
 print()
 
 
