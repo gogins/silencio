@@ -15,8 +15,6 @@
 
 static RTcmix *ffi_cmix = 0;
 
-#define FFI_MODEL 1
-
 extern "C"
 {
     
@@ -28,6 +26,7 @@ extern "C"
   double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
   void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
   void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, double p0, ...);
   void ffi_printOn();
   void ffi_printOff();
   void ffi_close();
@@ -35,8 +34,19 @@ extern "C"
   int LUA_EXEC(const char *luacode);
   int LUA_INTRO(const char *NAME, const char *luacode);
 
+  /** 
+   * The LuaInstrumentState structures 
+   * holds basic performance state for the 
+   * LUAINST Instrument and permits that state
+   * to be passed to and from the actual 
+   * Lua instrument code, e.g. it holds 
+   * the frame count, input and output buffers, etc.
+   * It also holds a pointer to additional
+   * instance instrument state that may be defined
+   * by the actual Lua instrument code.
+   */
   struct LuaInstrumentState
- {
+  {
     char *name;
     double *parameters;
     int parameterCount;
@@ -142,6 +152,22 @@ extern "C"
     return retval;
   }
 
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, double p0, ...)
+  {
+    va_list ap;
+    int i;
+    double p[MAXDISPARGS];
+    void   *retval;
+    p[0] = STRING_TO_DOUBLE(luaname);
+    va_start(ap, p0); // start variable list after p0
+    for (i = 1; i < (n_args - 1); i++) {
+      p[i] = va_arg(ap, double);
+    }
+    va_end(ap);
+    (void) ::dispatch(name, p, n_args + 1, &retval);
+    return retval;
+  }
+
   void ffi_printOn()
   {
     ffi_cmix->printOn();
@@ -178,7 +204,6 @@ extern "C"
  * LuaJIT has an FFI facility that enables such Lua 
  * instrument code to call any C function in the process
  * space. This includes most of the RTCmix functions.
- * This struct must be re-declared in an ffi.cdef.
  */
 #include <Instrument.h>
 #include <cstdio>
@@ -228,14 +253,15 @@ lua_State *manageLuaState()
     int threadId = pthread_self();
     if (luaStatesForThreads.find(threadId) == luaStatesForThreads.end())
       {
-	  L = lua_open();
-	  luaL_openlibs(L);
-          luaStatesForThreads[threadId] = L;
+	L = lua_open();
+	luaL_openlibs(L);
+	luaStatesForThreads[threadId] = L;
+	advise("LUAINST", "Created Lua state %p for thread %d\n.", L, threadId);
       }  
     else
-    {
-	  L = luaStatesForThreads[threadId];
-    }	    
+      {
+	L = luaStatesForThreads[threadId];
+      }	    
   }
   return L;
 }
@@ -285,6 +311,9 @@ extern "C"
     return (double) LUA_EXEC(luacode);
   }
 
+  // Forward declaration.
+
+  extern "C" Instrument *makeLUAINST();
   /**
    * Register a Lua instrument with RTcmix as NAME.
    * NAME must be defined in the Lua code and consists
@@ -310,8 +339,14 @@ extern "C"
    */
   int LUA_INTRO(const char *NAME, const char *luacode)
   {
+    static bool registered = false;
+    if (!registered) {
+      RT_INTRO("LUAINST", makeLUAINST);
+      registered = true;
+      advise("LUA_INTRO", "Registered makeLUAINST.\n");
+    }
     lua_State *L = manageLuaState();
-    advise("LUA_INTRO", "lua_State: 0x%p\n", L);
+    advise("LUA_INTRO", "lua_State: %p.", L);
     advise("LUA_INTRO", "Executing Lua code:\n%s\n", luacode);
     int result = luaL_dostring(L, luacode);
     if (result == 0)
@@ -326,6 +361,10 @@ extern "C"
 	    keys.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
 	    lua_pop(L, 1);
 	  }
+	else
+	  {
+	    rterror("LUA_INTRO", "Failed to register: %s.", init_function);
+	  }
 	char run_function[0x100];
 	std::snprintf(run_function, 0x100, "%s_run", NAME);
 	lua_getglobal(L, run_function);
@@ -334,11 +373,16 @@ extern "C"
 	    keys.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
 	    lua_pop(L, 1);
 	  }
+	else
+	  {
+	    rterror("LUA_INTRO", "Failed to register: %s.", run_function);
+	  }
       }
     else
       {
 	warn("LUA_INTRO", "Failed with: %d\n", result);
       }
+    advise("LUA_INTRO", "Finished registering %s with result: %d", NAME, result);
     return result;
   }
 
@@ -369,7 +413,7 @@ class LUAINST : public Instrument
 public:
   LUAINST() 
   {
-    std::memset(&state, 0, sizeof(state));        
+    std::memset(&state, 0, sizeof(LuaInstrumentState));        
   }
   virtual ~LUAINST()
   {
@@ -391,28 +435,29 @@ public:
     }
   }
   /**
-   * p0 = Output start time (outskip).
-   * p1 = Input start time (inskip).
-   * p2 = Input duration.
-   * p3 = Audio output gain.
-   * p4 = Lua instrument name.
+   * p0 = Lua instrument name.
+   * p1 = Output start time (outskip).
+   * p2 = Input start time (inskip).
+   * p3 = Input duration.
+   * p4 = Audio output gain.
    * pN = User-defined optional parameters.
    */
   virtual int init(double *parameters, int parameterCount)
   {
+    state.name = strdup(DOUBLE_TO_STRING(parameters[0]));
+    advise("LUAINST::init", "Began...");
     state.parameters = new double[parameterCount];
     state.parameterCount = parameterCount;
     for (int parameterI = 0; parameterI < parameterCount; ++parameterI) {
       state.parameters[parameterI] = parameters[parameterI];
     }
-    if (rtsetoutput(parameters[0], parameters[2], this) == -1) {
+    if (rtsetoutput((float) parameters[1], (float) parameters[2], this) == -1) {
       return DONT_SCHEDULE;
     }
-    if (rtsetinput(parameters[1], this) == -1) {
-      return DONT_SCHEDULE;
-    }        
-    state.name = strdup((char *)(size_t) parameters[4]);
-    state.inputChannelCount = inputChannels();
+    //if (rtsetinput(parameters[1], this) == -1) {
+    //  return DONT_SCHEDULE;
+    //}        
+    //state.inputChannelCount = inputChannels();
     state.outputChannelCount = outputChannels();
     state.output = new float[outputChannels()];
     // Invoke Lua NAME_init(this->state)
@@ -426,19 +471,20 @@ public:
       }
     int result = lua_tonumber(L, -1);
     lua_pop(L, 1);
+    advise("LUAINST::init", "Ended.");
     return nSamps();
   }
   virtual int configure()
   {
-    state.input = new float[RTBUFSAMPS * inputChannels()];
+    //state.input = new float[RTBUFSAMPS * inputChannels()];
     return 0;
   }
   virtual int run()
   {
     state.frameCount = framesToRun();
-    const int inputSampleCount = framesToRun() * inputChannels();
-    rtgetin(state.input, this, inputSampleCount);
-    for (int i = 0; i < inputSampleCount; i += inputChannels()) {
+    const int frameCount = framesToRun();    
+    //rtgetin(state.input, this, inputSampleCount);
+    for (int i = 0; i < frameCount; ++i) {
       if (--state.branch <= 0) {
 	doupdate();
 	state.branch = getSkip();
@@ -450,7 +496,8 @@ public:
       lua_pushlightuserdata(L, &state);
       if (lua_pcall(L, 1, 1, 0) != 0)
 	{
-	  rterror("LUAINST", "Lua error in \"%s_run\": %s.\n", state.name, lua_tostring(L, -1));
+	  die("LUAINST", "Lua error in \"%s_run\": %s, state %p.\n", state.name, lua_tostring(L, -1), L);
+	  exit(-1);
 	}
       int result = lua_tonumber(L, -1);
       lua_pop(L, 1);
@@ -462,7 +509,7 @@ public:
 private:
   void doupdate()
   {
-    update(state.parameters, state.parameterCount);
+    //update(state.parameters, state.parameterCount);
   }
   LuaInstrumentState state;
 };
