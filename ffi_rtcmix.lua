@@ -25,6 +25,7 @@ ffi.cdef[[
   double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
   void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
   void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, double p0, ...);
   void ffi_printOn();
   void ffi_printOff();
   void ffi_close();
@@ -90,9 +91,6 @@ cmix.ffi_cmd_d("SFLUTE", 7, 5.0, 1.0, 0.1, 67.0, 16.0, 5000.0, 0.5)
 cmix.ffi_cmd_d("SFLUTE", 7, 6.0, 1.0, 0.1, 56.0, 17.0, 5000.0, 0.5)
 cmix.ffi_cmd_d("SFLUTE", 7, 7.0, 1.0, 0.1, 53.0, 25.0, 5000.0, 0.5)
 
--- Give the RTcmix performance thread time to do its work.
-
-ffi.C.sleep(8)
 cmix.LUA_EXEC([=[
 print[[
 
@@ -101,7 +99,6 @@ This is a string, printed by executing a multi-line chunk of Lua code inside RTc
 And, it should be a multi-line string. This is done by nesting different levels of 'long brackets.'
 ]]]=])
 print()
-cmix.advise('ffi_rtcmix.lua', 'Done.')
 
 print('Now for the piece de resistance -- a synthesizer written in Lua!')
 
@@ -152,19 +149,25 @@ unsigned int sleep(unsigned int seconds);
 ]]
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 print('RTcmix again, from inside RTcmix:', cmix)
-print('Hello from inside LUA_INTRO.')
+print('Hello from inside Lua code being registered.')
 
 function LUA_OSC_init(state)
 	print('Hello from inside LUA_OSC_init()...')
+	return 0
 end
 
 function LUA_OSC_run(state)
+	 print('.')
+	 return 0
 end
-
+print('End of Lua code being registered.')
 ]=])
 
-cmix.ffi_cmd_d("LUAINST", 7, 7.0, 1.0, 0.1, "LUA_OSC", 53.0, 25.0, 5000.0, 0.5)
+cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 6, 8.0, 1.0, 0.1, 1.0, 53.0, 25.0)
 
+-- Give the RTcmix performance thread time to do its work.
+
+ffi.C.sleep(17)
 print()
 
 
