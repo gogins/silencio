@@ -147,6 +147,10 @@ ffi.cdef[[
 unsigned int sleep(unsigned int seconds);
 
 ]]
+
+local LuaInstrumentState_ct = ffi.typeof("struct LuaInstrumentState *");
+print('LuaInstrumentState_ct:', LuaInstrumentState_ct)
+
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 print('RTcmix again, from inside RTcmix:', cmix)
 print('Hello from inside Lua code being registered.')
@@ -157,6 +161,8 @@ function LUA_OSC_init(state)
 end
 
 function LUA_OSC_run(state)
+	 local luastate = ffi.cast(LuaInstrumentState_ct, state)
+	 print(luastate.branch, luastate.frameCount)
 	 return 0
 end
 print('End of Lua code being registered.')
