@@ -35,9 +35,8 @@ extern "C"
   int LUA_INTRO(const char *NAME, const char *luacode);
 
   /** 
-   * The LuaInstrumentState structures 
-   * holds basic performance state for the 
-   * LUAINST Instrument and permits that state
+   * Holds basic performance state for an instance (not class) 
+   * of a LUAINST Instrument and permits that state
    * to be passed to and from the actual 
    * Lua instrument code, e.g. it holds 
    * the frame count, input and output buffers, etc.
@@ -160,8 +159,8 @@ extern "C"
     double p[MAXDISPARGS];
     void   *retval;
     p[0] = STRING_TO_DOUBLE(luaname);
-    va_start(ap, p0); // start variable list after p0
-    for (i = 1; i < (n_args - 1); i++) {
+    va_start(ap, p0);
+    for (i = 1; i < (n_args - 1); ++i) {
       p[i] = va_arg(ap, double);
     }
     va_end(ap);
@@ -203,7 +202,7 @@ extern "C"
  * that enables users to define Instrument code in LuaJIT,
  * which is compiled just in time and runs nearly as fast as C.
  * LuaJIT has an FFI facility that enables such Lua 
- * instrument code to call any C function in the process
+ * instrument code to call any public C function in the process
  * space. This includes most of the RTCmix functions.
  */
 #include <Instrument.h>
@@ -224,28 +223,31 @@ extern "C"
 #include <lua/lualib.h>
 }
 
-struct keys_t
+/**
+ * Holds state specific to a Lua instrument class (not instance).
+ */
+struct LuaInstrumentClass_t
 {
-  keys_t() : init_key(0), run_key(0), initialized(false) {}
-  std::string luacode;
+  LuaInstrumentClass_t() : initialized(false), init_key(0), run_key(0) {}
   bool initialized;
+  std::string luacode;
   int init_key;
   int run_key;
 };
 
-keys_t &manageLuaReferenceKeys(const lua_State *L, const std::string &name)
+LuaInstrumentClass_t &manageLuaInstrumentClass(const lua_State *L, const std::string &name)
 {
-  static std::map<const lua_State *, std::map<std::string, keys_t> > luaReferenceKeys;
-  keys_t *keys = 0;
+  static std::map<const lua_State *, std::map<std::string, LuaInstrumentClass_t> > luaInstrumentClasses;
+  LuaInstrumentClass_t *luaInstrumentClass = 0;
 #pragma omp critical(lc_getrefkey)
   {
-    keys = &luaReferenceKeys[L][name];
+    luaInstrumentClass = &luaInstrumentClasses[L][name];
   }
-  return *keys;
+  return *luaInstrumentClass;
 }
 
 /**
- * Associate Lua states with threads.
+ * Associates Lua states with threads.
  */
 lua_State *manageLuaState()
 {
@@ -319,6 +321,7 @@ extern "C"
   // Forward declaration.
 
   extern "C" Instrument *makeLUAINST();
+
   /**
    * Register a Lua instrument with RTcmix as NAME.
    * NAME must be defined in the Lua code and consists
@@ -405,6 +408,7 @@ public:
       delete[] state.output;
       state.output = 0;
     }
+    state.initialized = false;
   }
   /**
    * p0 = Lua instrument name.
@@ -440,17 +444,25 @@ public:
     //state.input = new float[RTBUFSAMPS * inputChannels()];
     return 0;
   }
+  /**
+   * For Lua instruments, the run method also performs the Lua 
+   * portion of the init method. That is because the init 
+   * method is called from the main RTcmix thread whereas the 
+   * run method is called from the traverse thread, but Lua 
+   * is not thread-safe and our Lua state management code
+   * creates a separate Lua state for each thread.
+   */
   virtual int run()
   {
-    advise("LUAINST::run", "Began (thread %p)...", pthread_self());
+    //advise("LUAINST::run", "Began (thread %p)...", pthread_self());
     int result = 0;
     //rtgetin(state.input, this, inputSampleCount);
     lua_State *L = manageLuaState();
-    keys_t &keys = manageLuaReferenceKeys(L, state.name);
-    if (!keys.initialized) 
+    LuaInstrumentClass_t &luaInstrumentClass = manageLuaInstrumentClass(L, state.name);
+    if (!luaInstrumentClass.initialized) 
       {
-	advise("LUA_INTRO", "Executing Lua code:\n%s\n", keys.luacode.c_str());
 	const char *luacode = luaCodeForInstrumentNames[state.name].c_str();
+	advise("LUAINST", "Defining Lua instrument code:\n%s\n", luacode);
 	result = luaL_dostring(L, luacode);
 	if (result == 0)
 	  {
@@ -459,35 +471,35 @@ public:
 	    lua_getglobal(L, init_function);
 	    if (!lua_isnil(L, 1))
 	      {
-		keys.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
+		luaInstrumentClass.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
 		lua_pop(L, 1);
 	      }
 	    else
 	      {
-		exit(die("LUA_INTRO", "Failed to register: %s.", init_function));
+		exit(die("LUAINST", "Failed to register: %s.", init_function));
 	      }
 	    char run_function[0x100];
 	    std::snprintf(run_function, 0x100, "%s_run", state.name);
 	    lua_getglobal(L, run_function);
 	    if (!lua_isnil(L, 1))
 	      {
-		keys.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
+		luaInstrumentClass.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
 		lua_pop(L, 1);
 	      }
 	    else
 	      {
-		die("LUAINST", "Failed to register: %s.", run_function);
+		exit(die("LUAINST", "Failed to register: %s.", run_function));
 	      }
 	  }
 	else
 	  {
 	    warn("LUAINST", "Failed with: %d\n", result);
 	  }
-	keys.initialized = true;
+	luaInstrumentClass.initialized = true;
       }
     if (!state.initialized) 
       {
-	lua_rawgeti(L, LUA_REGISTRYINDEX, keys.init_key);
+	lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.init_key);
 	lua_pushlightuserdata(L, &state);
 	if (lua_pcall(L, 1, 1, 0) != 0)
 	  {
@@ -495,8 +507,8 @@ public:
 	  }
 	result = lua_tonumber(L, -1);
 	lua_pop(L, 1);
+	state.initialized = true;
       }
-    lua_rawgeti(L, LUA_REGISTRYINDEX, keys.run_key);
     state.frameCount = framesToRun();
     for (int i = 0; i < state.frameCount; ++i) 
       {
@@ -505,10 +517,11 @@ public:
 	    doupdate();
 	    state.branch = getSkip();
 	  }
+	lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.run_key);
 	lua_pushlightuserdata(L, &state);
 	if (lua_pcall(L, 1, 1, 0) != 0)
 	  {
-	    die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), keys.run_key, i);
+	    die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), luaInstrumentClass.run_key, i);
 	    exit(-1);
 	  }
 	int result = lua_tonumber(L, -1);
