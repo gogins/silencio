@@ -56,6 +56,7 @@ extern "C"
     int outputChannelCount;
     float *output;
     int branch;
+    bool initialized;
     // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
     // which contains state that specifically belongs to an instance of a Lua 
     // instrument. If such state exists, the NAME_init function must declare 
@@ -225,7 +226,9 @@ extern "C"
 
 struct keys_t
 {
-  keys_t() : init_key(0), run_key(0) {}
+  keys_t() : init_key(0), run_key(0), initialized(false) {}
+  std::string luacode;
+  bool initialized;
   int init_key;
   int run_key;
 };
@@ -256,7 +259,7 @@ lua_State *manageLuaState()
 	L = lua_open();
 	luaL_openlibs(L);
 	luaStatesForThreads[threadId] = L;
-	advise("LUAINST", "Created Lua state %p for thread %d\n.", L, threadId);
+	advise("manageLuaState", "Created Lua state %p for thread %p.\n", L, threadId);
       }  
     else
       {
@@ -311,6 +314,8 @@ extern "C"
     return (double) LUA_EXEC(luacode);
   }
 
+  static std::map<std::string, std::string> luaCodeForInstrumentNames;
+
   // Forward declaration.
 
   extern "C" Instrument *makeLUAINST();
@@ -340,52 +345,16 @@ extern "C"
   int LUA_INTRO(const char *NAME, const char *luacode)
   {
     static bool registered = false;
-    if (!registered) {
-      RT_INTRO("LUAINST", makeLUAINST);
-      registered = true;
-      advise("LUA_INTRO", "Registered makeLUAINST.\n");
-    }
-    lua_State *L = manageLuaState();
-    advise("LUA_INTRO", "lua_State: %p.", L);
-    advise("LUA_INTRO", "Executing Lua code:\n%s\n", luacode);
-    int result = luaL_dostring(L, luacode);
-    if (result == 0)
+    if (!registered) 
       {
-	keys_t &keys = manageLuaReferenceKeys(L, NAME);
-	advise("LUA_INTRO", "Registering instrument: %s...\n", NAME);
-	char init_function[0x100];
-	std::snprintf(init_function, 0x100, "%s_init", NAME);
-	lua_getglobal(L, init_function);
-	if (!lua_isnil(L, 1))
-	  {
-	    keys.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
-	    lua_pop(L, 1);
-	  }
-	else
-	  {
-	    rterror("LUA_INTRO", "Failed to register: %s.", init_function);
-	  }
-	char run_function[0x100];
-	std::snprintf(run_function, 0x100, "%s_run", NAME);
-	lua_getglobal(L, run_function);
-	if (!lua_isnil(L, 1))
-	  {
-	    keys.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
-	    lua_pop(L, 1);
-	  }
-	else
-	  {
-	    rterror("LUA_INTRO", "Failed to register: %s.", run_function);
-	  }
+	RT_INTRO("LUAINST", makeLUAINST);
+	registered = true;
+	advise("LUA_INTRO", "Registered \"makeLUAINST\".\n");
       }
-    else
-      {
-	warn("LUA_INTRO", "Failed with: %d\n", result);
-      }
-    advise("LUA_INTRO", "Finished registering %s with result: %d", NAME, result);
-    return result;
+    luaCodeForInstrumentNames[NAME] = luacode;
+    return 0;
   }
-
+  
   double lua_intro(float *p, int n, double *pp)
   {
     const char *NAME = DOUBLE_TO_STRING(pp[0]);
@@ -407,6 +376,9 @@ extern "C"
  * The Lua cdef NAME, the NAME_init function, and the 
  * NAME_run function must be defined by calling LUA_INTRO
  * with a chunk of Lua source code.
+ * 
+ * TODO: Must associate lua_State with instrument instance/init thread,
+ * not run thread, which is different. For now, just one lua_State. 
  */
 class LUAINST : public Instrument 
 {
@@ -445,33 +417,22 @@ public:
   virtual int init(double *parameters, int parameterCount)
   {
     state.name = strdup(DOUBLE_TO_STRING(parameters[0]));
-    advise("LUAINST::init", "Began...");
     state.parameters = new double[parameterCount];
     state.parameterCount = parameterCount;
-    for (int parameterI = 0; parameterI < parameterCount; ++parameterI) {
-      state.parameters[parameterI] = parameters[parameterI];
-    }
-    if (rtsetoutput((float) parameters[1], (float) parameters[2], this) == -1) {
-      return DONT_SCHEDULE;
-    }
+    for (int parameterI = 0; parameterI < parameterCount; ++parameterI) 
+      {
+	state.parameters[parameterI] = parameters[parameterI];
+      }
+    if (rtsetoutput((float) parameters[1], (float) parameters[3], this) == -1) 
+      {
+	return DONT_SCHEDULE;
+      }
     //if (rtsetinput(parameters[1], this) == -1) {
     //  return DONT_SCHEDULE;
     //}        
     //state.inputChannelCount = inputChannels();
     state.outputChannelCount = outputChannels();
     state.output = new float[outputChannels()];
-    // Invoke Lua NAME_init(this->state)
-    lua_State *L = manageLuaState();
-    keys_t &keys = manageLuaReferenceKeys(L, state.name);
-    lua_rawgeti(L, LUA_REGISTRYINDEX, keys.init_key);
-    lua_pushlightuserdata(L, &state);
-    if (lua_pcall(L, 1, 1, 0) != 0)
-      {
-	rterror("LUAINST", "Lua error in \"%s_init\": %s.\n", state.name, lua_tostring(L, -1));
-      }
-    int result = lua_tonumber(L, -1);
-    lua_pop(L, 1);
-    advise("LUAINST::init", "Ended.");
     return nSamps();
   }
   virtual int configure()
@@ -481,29 +442,80 @@ public:
   }
   virtual int run()
   {
-    state.frameCount = framesToRun();
-    const int frameCount = framesToRun();    
+    advise("LUAINST::run", "Began (thread %p)...", pthread_self());
+    int result = 0;
     //rtgetin(state.input, this, inputSampleCount);
-    for (int i = 0; i < frameCount; ++i) {
-      if (--state.branch <= 0) {
-	doupdate();
-	state.branch = getSkip();
+    lua_State *L = manageLuaState();
+    keys_t &keys = manageLuaReferenceKeys(L, state.name);
+    if (!keys.initialized) 
+      {
+	advise("LUA_INTRO", "Executing Lua code:\n%s\n", keys.luacode.c_str());
+	const char *luacode = luaCodeForInstrumentNames[state.name].c_str();
+	result = luaL_dostring(L, luacode);
+	if (result == 0)
+	  {
+	    char init_function[0x100];
+	    std::snprintf(init_function, 0x100, "%s_init", state.name);
+	    lua_getglobal(L, init_function);
+	    if (!lua_isnil(L, 1))
+	      {
+		keys.init_key = luaL_ref(L, LUA_REGISTRYINDEX);
+		lua_pop(L, 1);
+	      }
+	    else
+	      {
+		exit(die("LUA_INTRO", "Failed to register: %s.", init_function));
+	      }
+	    char run_function[0x100];
+	    std::snprintf(run_function, 0x100, "%s_run", state.name);
+	    lua_getglobal(L, run_function);
+	    if (!lua_isnil(L, 1))
+	      {
+		keys.run_key = luaL_ref(L, LUA_REGISTRYINDEX);
+		lua_pop(L, 1);
+	      }
+	    else
+	      {
+		die("LUAINST", "Failed to register: %s.", run_function);
+	      }
+	  }
+	else
+	  {
+	    warn("LUAINST", "Failed with: %d\n", result);
+	  }
+	keys.initialized = true;
       }
-      // Invoke Lua NAME_run(this->state).
-      lua_State *L = manageLuaState();
-      keys_t &keys = manageLuaReferenceKeys(L, state.name);
-      lua_rawgeti(L, LUA_REGISTRYINDEX, keys.run_key);
-      lua_pushlightuserdata(L, &state);
-      if (lua_pcall(L, 1, 1, 0) != 0)
-	{
-	  die("LUAINST", "Lua error in \"%s_run\": %s, state %p.\n", state.name, lua_tostring(L, -1), L);
-	  exit(-1);
-	}
-      int result = lua_tonumber(L, -1);
-      lua_pop(L, 1);
-      rtaddout(state.output);
-      increment();
-    }
+    if (!state.initialized) 
+      {
+	lua_rawgeti(L, LUA_REGISTRYINDEX, keys.init_key);
+	lua_pushlightuserdata(L, &state);
+	if (lua_pcall(L, 1, 1, 0) != 0)
+	  {
+	    rterror("LUAINST", "Lua error in \"%s_init\": %s.\n", state.name, lua_tostring(L, -1));
+	  }
+	result = lua_tonumber(L, -1);
+	lua_pop(L, 1);
+      }
+    lua_rawgeti(L, LUA_REGISTRYINDEX, keys.run_key);
+    state.frameCount = framesToRun();
+    for (int i = 0; i < state.frameCount; ++i) 
+      {
+	if (--state.branch <= 0) 
+	  {
+	    doupdate();
+	    state.branch = getSkip();
+	  }
+	lua_pushlightuserdata(L, &state);
+	if (lua_pcall(L, 1, 1, 0) != 0)
+	  {
+	    die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), keys.run_key, i);
+	    exit(-1);
+	  }
+	int result = lua_tonumber(L, -1);
+	lua_pop(L, 1);
+	rtaddout(state.output);
+	increment();
+      }
     return framesToRun();
   }
 private:

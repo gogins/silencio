@@ -157,7 +157,6 @@ function LUA_OSC_init(state)
 end
 
 function LUA_OSC_run(state)
-	 print('.')
 	 return 0
 end
 print('End of Lua code being registered.')
