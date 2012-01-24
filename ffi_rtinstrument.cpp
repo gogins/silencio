@@ -12,7 +12,7 @@
  *
  * Build me with this command in the RTcmix directory:
  *
- * g++ -shared -Wl,-soname,libLUAINST.so -o shlib/libLUAINST.so ~/silencio/ffi_rtinstrument.cpp -Iinclude -Isrc -lpthread -lgomp -lm -ldl -lluajit-5.1
+ * g++ -shared -fopenmp -Wl,-soname,libLUAINST.so -o shlib/libLUAINST.so ~/silencio/ffi_rtinstrument.cpp -Iinclude -Isrc -lm -ldl -lluajit-5.1
  */
 #include <RTcmix.h>
 #include <Instrument.h>

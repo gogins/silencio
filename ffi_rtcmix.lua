@@ -54,7 +54,7 @@ local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 -- Now we are ready to actually use RTcmix in the usual way.
 -- It seems to be necessary to pass the device selection to the creator.
 
-cmix.ffi_create(44100, 2, 4096, 'device=plughw:1', nil, nil)
+cmix.ffi_create(44100, 2, 4096, 'device=plughw', nil, nil)
 ffi.C.sleep(1)
 cmix.ffi_printOn()
 
@@ -100,8 +100,10 @@ more levels of nesting.
 ]]
 cmix.ffi_cmd_s("lua_intro", 2, "LUA_OSC", [=[
 local ffi = require('ffi')
-
+local math = require('math')
+local m = ffi.load('m')
 ffi.cdef[[
+  double sin(double);
   int advise(const char*, const char *,...);
   struct LuaInstrumentState
   {
@@ -145,14 +147,16 @@ end
 function LUA_OSC_run(state)
 	 local luastate = ffi.cast(LuaInstrumentState_ct, state)
 	 --print(string.format('run: frame %5d of %5d  branch: %5d', luastate.frameI, luastate.frameCount, luastate.branch))
-	 luastate.output[0] = ffi.C.sin(440.0 / 2.0 * ffi.C._M_PI * luastate.frameI)
-	 luastate.output[1] = luastate.output[0]
+	 local signal = m.sin(luastate.parameters[4] / (2.0 * math.pi * 44100) * luastate.frameI) * luastate.parameters[5]
+	 --print(signal)
+	 luastate.output[0] = signal
+	 luastate.output[1] = signal
 	 return 0
 end
 print('End of Lua code being registered.')
 ]=])
 
-cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 6, 8.0, 1.0, 0.1, 1.0, 53.0, 25.0)
+cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 6, 8.0, 1.0, 0.1, 1.0, 440.0, 8000.0)
 
 -- Give the RTcmix performance thread time to do its work.
 
