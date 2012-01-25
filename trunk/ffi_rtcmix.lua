@@ -117,6 +117,7 @@ ffi.cdef[[
     int outputChannelCount;
     float *output;
     int branch;
+    long currentFrame;
     bool initialized;
     // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
     // which contains state that specifically belongs to an instance of a Lua 
@@ -136,27 +137,31 @@ print('LuaInstrumentState_ct:', LuaInstrumentState_ct)
 -- We may, if we wish, load RTcmix into the symbol table for the Lua instrument.
 
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
-cmix.advise('LUA', 'RTcmix again, from inside RTcmix:', cmix)
+
 cmix.advise('LUA', 'Hello from inside Lua code being registered.')
 
 function LUA_OSC_init(state)
-	print('Hello from inside LUA_OSC_init()...')
+	local luastate = ffi.cast(LuaInstrumentState_ct, state)
+	cmix.advise('LUA', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[0], luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4]))
 	return 0
 end
 
 function LUA_OSC_run(state)
 	 local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	 --print(string.format('run: frame %5d of %5d  branch: %5d', luastate.frameI, luastate.frameCount, luastate.branch))
-	 local signal = m.sin(luastate.parameters[4] / (2.0 * math.pi * 44100) * luastate.frameI) * luastate.parameters[5]
+	 --print(string.format('run: frame %5d of %5d  branch: %5d', luastate.currentFrame, luastate.frameCount, luastate.branch))
+	 local t = (luastate.currentFrame / 44100.0)
+	 local x = 2.0 * math.pi * t * luastate.parameters[5]
+	 local signal = m.sin(t) * luastate.parameters[4]
 	 --print(signal)
 	 luastate.output[0] = signal
 	 luastate.output[1] = signal
 	 return 0
 end
+
 print('End of Lua code being registered.')
 ]=])
 
-cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 6, 8.0, 1.0, 0.1, 1.0, 440.0, 8000.0)
+cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5, 8.0, 0.0, 5.0, 4000.0, 440.0)
 
 -- Give the RTcmix performance thread time to do its work.
 
