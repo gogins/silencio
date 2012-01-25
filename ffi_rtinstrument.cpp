@@ -60,6 +60,7 @@ struct LuaInstrumentState
   int outputChannelCount;
   float *output;
   int branch;
+  long currentFrame;
   bool initialized;
   // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
   // which contains state that specifically belongs to an instance of a Lua 
@@ -263,7 +264,7 @@ public:
 	state.initialized = true;
       }
     state.frameCount = framesToRun();
-    for (state.frameI = 0; state.frameI < state.frameCount; ++state.frameI) 
+    for (state.frameI = 0; state.frameI < state.frameCount; ++state.frameI, ++state.currentFrame) 
       {
 	if (--state.branch <= 0) 
 	  {
