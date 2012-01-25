@@ -29,7 +29,7 @@ double ffi_cmdval_d(const char *name, int n_args, double p0, ...);
 double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
 void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
 void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
-void *ffi_cmd_l(const char *name, const char *luaname, int n_args, double p0, ...);
+void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...);
 void ffi_printOn();
 void ffi_printOff();
 void ffi_close();
@@ -142,7 +142,7 @@ cmix.advise('LUA', 'Hello from inside Lua code being registered.')
 
 function LUA_OSC_init(state)
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	cmix.advise('LUA', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[0], luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4]))
+	cmix.advise('LUA', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4], luastate.parameters[5]))
 	return 0
 end
 
@@ -152,7 +152,7 @@ function LUA_OSC_run(state)
 	 local t = (luastate.currentFrame / 44100.0)
 	 local x = 2.0 * math.pi * t * luastate.parameters[5]
 	 local signal = m.sin(t) * luastate.parameters[4]
-	 --print(signal)
+	 print(signal)
 	 luastate.output[0] = signal
 	 luastate.output[1] = signal
 	 return 0
