@@ -29,7 +29,7 @@ extern "C"
   double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
   void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
   void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
-  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, double p0, ...);
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...);
   void ffi_printOn();
   void ffi_printOff();
   void ffi_close();
@@ -123,19 +123,24 @@ extern "C"
     return retval;
   }
 
-  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, double p0, ...)
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...)
   {
-    va_list ap;
-    int i;
     double p[MAXDISPARGS];
     void   *retval;
     p[0] = STRING_TO_DOUBLE(luaname);
-    va_start(ap, p0);
-    for (i = 1; i < (n_args - 1); ++i) {
-      p[i] = va_arg(ap, double);
+    int i;
+    va_list ap;
+    va_start(ap, n_args);
+    for (i = 0; i < n_args; i++) {
+      p[i + 1] = va_arg(ap, double);
     }
     va_end(ap);
-    (void) ::dispatch(name, p, n_args + 1, &retval);
+    n_args++;
+    for (i = 0; i < n_args; i++) 
+      {
+	printf("ffi_cmd_l: p[%d] = %f\n", i, p[i]);
+      }
+    (void) ::dispatch(name, p, n_args, &retval);
     return retval;
   }
 
