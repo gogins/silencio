@@ -279,7 +279,7 @@ public:
       }
     state.frameCount = framesToRun();
     // Currently, Lua code is called for every frame. 
-    // This code should be changed to call Lua code in blocks for each branch or chunk.
+    // This loop should be changed to call Lua code in blocks for each branch or chunk.
     for (state.frameI = 0; state.frameI < state.frameCount; ++state.frameI, ++state.currentFrame) 
       {
 	if (--state.branch <= 0) 
