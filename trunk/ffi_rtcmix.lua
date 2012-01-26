@@ -3,7 +3,7 @@ print[[
 =============================================================
 H E L L O ,   T H I S   I S   R T C M I X   F R O M   L U A .
 Example code by Michael Gogins
-16 January 2012
+25 January 2012
 =============================================================
 
 ]]
@@ -60,7 +60,7 @@ cmix.ffi_printOn()
 
 -- Because all FFI functions are typed as C, there are no
 -- parameter type overloads; hence the FFI function names end with _s or _d 
--- to indicate that they they have string or double varargs.
+-- to indicate whether they have string or double varargs.
 
 print[[
 ============================================
@@ -82,17 +82,17 @@ cmix.ffi_cmd_d("SFLUTE", 7, 7.0, 1.0, 0.1, 53.0, 25.0, 5000.0, 0.5)
 
 print[[
 
-==============================================================
-Next, the piece de resistance -- a synthesizer written in Lua!
-==============================================================
+=======================================================
+Next, a totally rudimentary synthesizer written in Lua!
+=======================================================
 
 ]]
 
 cmix.ffi_cmd_s("load", 1, "LUAINST")
 --[[
 The next line is key. We are registering the Lua instrument
-LUA_OSC's Lua code, using the lua_intro function that has been 
-loaded into RTcmix.
+LUA_OSC's Lua code, using the lua_intro function that the 
+LUAINST library has loaded into RTcmix.
 
 The double brackets enclose Lua multi-line string constants;
 zero or more equals signs within the brackets denote zero or 
@@ -104,6 +104,22 @@ local math = require('math')
 local m = ffi.load('m')
 ffi.cdef[[
   double sin(double);
+  void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
+  double ffi_cmdval(const char *name);
+  double ffi_cmdval_d(const char *name, int n_args, double p0, ...);
+  double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
+  void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...);
+  void ffi_printOn();
+  void ffi_printOff();
+  void ffi_close();
+  int ffi_bufsamps();
+  float ffi_sr(); 
+  int ffi_chans(); 
+  long ffi_getElapsedFrames(); 
+  void ffi_destroy();
+  int LUA_INTRO(const char *NAME, const char *luacode);
   int advise(const char*, const char *,...);
   struct LuaInstrumentState
   {
@@ -113,6 +129,7 @@ ffi.cdef[[
     int frameI;
     int frameCount;
     int inputChannelCount;
+    int inputSampleCount;
     float *input;
     int outputChannelCount;
     float *output;
@@ -128,31 +145,31 @@ ffi.cdef[[
   };
 ]]
 
--- Obtain a cdef for the LuaInstrumentState struct,
+-- Obtain a ctype for a pointer to the LuaInstrumentState struct,
 -- for greater efficiency.
 
 local LuaInstrumentState_ct = ffi.typeof("struct LuaInstrumentState *");
-print('LuaInstrumentState_ct:', LuaInstrumentState_ct)
 
 -- We may, if we wish, load RTcmix into the symbol table for the Lua instrument.
 
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 
-cmix.advise('LUA', 'Hello from inside Lua code being registered.')
-
 function LUA_OSC_init(state)
+	-- Type casting the ctype for LuaInstrumentState enables us to 
+	-- access members of that type as though they are Lua variables.
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	cmix.advise('LUA', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4], luastate.parameters[5]))
+	cmix.advise('LUA_OSC', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4], luastate.parameters[5]))
 	return 0
 end
 
 function LUA_OSC_run(state)
+	 -- Type casting the ctype for LuaInstrumentState enables us to 
+	 -- access members of that type as though they are Lua variables.
 	 local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	 --print(string.format('run: frame %5d of %5d  branch: %5d', luastate.currentFrame, luastate.frameCount, luastate.branch))
-	 local t = (luastate.currentFrame / 44100.0)
-	 local x = 2.0 * math.pi * t * luastate.parameters[5]
-	 local signal = m.sin(t) * luastate.parameters[4]
-	 print(signal)
+	 local t = luastate.currentFrame / cmix.ffi_sr()
+	 local w = 2.0 * math.pi * luastate.parameters[5]
+         local x = m.sin(w * t)
+	 local signal = x * luastate.parameters[4]
 	 luastate.output[0] = signal
 	 luastate.output[1] = signal
 	 return 0
@@ -161,11 +178,18 @@ end
 print('End of Lua code being registered.')
 ]=])
 
-cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5, 8.0, 0.0, 5.0, 4000.0, 440.0)
+-- The ffi_cmd_l function invokes a Lua instrument; there is a second
+-- string name for the actual Lua instrument class defined above.
+-- This function could be invoked from Minc or any other language as it is 
+-- now a loaded and bound CMIX function.
+
+cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5,  9.0, 0.0, 5.0, 4000.0, 440.00)
+cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5, 10.0, 0.0, 5.0, 4000.0, 554.37)
+cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5, 11.0, 0.0, 5.0, 4000.0, 659.26)
 
 -- Give the RTcmix performance thread time to do its work.
 
-ffi.C.sleep(17)
+ffi.C.sleep(18)
 print()
 
 
