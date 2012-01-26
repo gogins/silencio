@@ -187,9 +187,125 @@ cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5,  9.0, 0.0, 5.0, 4000.0, 440.00)
 cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5, 10.0, 0.0, 5.0, 4000.0, 554.37)
 cmix.ffi_cmd_l("LUAINST", "LUA_OSC", 5, 11.0, 0.0, 5.0, 4000.0, 659.26)
 
+print[[
+
+====================================
+Chua's oscillator written in Lua!...
+====================================
+
+]]
+
+cmix.ffi_cmd_s("lua_intro", 2, "CHUA", [=[
+local ffi = require('ffi')
+local math = require('math')
+local m = ffi.load('m')
+ffi.cdef[[
+  double sin(double);
+  void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
+  double ffi_cmdval(const char *name);
+  double ffi_cmdval_d(const char *name, int n_args, double p0, ...);
+  double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
+  void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
+  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...);
+  void ffi_printOn();
+  void ffi_printOff();
+  void ffi_close();
+  int ffi_bufsamps();
+  float ffi_sr(); 
+  int ffi_chans(); 
+  long ffi_getElapsedFrames(); 
+  void ffi_destroy();
+  int LUA_INTRO(const char *NAME, const char *luacode);
+  int advise(const char*, const char *,...);
+  struct LuaInstrumentState
+  {
+    char *name;
+    double *parameters;
+    int parameterCount;
+    int frameI;
+    int frameCount;
+    int inputChannelCount;
+    int inputSampleCount;
+    float *input;
+    int outputChannelCount;
+    float *output;
+    int branch;
+    long currentFrame;
+    bool initialized;
+    // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
+    // which contains state that specifically belongs to an instance of a Lua 
+    // instrument. If such state exists, the NAME_init function must declare 
+    // and define an instance of a C structure containing all elements of that 
+    // state, and set this pointer to the address of that structure.
+    void *instanceState;
+  };
+
+  -- Define the instance state for Chua's oscillator.
+
+  struct CHUA 
+  {
+	double Bp1,Bp2,m0,m1,m2;	/* Non-linear resistor parameters */
+	double Vc1,Vc2,Il;		/* State variables */
+	double dVc1,dVc2,dIl;		/* Derivatives of state variables */
+	double Ls,C1s,C2s;		/* Time scaled values of L,C1 and C2 */
+	double tscale;			/* Used for time scaling */
+	double frequency;		/* Frequency of fundamental harmonic */
+	double tstep;			/* Time increment of each differiantial step */
+  };
+]]
+
+local LuaInstrumentState_ct = ffi.typeof("struct LuaInstrumentState *");
+local CHUA_ct = ffi.typeof("struct CHUA *");
+
+-- We may, if we wish, load RTcmix into the symbol table for the Lua instrument.
+
+local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
+
+function LUA_OSC_init(state)
+	-- Type casting the ctype for LuaInstrumentState enables us to 
+	-- access members of that type as though they are Lua variables.
+	local luastate = ffi.cast(LuaInstrumentState_ct, state)
+	local chua = CHUA()
+	luastate.instanceState = chua
+	cmix.advise('CHUA', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4], luastate.parameters[5]))
+	return 0
+end
+
+function LUA_OSC_run(state)
+	-- Type casting the ctype for a type enables us to 
+	-- access members of that type as though they are Lua variables.
+	local luastate = ffi.cast(LuaInstrumentState_ct, state)
+	local chua = ffi.cast(CHUA_ct, luastate.instanceState
+	if (chua.Vc1 < chua.Bp1) then
+	   chua.g2 = chua.m0 * (chua.Vc1 - chua.Bp1) + chua.m1 * chua.Bp1
+	end
+	if ((chua.Vc1 >= chua.Bp1) and (chua.Vc1 <= chua.Bp2)) then 
+	   chua.g2 = chua.m1 * chua.Vc1
+	end
+	if (chua.Vc1 > chua.Bp2) then
+	   chua.g2 = chua.m2 * (chua.Vc1 - chua.Bp2) + chua.m1 * chua.Bp2
+	end
+	chua.dVc1 = (chua.G1 * (chua.Vc2 - chua.Vc1) - chua.g2) / chua.C1s;
+	chua.dVc2 = (chua.G1 * (chua.Vc1 - chua.Vc2) + chua.Il) / chua.C2s;
+	chua.dIl = -chua.Vc2 / chua.Ls;
+	chua.Vc1 = chua.Vc1 + chua.dVc1 * chua.tstep;
+	chua.Vc2 = chua.Vc2 + chua.dVc2 * chua.tstep;
+	chua.Il = chua.Il + chua.dIl * chua.tstep;
+	luastate.output[0] = chua.Il
+	luastate.output[1] = chua.Il
+	return 0
+end
+
+print('End of Lua code being registered.')
+]=])
+
 -- Give the RTcmix performance thread time to do its work.
 
-ffi.C.sleep(18)
+print('Press Control-C to exit....')
+while true do
+      ffi.C.sleep(1)
+end
 print()
 
 
