@@ -7,14 +7,9 @@
  * It is designed to simplify embedding RTcmix in Lua, Lisp, etc., using 
  * their C calling convention based foreign function interface facilities.
  *
- * This file should be #included at the bottom of RTcmix.cpp. This file does
- * not require any linkage to Lua or to OpenMP.
+ * This file should be #included at the bottom of RTcmix.cpp. This file has no 
+ * external dependencies, and it does not require any linkage to Lua or to OpenMP.
  */
-
-#include <rt.h>
-#include <stdarg.h>
-#include <map>
-#include <string>
 
 static RTcmix *ffi_cmix = 0;
 
@@ -33,8 +28,13 @@ extern "C"
   void ffi_printOn();
   void ffi_printOff();
   void ffi_close();
+  int ffi_bufsamps();
+  float ffi_sr(); 
+  int ffi_chans(); 
+  long ffi_getElapsedFrames(); 
   void ffi_destroy();
   int LUA_INTRO(const char *NAME, const char *luacode);
+
   void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3)
   {
     if (ffi_cmix) {
@@ -128,18 +128,13 @@ extern "C"
     double p[MAXDISPARGS];
     void   *retval;
     p[0] = STRING_TO_DOUBLE(luaname);
-    int i;
     va_list ap;
     va_start(ap, n_args);
-    for (i = 0; i < n_args; i++) {
+    for (int i = 0; i < n_args; i++) {
       p[i + 1] = va_arg(ap, double);
     }
     va_end(ap);
     n_args++;
-    for (i = 0; i < n_args; i++) 
-      {
-	printf("ffi_cmd_l: p[%d] = %f\n", i, p[i]);
-      }
     (void) ::dispatch(name, p, n_args, &retval);
     return retval;
   }
@@ -166,6 +161,27 @@ extern "C"
       delete ffi_cmix;
       ffi_cmix = 0;
     }
+  }
+
+  int ffi_bufsamps() 
+  { 
+    return ffi_cmix->bufsamps(); 
+  }
+  
+  float ffi_sr() 
+  { 
+    return ffi_cmix->sr(); 
+  
+  }
+  
+  int ffi_chans() 
+  {
+    return ffi_cmix->chans(); 
+  }
+
+  long ffi_getElapsedFrames() 
+  { 
+    return ffi_cmix->getElapsedFrames(); 
   }
 
 }

@@ -10,9 +10,12 @@
  * instrument code to call any public C function in the process
  * space. This includes most of the RTCmix functions.
  *
- * Build me with this command in the RTcmix directory:
+ * Build LUAINST with this command in the RTcmix directory
+ * (you may need to change the path of the ffi_rtinstrument.cpp file).
+ * And if you don't have OpenMP support, just omit -fopenmp 
+ * and add -lpthread.
  *
- * g++ -shared -fopenmp -Wl,-soname,libLUAINST.so -o shlib/libLUAINST.so ~/silencio/ffi_rtinstrument.cpp -Iinclude -Isrc -lm -ldl -lluajit-5.1
+ * g++ -O2 -shared -fopenmp -Wl,-soname,libLUAINST.so -o shlib/libLUAINST.so ~/silencio/ffi_rtinstrument.cpp -Iinclude -Isrc -lm -ldl -lluajit-5.1
  */
 #include <RTcmix.h>
 #include <Instrument.h>
@@ -56,6 +59,7 @@ struct LuaInstrumentState
   int frameI;
   int frameCount;
   int inputChannelCount;
+  int inputSampleCount;
   float *input;
   int outputChannelCount;
   float *output;
@@ -123,19 +127,20 @@ lua_State *manageLuaState()
 /**
  * LUAINST is actually a wrapper around a Lua "class"
  * that defines a Lua cdef NAME structure containing 
- * instrument state, a NAME_init function that performs
+ * instrument state, a Lua NAME_init function that performs
  * the work of any other RTcmix Instrument::init function,
- * and a NAME_run function that performs the work of any 
+ * and a Lua NAME_run function that performs the work of any 
  * other RTcix Instrument::run function. The actual 
  * Lua instrument state and functions are looked up by 
  * NAME. 
  *
  * The Lua cdef NAME, the NAME_init function, and the 
- * NAME_run function must be defined by calling LUA_INTRO
- * with a chunk of Lua source code.
- * 
- * TODO: Must associate lua_State with instrument instance/init thread,
- * not run thread, which is different. For now, just one lua_State. 
+ * NAME_run function must be defined by calling the 
+ * lua_intro command with a chunk of Lua source code.
+ *
+ * Note that there is one LUAINST class for both 
+ * output and input/output processing. To use an input,
+ * set inskip to non-zero and use bus_config.
  */
 class LUAINST : public Instrument 
 {
@@ -165,11 +170,12 @@ public:
     state.initialized = false;
   }
   /**
-   * p0 = Lua instrument name.
+   * These pfields are standard for LUAINST instruments:
+   * p0 = Lua instrument name (string, all others are doubles).
    * p1 = Output start time (outskip).
-   * p2 = Input start time (inskip).
-   * p3 = Input duration.
-   * p4 = Audio output gain.
+   * p2 = Input start time (inskip, must be non-zero for inputs).
+   * p3 = Duration.
+   * p4 = Amplitude.
    * pN = User-defined optional parameters.
    */
   virtual int init(double *parameters, int parameterCount)
@@ -185,17 +191,21 @@ public:
       {
 	return DONT_SCHEDULE;
       }
-    //if (rtsetinput(parameters[1], this) == -1) {
-    //  return DONT_SCHEDULE;
-    //}        
-    //state.inputChannelCount = inputChannels();
+    if (parameters[2] != 0.0) 
+      {
+	if (rtsetinput(parameters[1], this) == -1) {
+	  return DONT_SCHEDULE;
+	}
+	state.inputChannelCount = inputChannels();
+      }
     state.outputChannelCount = outputChannels();
     state.output = new float[outputChannels()];
     return nSamps();
   }
   virtual int configure()
   {
-    //state.input = new float[RTBUFSAMPS * inputChannels()];
+    state.inputSampleCount = RTBUFSAMPS * inputChannels();
+    state.input = new float[state.inputSampleCount];
     return 0;
   }
   /**
@@ -210,7 +220,11 @@ public:
   {
     //advise("LUAINST::run", "Began (thread %p)...", pthread_self());
     int result = 0;
-    //rtgetin(state.input, this, inputSampleCount);
+    if (state.parameters[2] != 0.0) 
+      {
+	state.inputSampleCount = RTBUFSAMPS * inputChannels();
+	rtgetin(state.input, this, state.inputSampleCount);
+      }
     lua_State *L = manageLuaState();
     LuaInstrumentClass_t &luaInstrumentClass = manageLuaInstrumentClass(L, state.name);
     if (!luaInstrumentClass.initialized) 
@@ -264,6 +278,8 @@ public:
 	state.initialized = true;
       }
     state.frameCount = framesToRun();
+    // Currently, Lua code is called for every frame. 
+    // This code should be changed to call Lua code in blocks for each branch or chunk.
     for (state.frameI = 0; state.frameI < state.frameCount; ++state.frameI, ++state.currentFrame) 
       {
 	if (--state.branch <= 0) 
@@ -288,14 +304,13 @@ public:
 private:
   void doupdate()
   {
-    //update(state.parameters, state.parameterCount);
+    update(state.parameters, state.parameterCount);
   }
   LuaInstrumentState state;
 };
 
 extern "C" 
 {
- 
   /**
    * Register a Lua instrument with RTcmix as NAME.
    * NAME must be defined in the Lua code and consists
@@ -335,7 +350,9 @@ extern "C"
 
 /** 
  * Factory function called by RTcmix during 
- * performance to make new instances of a Lua instrument.
+ * performance to make new instances of LUAINST which,
+ * in turn, will call lua_intro to define and create
+ * new instances of the actual Lua instruments..
  */
 Instrument *makeLUAINST()
 {
