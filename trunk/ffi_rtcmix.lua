@@ -205,14 +205,33 @@ ffi.cdef[[
 
   struct CHUA 
   {
-	double Bp1,Bp2,m0,m1,m2;	/* Non-linear resistor parameters */
-	double Vc1,Vc2,Il;		/* State variables */
-	double dVc1,dVc2,dIl;		/* Derivatives of state variables */
-	double Ls,C1s,C2s;		/* Time scaled values of L,C1 and C2 */
-	double tscale;			/* Used for time scaling */
-	double frequency;		/* Frequency of fundamental harmonic */
-	double tstep;			/* Time increment of each differiantial step */
-	double G,G1,g2;
+	/* Non-linear resistor parameters */
+	double Bp1;
+	double Bp2;
+	double m0;
+	double m1;
+	double m2;
+	/* State variables */
+	double Vc1;
+	double Vc2;
+	double Il;		
+	/* Derivatives of state variables */
+	double dVc1;
+	double dVc2;
+	double dIl;
+	/* Time scaled values of L,C1 and C2 */
+	double Ls;
+	double C1s;
+	double C2s;		
+	/* Used for time scaling */
+	double tscale;			
+	/* Frequency of fundamental harmonic */
+	double frequency;		
+	/* Time increment of each differiantial step */
+	double tstep;			
+	double G;
+	double G1;
+	double g2;
   };
 ]]
 
@@ -255,6 +274,7 @@ function CHUA_run(state)
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
 	-- SNEAKY, SEAKY (part II)!! LuaJIT dereferences POINTER to struct with same semantics as struct.
 	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
+	print(tostring(chua), chua.Vc2)
 	if chua.Vc1 < chua.Bp1 then
 	   chua.g2 = chua.m0 * (chua.Vc1 - chua.Bp1) + chua.m1 * chua.Bp1
 	end
@@ -272,6 +292,8 @@ function CHUA_run(state)
 	chua.Il = chua.Il + (chua.dIl * chua.tstep)
 	luastate.output[0] = chua.Il
 	luastate.output[1] = chua.Il
+	print(tostring(chua), chua.Vc2)
+	os.exit()
 	return 0
 end
 
