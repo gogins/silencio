@@ -200,48 +200,8 @@ local ffi = require('ffi')
 local math = require('math')
 local m = ffi.load('m')
 ffi.cdef[[
-  double sin(double);
-  void *ffi_create(double tsr, int tnchans, int bsize, const char *opt1, const char *opt2, const char *opt3);
-  double ffi_cmdval(const char *name);
-  double ffi_cmdval_d(const char *name, int n_args, double p0, ...);
-  double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
-  void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
-  void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
-  void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...);
-  void ffi_printOn();
-  void ffi_printOff();
-  void ffi_close();
-  int ffi_bufsamps();
-  float ffi_sr(); 
-  int ffi_chans(); 
-  long ffi_getElapsedFrames(); 
-  void ffi_destroy();
-  int LUA_INTRO(const char *NAME, const char *luacode);
-  int advise(const char*, const char *,...);
-  struct LuaInstrumentState
-  {
-    char *name;
-    double *parameters;
-    int parameterCount;
-    int frameI;
-    int frameCount;
-    int inputChannelCount;
-    int inputSampleCount;
-    float *input;
-    int outputChannelCount;
-    float *output;
-    int branch;
-    long currentFrame;
-    bool initialized;
-    // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
-    // which contains state that specifically belongs to an instance of a Lua 
-    // instrument. If such state exists, the NAME_init function must declare 
-    // and define an instance of a C structure containing all elements of that 
-    // state, and set this pointer to the address of that structure.
-    void *instanceState;
-  };
 
-  -- Define the instance state for Chua's oscillator.
+  // Define the instance state for Chua's oscillator.
 
   struct CHUA 
   {
@@ -252,46 +212,64 @@ ffi.cdef[[
 	double tscale;			/* Used for time scaling */
 	double frequency;		/* Frequency of fundamental harmonic */
 	double tstep;			/* Time increment of each differiantial step */
+	double G,G1,g2;
   };
 ]]
 
-local LuaInstrumentState_ct = ffi.typeof("struct LuaInstrumentState *");
-local CHUA_ct = ffi.typeof("struct CHUA *");
+local LuaInstrumentState_ct = ffi.typeof("struct LuaInstrumentState *")
+local CHUA_ct = ffi.typeof("struct CHUA");
+local CHUAp_ct = ffi.typeof("struct CHUA *");
 
 -- We may, if we wish, load RTcmix into the symbol table for the Lua instrument.
 
 local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 
-function LUA_OSC_init(state)
+function CHUA_init(state)
 	-- Type casting the ctype for LuaInstrumentState enables us to 
 	-- access members of that type as though they are Lua variables.
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	local chua = CHUA()
+	local chua = CHUA_ct()
+	cmix.advise('CHUA', '%s', tostring(chua))
+	-- SNEAKY, SEAKY (part I)!! LuaJIT assigns struct as a pointer to struct (which automatically casts to void *).
 	luastate.instanceState = chua
-	cmix.advise('CHUA', string.format('outskip: %9.4f  inskip: %9.4f  dur: %9.4f  amp: %9.4f  freq: %9.4f', luastate.parameters[1], luastate.parameters[2], luastate.parameters[3], luastate.parameters[4], luastate.parameters[5]))
+	cmix.advise('CHUA', 'p[ 1] outskip: %9.4f', luastate.parameters[ 1])
+	cmix.advise('CHUA', 'p[ 2] inskip:  %9.4f', luastate.parameters[ 2])
+	cmix.advise('CHUA', 'p[ 3] dur:     %9.4f', luastate.parameters[ 3])
+	cmix.advise('CHUA', 'p[ 4] amp:     %9.4f', luastate.parameters[ 4])
+	cmix.advise('CHUA', 'p[ 5] pitch:   %9.4f', luastate.parameters[ 5]) 
+	cmix.advise('CHUA', 'p[ 6] L:       %9.4f', luastate.parameters[ 6]) 
+	cmix.advise('CHUA', 'p[ 7] C1:      %9.4f', luastate.parameters[ 7]) 
+	cmix.advise('CHUA', 'p[ 8] C2:      %9.4f', luastate.parameters[ 8]) 
+	cmix.advise('CHUA', 'p[ 9] G:       %9.4f', luastate.parameters[ 9]) 
+	cmix.advise('CHUA', 'p[10] Bp1:     %9.4f', luastate.parameters[10]) 
+	cmix.advise('CHUA', 'p[11] Bp2:     %9.4f', luastate.parameters[11]) 
+	cmix.advise('CHUA', 'p[12] m0:      %9.4f', luastate.parameters[12]) 
+	cmix.advise('CHUA', 'p[13] m1:      %9.4f', luastate.parameters[13]) 
+	cmix.advise('CHUA', 'p[14] m2:      %9.4f', luastate.parameters[14]) 
 	return 0
 end
 
-function LUA_OSC_run(state)
+function CHUA_run(state)
 	-- Type casting the ctype for a type enables us to 
 	-- access members of that type as though they are Lua variables.
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	local chua = ffi.cast(CHUA_ct, luastate.instanceState
-	if (chua.Vc1 < chua.Bp1) then
+	-- SNEAKY, SEAKY (part II)!! LuaJIT dereferences POINTER to struct with same semantics as struct.
+	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
+	if chua.Vc1 < chua.Bp1 then
 	   chua.g2 = chua.m0 * (chua.Vc1 - chua.Bp1) + chua.m1 * chua.Bp1
 	end
-	if ((chua.Vc1 >= chua.Bp1) and (chua.Vc1 <= chua.Bp2)) then 
+	if (chua.Vc1 >= chua.Bp1) and (chua.Vc1 <= chua.Bp2) then 
 	   chua.g2 = chua.m1 * chua.Vc1
 	end
-	if (chua.Vc1 > chua.Bp2) then
+	if chua.Vc1 > chua.Bp2 then
 	   chua.g2 = chua.m2 * (chua.Vc1 - chua.Bp2) + chua.m1 * chua.Bp2
 	end
-	chua.dVc1 = (chua.G1 * (chua.Vc2 - chua.Vc1) - chua.g2) / chua.C1s;
-	chua.dVc2 = (chua.G1 * (chua.Vc1 - chua.Vc2) + chua.Il) / chua.C2s;
-	chua.dIl = -chua.Vc2 / chua.Ls;
-	chua.Vc1 = chua.Vc1 + chua.dVc1 * chua.tstep;
-	chua.Vc2 = chua.Vc2 + chua.dVc2 * chua.tstep;
-	chua.Il = chua.Il + chua.dIl * chua.tstep;
+	chua.dVc1 = (chua.G1 * (chua.Vc2 - chua.Vc1) - chua.g2) / chua.C1s --L70
+	chua.dVc2 = (chua.G1 * (chua.Vc1 - chua.Vc2) + chua.Il) / chua.C2s
+	chua.dIl = - (chua.Vc2 / chua.Ls)
+	chua.Vc1 = chua.Vc1 + (chua.dVc1 * chua.tstep)
+	chua.Vc2 = chua.Vc2 + (chua.dVc2 * chua.tstep)
+	chua.Il = chua.Il + (chua.dIl * chua.tstep)
 	luastate.output[0] = chua.Il
 	luastate.output[1] = chua.Il
 	return 0
@@ -299,6 +277,8 @@ end
 
 print('End of Lua code being registered.')
 ]=])
+
+cmix.ffi_cmd_l("LUAINST", "CHUA", 14, 18.0, 0.0, 20.0, 4000.0, 48.0, 0.142857, 0.111111, 1, 0.7, -1, 1, -0.5, -0.8, -0.5)
 
 -- Give the RTcmix performance thread time to do its work.
 
