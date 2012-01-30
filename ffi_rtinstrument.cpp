@@ -173,7 +173,7 @@ public:
    * These pfields are standard for LUAINST instruments:
    * p0 = Lua instrument name (string, all others are doubles).
    * p1 = Output start time (outskip).
-   * p2 = Input start time (inskip, must be non-zero for inputs).
+   * p2 = Input start time (inskip, must be zero if there is no input).
    * p3 = Duration.
    * p4 = Amplitude.
    * pN = User-defined optional parameters.
@@ -230,7 +230,7 @@ public:
     if (!luaInstrumentClass.initialized) 
       {
 	const char *luacode = luaCodeForInstrumentNames[state.name].c_str();
-	advise("LUAINST", "Defining Lua instrument code:\n%s\n", luacode);
+	advise("LUAINST", "Defining Lua instrument code:\n\n%0.120s\n...\n", luacode);
 	result = luaL_dostring(L, luacode);
 	if (result == 0)
 	  {

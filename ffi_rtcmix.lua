@@ -30,6 +30,7 @@ double ffi_cmdval_s(const char *name, int n_args, const char* p0, ...);
 void *ffi_cmd_d(const char *name, int n_args, double p0, ...);
 void *ffi_cmd_s(const char *name, int n_args, const char* p0, ...);
 void *ffi_cmd_l(const char *name, const char *luaname, int n_args, ...);
+void *ffi_cmd_l_15(const char *name, const char *luaname, double p1, double p2, double p3, double p4, double p5, double p6, double p7, double p8, double p9, double p10, double p11, double p12, double p13, double p14, double p15);
 void ffi_printOn();
 void ffi_printOff();
 void ffi_close();
@@ -150,7 +151,9 @@ ffi.cdef[=[
     // which contains state that specifically belongs to an instance of a Lua 
     // instrument. If such state exists, the NAME_init function must declare 
     // and define an instance of a C structure containing all elements of that 
-    // state, and set this pointer to the address of that structure.
+    // state, and set this pointer to the address of that structure. The memory
+    // for instanceState should be from the C allocator and should not be 
+    // garbage-collected.
     void *instanceState;
   };
 ]=]
@@ -212,36 +215,61 @@ ffi.cdef[=[
 
   struct CHUA 
   {
-	/* Non-linear resistor parameters */
-	double Bp1;
-	double Bp2;
-	double m0;
-	double m1;
-	double m2;
-	/* State variables */
-	double Vc1;
-	double Vc2;
-	double I1;		
-	/* Derivatives of state variables */
-	double dVc1;
-	double dVc2;
-	double dI1;
-	double L;
-	double C1;
-	double C2;
-	/* Time scaled values of L,C1 and C2 */
-	double Ls;
-	double C1s;
-	double C2s;		
-	/* Used for time scaling */
-	double tscale;			
-	/* Frequency of fundamental harmonic */
-	double freq;		
-	/* Time increment of each differential step */
-	double tstep;			
-	double G1;
-	double G2;
-	double waitc;
+    // OUTPUTS
+    double I3;
+    double V2;
+    double V1;
+    // INPUTS
+    // sys_variables = system_vars(5:12); % L,R0,C2,G,Ga,Gb,E,C1
+    // % x0,y0,z0,dataset_size,step_size
+    // integ_variables = [system_vars(14:16),system_vars(1:2)];
+    // function TimeSeries = chuacc(L,R0,C2,G,Ga,Gb,C1,E,x0,y0,z0,
+    //                              dataset_size,step_size)
+    // Circuit elements.
+    double L;		
+    double R0;	   	
+    double C2;	   	
+    double G;	   	
+    double Ga;	   	
+    double Gb;	   	
+    // Defaulting to 1 here...
+    double E;	   	
+    double C1;	   	
+    // Initial values...
+    double I3;		
+    double V2;	   	
+    double V1;		
+    double step_size; 	
+    // STATE
+    // Runge-Kutta step sizes.
+    double h;	   
+    double h2;	   
+    double h6;	   
+    // Runge-Kutta slopes.
+    // NOTE: The original MATLAB code uses 1-based indexing.
+    // Although the MATLAB vectors are columns,
+    // these are rows; it doesn't matter here.
+    // k1 = [0 0 0]';
+    double k1[4];
+    double k2[4];
+    double k3[4];
+    double k4[4];
+    // Temporary value.
+    double M[4];
+    // Other variables.
+    double step_size;
+    double anor;
+    double bnor;
+    double bnorplus1;
+    double alpha;
+    double beta;
+    double gammaloc;
+    double bh;
+    double bh2;
+    double ch;
+    double ch2;
+    double omch2;
+    double temp;
   };
 ]=]
 
@@ -254,74 +282,79 @@ function CHUA_init(state)
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
 	luastate.instanceState = ffi.C.calloc(1, ffi.sizeof(CHUA_ct))
 	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
-	cmix.advise('CHUA', '%s', tostring(chua))
-	cmix.advise('CHUA', 'p[ 1] outskip: %9.4f', luastate.parameters[ 1])
-	cmix.advise('CHUA', 'p[ 2] inskip:  %9.4f', luastate.parameters[ 2])
-	cmix.advise('CHUA', 'p[ 3] dur:     %9.4f', luastate.parameters[ 3])
-	cmix.advise('CHUA', 'p[ 4] amp:     %9.4f', luastate.parameters[ 4])
-	chua.freq = 	    	   	    	    cmix.cpsoct(cmix.octmidi(luastate.parameters[ 5]))
-	cmix.advise('CHUA', 'p[ 5] freq :   %9.4f', chua.freq) 
-	chua.L     = 	    	   	    	    luastate.parameters[ 6]
-	cmix.advise('CHUA', 'p[ 6] L:       %9.4f', chua.L) 
-	chua.C1    = 	    	   	    	    luastate.parameters[ 7]
-	cmix.advise('CHUA', 'p[ 7] C1:      %9.4f', chua.C1) 
-	chua.C2    = 	    	   	    	    luastate.parameters[ 8]
-	cmix.advise('CHUA', 'p[ 8] C2:      %9.4f', chua.C2) 
-	chua.G1    = 	    	   	    	    luastate.parameters[ 9]
-	cmix.advise('CHUA', 'p[ 9] G:       %9.4f', chua.G1) 
-	chua.Bp1   = 	    	   	    	    luastate.parameters[10]
-	cmix.advise('CHUA', 'p[10] Bp1:     %9.4f', chua.Bp1) 
-	chua.Bp2   = 	    	   	    	    luastate.parameters[11]
-	cmix.advise('CHUA', 'p[11] Bp2:     %9.4f', chua.Bp2) 
-	chua.m0    = 	    	   	    	    luastate.parameters[12]
-	cmix.advise('CHUA', 'p[12] m0:      %9.4f', chua.m0) 
-	chua.m1    = 	    	   	    	    luastate.parameters[13]
-	cmix.advise('CHUA', 'p[13] m1:      %9.4f', chua.m1) 
-	chua.m2 = 	    	   	    	    luastate.parameters[14]
-	cmix.advise('CHUA', 'p[14] m2:      %9.4f', chua.m2)
-	chua.tscale = 0.325 / chua.freq
-	chua.waitc = 20
-	chua.tstep = 1.0 / chua.waitc * 1 / cmix.ffi_sr()
-	chua.Vc1 = 0
-	chua.Vc2 = 0.1
-	chua.I1 = 0
-	chua.Ls = chua.tscale * chua.L
-	chua.C1s = chua.tscale * chua.C1
-	chua.C2s = chua.tscale * chua.C2
+    	chua.step_size = luastate.parameters[ 5]
+	cmix.advise("CHUA", "step_size: %f", chua.step_size)
+    	chua.L =     	 luastate.parameters[ 6]
+	print("L:         ", chua.L)
+    	chua.R0 =  	 luastate.parameters[ 7]
+	print("R0:        ", chua.R0)
+    	chua.C2 =  	 luastate.parameters[ 8]
+	print("C2:        ", chua.C2)
+    	chua.G =   	 luastate.parameters[ 9]
+	print("G:         ", chua.G)
+    	chua.Ga =  	 luastate.parameters[10]
+	print("Ga:        ", chua.Ga)
+    	chua.Gb =  	 luastate.parameters[11]
+	print("Gb:        ", chua.Gb)
+    	chua.C1 =  	 luastate.parameters[12]
+	print("C1:        ", chua.C1)
+    	chua.I3 =  	 luastate.parameters[13]
+	print("I3:        ", chua.I3)
+    	chua.V2 =  	 luastate.parameters[14]
+	print("V2:        ", chua.V2)
+    	chua.V1 =  	 luastate.parameters[15]
+	print("V1:        ", chua.V1)
+	chua.E = 1
+	cmix.advise("CHUA", "E:         %f", chua.E)
+    	-- chua.M[1] = chua.V1 /  chua.E
+    	-- chua.M[2] = chua.V2 /  chua.E
+    	-- chua.M[3] = chua.I3 / (chua.E * chua.G)
 	return 0
 end
 
 function CHUA_run(state)
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
 	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
-	if chua.Vc1 < chua.Bp1 then
-	   chua.G2 = chua.m0 * (chua.Vc1 - chua.Bp1) + chua.m1 * chua.Bp1
-	end
-	if (chua.Vc1 >= chua.Bp1) and (chua.Vc1 <= chua.Bp2) then 
-	   chua.G2 = chua.m1 * chua.Vc1
-	end
-	if chua.Vc1 > chua.Bp2 then
-	   chua.G2 = chua.m2 * (chua.Vc1 - chua.Bp2) + chua.m1 * chua.Bp2
-	end
-	chua.dVc1 = (chua.G1 * (chua.Vc2 - chua.Vc1) - chua.G2) / chua.C1s 
-	chua.dVc2 = (chua.G1 * (chua.Vc1 - chua.Vc2) + chua.I1) / chua.C2s
-	chua.dI1 = - chua.Vc2 / chua.Ls
-	chua.Vc1 = chua.Vc1 + chua.dVc1 * chua.tstep
-	chua.Vc2 = chua.Vc2 + chua.dVc2 * chua.tstep
-	chua.I1 = chua.I1 + chua.dI1 * chua.tstep
-	luastate.output[0] = chua.Vc1 * luastate.parameters[4]
-	luastate.output[1] = chua.Vc1 * luastate.parameters[4]
-	--print (luastate.output[0])
 	return 0
 end
 
 ]])
 
-cmix.ffi_cmd_l("LUAINST", "CHUA", 14, 16.0, 0.0, 120.0, 4000.0, 48.0, 0.142857, 0.111111, 1, 0.7, -1, 1, -0.5, -0.8, -0.5)
+-- Torus attractor from the gallery of attractors.
 
+local outskip = 20.0
+local inskip = 0.0
+local dur = 20.0
+cmix.ffi_cmd_l_15("LUAINST", "CHUA", outskip,	inskip,	dur,	1500.00000000000000,	0.10000000000000,	-0.00707925000000,	0.00001647000000,	100.00000000000000,	1.00000000000000,	-0.99955324000000,	-1.00028375000000,	-0.00222159000000,	-2.36201596260071, 0.00308917625807, 3.87075614929199)
+
+--[[
+
+p1	p2	p3	p4	p5	p6	p7	p8	p9	p10	p11	p12	p13	p14	p15
+outskip	inskip	dur	amp	stepsize	L	R0	C2	G	Ga	Gb	C1	I3	V2	V1
+outskip	inskip	dur	1500.00000000000000	0.10000000000000	-0.00707925000000	0.00001647000000	100.00000000000000	1.00000000000000	-0.99955324000000	-1.00028375000000	-0.00222159000000	-2.36201596260071	0.00308917625807	3.87075614929199
+outskip	inskip	dur	1500.00000000000000	0.42500000000000	1.35061680000000	0.00000000000000	-4.50746268737000	-1.00000000000000	2.49240000000000	0.93000000000000	1.00000000000000	-22.28662665000000	0.00950660800000	-22.28615760000000
+outskip	inskip	dur	1024.00000000000000	0.05000000000000	0.00667000000000	0.00065100000000	10.00000000000000	-1.00000000000000	0.85600000000000	1.10000000000000	0.06000000000000	-20.20059013366700	0.17253932356834	-4.07686233520508
+
+cmix.ffi_cmd_l_15("LUAINST", "CHUA", 25, outskip, 0, dur, 1500, .1, -1, -1, -0.00707925, 0.00001647, 100, 1, -0.99955324, -1.00028375, 1, -0.00222159, 204.8, -2.36201596260071, 3.08917625807226e-03, 3.87075614929199, 7, 0.4, 0.004, 1, 86, 30)
+
+-- Heteroclinic orbit.
+
+outskip = outskip + 21
+cmix.ffi_cmd_l("LUAINST", "CHUA", 25, outskip, 0, dur, 1500, .425,  0, -1,  1.3506168,  0, -4.50746268737, -1, 2.4924, .93, 1, 1, 0, -22.28662665, .009506608, -22.2861576, 32, 10, 2, 20, 86, 30)
+
+-- Periodic attractor (torus breakdown route).
+
+outskip = outskip + 21
+cmix.ffi_cmd_l("LUAINST", "CHUA", 25, outskip, 0, dur, 1024, .05,  -1, -1,  0.00667, 0.000651, 10, -1, .856, 1.1, 1, .06, 51.2, -20.200590133667, .172539323568344, -4.07686233520508, 2.5, 10, .2, 1, 66, 81)
+
+-- Torus attractor (torus breakdown route).
+
+outskip = outskip + 21
+cmix.ffi_cmd_l("LUAINST", "CHUA", 25, outskip, 0, dur, 1024, 0.05, -1, -1, 0.00667, 0.000651, 10, -1, 0.856, 1.1, 1, 0.1, 153.6, 21.12496758, 0.03001749, 0.515828669, 2.5, 10, 0.2, 1, 66, 81)
+--]]
 print[[
 
-Press Control-C to exit....'
+Press [Ctrl-C] to exit...
 
 ]]
 

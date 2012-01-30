@@ -139,6 +139,30 @@ extern "C"
     return retval;
   }
 
+void *ffi_cmd_l_15(const char *name, const char *luaname, double p1, double p2, double p3, double p4, double p5, double p6, double p7, double p8, double p9, double p10, double p11, double p12, double p13, double p14, double p15)
+  {
+    double p[MAXDISPARGS];
+    void   *retval;
+    p[ 0] = STRING_TO_DOUBLE(luaname);
+    p[ 1] = p1;
+    p[ 2] = p2;
+    p[ 3] = p3;
+    p[ 4] = p4;
+    p[ 5] = p5;
+    p[ 6] = p6;
+    p[ 7] = p7;
+    p[ 8] = p8;
+    p[ 9] = p9;
+    p[10] = p10;
+    p[11] = p11;
+    p[12] = p12;
+    p[13] = p13;
+    p[14] = p14;
+    p[15] = p15;
+    (void) ::dispatch(name, p, 16, &retval);
+    return retval;
+  }
+
   void ffi_printOn()
   {
     ffi_cmix->printOn();
@@ -170,8 +194,7 @@ extern "C"
   
   float ffi_sr() 
   { 
-    return ffi_cmix->sr(); 
-  
+    return ffi_cmix->sr();   
   }
   
   int ffi_chans() 
