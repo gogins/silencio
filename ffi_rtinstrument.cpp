@@ -64,6 +64,7 @@ struct LuaInstrumentState
   int outputChannelCount;
   float *output;
   int branch;
+  int branchFrames;
   long currentFrame;
   bool initialized;
   // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
@@ -199,7 +200,7 @@ public:
 	state.inputChannelCount = inputChannels();
       }
     state.outputChannelCount = outputChannels();
-    state.output = new float[outputChannels()];
+    state.output = new float[outputChannels() * getSkip()];
     return nSamps();
   }
   virtual int configure()
@@ -286,18 +287,19 @@ public:
 	  {
 	    doupdate();
 	    state.branch = getSkip();
+	    state.branchFrames = state.branch;
+	    lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.run_key);
+	    lua_pushlightuserdata(L, &state);
+	    if (lua_pcall(L, 1, 1, 0) != 0)
+	      {
+		die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), luaInstrumentClass.run_key, state.frameI);
+		exit(-1);
+	      }
+	    int result = lua_tonumber(L, -1);
+	    lua_pop(L, 1);
+	    rtbaddout(state.output, state.branchFrames);
+	    increment(state.branchFrames);
 	  }
-	lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.run_key);
-	lua_pushlightuserdata(L, &state);
-	if (lua_pcall(L, 1, 1, 0) != 0)
-	  {
-	    die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), luaInstrumentClass.run_key, state.frameI);
-	    exit(-1);
-	  }
-	int result = lua_tonumber(L, -1);
-	lua_pop(L, 1);
-	rtaddout(state.output);
-	increment();
       }
     return framesToRun();
   }
