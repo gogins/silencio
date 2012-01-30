@@ -145,6 +145,7 @@ ffi.cdef[=[
     int outputChannelCount;
     float *output;
     int branch;
+    int branchFrames;
     long currentFrame;
     bool initialized;
     // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
@@ -283,7 +284,7 @@ function CHUA_init(state)
 	luastate.instanceState = ffi.C.calloc(1, ffi.sizeof(CHUA_ct))
 	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
     	chua.step_size = luastate.parameters[ 5]
-	cmix.advise("CHUA", "step_size: %f", chua.step_size)
+	print(string.format("step_size: %f", chua.step_size))
     	chua.L =     	 luastate.parameters[ 6]
 	print("L:         ", chua.L)
     	chua.R0 =  	 luastate.parameters[ 7]
@@ -304,8 +305,8 @@ function CHUA_init(state)
 	print("V2:        ", chua.V2)
     	chua.V1 =  	 luastate.parameters[15]
 	print("V1:        ", chua.V1)
-	chua.E = 1
-	cmix.advise("CHUA", "E:         %f", chua.E)
+	chua.E = 1.0
+	print(string.format("E:         %f", chua.E))
     	-- chua.M[1] = chua.V1 /  chua.E
     	-- chua.M[2] = chua.V2 /  chua.E
     	-- chua.M[3] = chua.I3 / (chua.E * chua.G)
@@ -325,7 +326,8 @@ end
 local outskip = 20.0
 local inskip = 0.0
 local dur = 20.0
-cmix.ffi_cmd_l_15("LUAINST", "CHUA", outskip,	inskip,	dur,	1500.00000000000000,	0.10000000000000,	-0.00707925000000,	0.00001647000000,	100.00000000000000,	1.00000000000000,	-0.99955324000000,	-1.00028375000000,	-0.00222159000000,	-2.36201596260071, 0.00308917625807, 3.87075614929199)
+cmix.ffi_cmd_l("LUAINST", "CHUA", 14, outskip,	inskip,	dur,	1500.00000000000000,	0.10000000000000,	-0.00707925000000,	0.00001647000000,	100.00000000000000,	1.00000000000000,	-0.99955324000000,	-1.00028375000000,	-0.00222159000000,	-2.36201596260071, 0.00308917625807) 
+--, 3.87075614929199)
 
 --[[
 
