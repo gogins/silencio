@@ -55,7 +55,7 @@ local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 -- Now we are ready to actually use RTcmix in the usual way.
 -- It seems to be necessary to pass the device selection to the creator.
 
-cmix.ffi_create(44100, 2, 4096, 'device=plughw', nil, nil)
+cmix.ffi_create(44100, 2, 4096, 'device=plughw:1', nil, nil)
 ffi.C.sleep(1)
 cmix.ffi_printOn()
 
@@ -134,28 +134,24 @@ ffi.cdef[=[
   void *calloc(size_t num, size_t size);	
   struct LuaInstrumentState
   {
-    char *name;
-    double *parameters;
-    int parameterCount;
-    int frameI;
-    int frameCount;
-    int inputChannelCount;
-    int inputSampleCount;
-    float *input;
-    int outputChannelCount;
-    float *output;
-    int branch;
-    int branchFrames;
-    long currentFrame;
-    bool initialized;
-    // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
-    // which contains state that specifically belongs to an instance of a Lua 
-    // instrument. If such state exists, the NAME_init function must declare 
-    // and define an instance of a C structure containing all elements of that 
-    // state, and set this pointer to the address of that structure. The memory
-    // for instanceState should be from the C allocator and should not be 
-    // garbage-collected.
-    void *instanceState;
+	char *name;
+	int parameterCount;
+	double *parameters;
+  	int inputChannelCount;
+  	int inputSampleCount;
+  	float *input;
+  	int outputChannelCount;
+  	float *output;
+  	int startFrame;
+  	int currentFrame;
+  	int endFrame;
+  	bool initialized;
+  	// This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
+  	// which contains state that specifically belongs to an instance of a Lua 
+  	// instrument. If such state exists, the NAME_init function must declare 
+  	// and define an instance of a C structure containing all elements of that 
+  	// state, and set this pointer to the address of that structure.
+  	void *instanceState;
   };
 ]=]
 
@@ -180,12 +176,18 @@ function LUA_OSC_run(state)
 	 -- Type casting the ctype for LuaInstrumentState enables us to 
 	 -- access members of that type as though they are Lua variables.
 	 local luastate = ffi.cast(LuaInstrumentState_ct, state)
-	 local t = luastate.currentFrame / cmix.ffi_sr()
-	 local w = 2.0 * math.pi * luastate.parameters[5]
-         local x = m.sin(w * t)
-	 local signal = x * luastate.parameters[4]
-	 luastate.output[0] = signal
-	 luastate.output[1] = signal
+	 local sampleI = 0
+	 for currentFrame = luastate.startFrame, luastate.endFrame - 1 do
+	     -- print(luastate.startFrame, currentFrame, luastate.endFrame)
+	     local t = currentFrame / cmix.ffi_sr()      
+	     local w = 2.0 * math.pi * luastate.parameters[5]
+             local x = m.sin(w * t)
+	     local signal = x * luastate.parameters[4]
+	     luastate.output[sampleI] = signal
+	     sampleI = sampleI + 1
+	     luastate.output[sampleI] = signal
+	     sampleI = sampleI + 1
+	 end
 	 return 0
 end
 
