@@ -54,18 +54,16 @@ extern "C"
 struct LuaInstrumentState
 {
   char *name;
-  double *parameters;
   int parameterCount;
-  int frameI;
-  int frameCount;
+  double *parameters;
   int inputChannelCount;
   int inputSampleCount;
   float *input;
   int outputChannelCount;
   float *output;
-  int branch;
-  int branchFrames;
-  long currentFrame;
+  int startFrame;
+  int currentFrame;
+  int endFrame;
   bool initialized;
   // This points to a C structure, declared as a LuaJIT FFI cdef in Lua code,
   // which contains state that specifically belongs to an instance of a Lua 
@@ -200,7 +198,7 @@ public:
 	state.inputChannelCount = inputChannels();
       }
     state.outputChannelCount = outputChannels();
-    state.output = new float[outputChannels() * getSkip()];
+    state.output = new float[outputChannels() * framesToRun()];
     return nSamps();
   }
   virtual int configure()
@@ -278,29 +276,21 @@ public:
 	lua_pop(L, 1);
 	state.initialized = true;
       }
-    state.frameCount = framesToRun();
-    // Currently, Lua code is called for every frame. 
-    // This loop should be changed to call Lua code in blocks for each branch or chunk.
-    for (state.frameI = 0; state.frameI < state.frameCount; ++state.frameI, ++state.currentFrame) 
+    state.startFrame = state.endFrame;
+    long frameCount = framesToRun();
+    state.endFrame = state.startFrame + frameCount;
+    doupdate();
+    lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.run_key);
+    lua_pushlightuserdata(L, &state);
+    if (lua_pcall(L, 1, 1, 0) != 0)
       {
-	if (--state.branch <= 0) 
-	  {
-	    doupdate();
-	    state.branch = getSkip();
-	    state.branchFrames = state.branch;
-	    lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.run_key);
-	    lua_pushlightuserdata(L, &state);
-	    if (lua_pcall(L, 1, 1, 0) != 0)
-	      {
-		die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), luaInstrumentClass.run_key, state.frameI);
-		exit(-1);
-	      }
-	    int result = lua_tonumber(L, -1);
-	    lua_pop(L, 1);
-	    rtbaddout(state.output, state.branchFrames);
-	    increment(state.branchFrames);
-	  }
+	die("LUAINST", "Lua error in \"%s_run\": %s with key %p frame %i.\n", state.name, lua_tostring(L, -1), luaInstrumentClass.run_key, state.currentFrame);
+	exit(-1);
       }
+    result = lua_tonumber(L, -1);
+    lua_pop(L, 1);
+    rtbaddout(state.output, frameCount);
+    increment(frameCount);
     return framesToRun();
   }
 private:
