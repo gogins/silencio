@@ -321,8 +321,8 @@ end
 function CHUA_run(state)
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
 	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
-    	-- Recompute Runge-Kutta stuff every buffer in case control variables
-    	-- have changed.
+    	-- Recompute Runge-Kutta stuff every buffer, 
+	-- in case control variables have changed.
     	chua.h = chua.step_size * chua.G / chua.C2
     	chua.h2 = chua.h / 2.0
     	chua.h6 = chua.h / 6.0
@@ -338,39 +338,43 @@ function CHUA_run(state)
     	chua.ch2 = chua.gammaloc * chua.h2
     	chua.omch2 = 1.0 - chua.ch2
      	-- Standard 4th-order Runge-Kutta integration.
-	local i = 0
+	local sampleI = 0
 	for currentFrame = luastate.startFrame, luastate.endFrame - 1 do
       	    -- Stage 1.
-      	    chua.k1[1] = chua.alpha * (chua.M[2] - chua.bnorplus1 * chua.M[1] - (.5) * (chua.anor - chua.bnor) * (m.abs(chua.M[1] + 1) - m.abs(chua.M[1] - 1)))
+      	    chua.k1[1] = chua.alpha * (chua.M[2] - chua.bnorplus1 * chua.M[1] - 0.5 * (chua.anor - chua.bnor) * (m.abs(chua.M[1] + 1) - m.abs(chua.M[1] - 1)))
       	    chua.k1[2] = chua.M[1] - chua.M[2] + chua.M[3]
       	    chua.k1[3] = -chua.beta * chua.M[2] - chua.gammaloc * chua.M[3]
       	    -- Stage 2.
       	    local temp = chua.M[1] + chua.h2 * chua.k1[1]
-
-      k2(1) = alpha*(M(2) + h2*k1(2) - bnorplus1*temp -
-                     (.5)*(anor - bnor)*(abs(temp + 1) - abs(temp - 1)));
-      k2(2) = k1(2) + h2*(k1(1) - k1(2) + k1(3));
-      k2(3) = omch2*k1(3) - bh2*k1(2);
-      // Stage 3.
-      temp = M(1) + h2*k2(1);
-      k3(1) = alpha*(M(2) + h2*k2(2) - bnorplus1*temp -
-                     (.5)*(anor - bnor)*(abs(temp + 1) - abs(temp - 1)));
-      k3(2) = k1(2) + h2*(k2(1) - k2(2) + k2(3));
-      k3(3) = k1(3) - bh2*k2(2) - ch2*k2(3);
-      // Stage 4.
-      temp = M(1) + h*k3(1);
-      k4(1) = alpha*(M(2) + h*k3(2) - bnorplus1*temp -
-                     (.5)*(anor - bnor)*(abs(temp + 1) - abs(temp - 1)));
-      k4(2) = k1(2) + h*(k3(1) - k3(2) + k3(3));
-      k4(3) = k1(3) - bh*k3(2) - ch*k3(3);
-      M = M + (k1 + 2*k2 + 2*k3 + k4)*(h6);
-      // TimeSeries(3,i+1) = E*M(1);
-      V1[i] = E * M(1);
-      // TimeSeries(2,i+1) = E*M(2);
-      V2[i] = E * M(2);
-      // TimeSeries(1,i+1) = (E*G)*M(3);
-      I3[i] = (E * G) * M(3);
-      // warn(csound, "%4d  V1: %f  V2: %f  I3: %f\n", i, V1[i], V2[i], I3[i]);
+      	    chua.k2[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k1[2] - chua.bnorplus1 * temp - 0.5 * (chua.anor - chua.bnor) * (m.abs(temp + 1) - m.abs(temp - 1)))
+            chua.k2[2] = chua.k1[2] + chua.h2 * (chua.k1[1] - chua.k1[2] + chua.k1[3])
+      	    chua.k2[3] = chua.omch2 * chua.k1[3] - chua.bh2 * chua.k1[2]
+      	    -- Stage 3.
+      	    temp = chua.M[1] + chua.h2 * chua.k2[1]
+      	    chua.k3[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k2[2] - chua.bnorplus1 * temp - 0.5 * (chua.anor - chua.bnor) * (m.abs(temp + 1) - m.abs(temp - 1)))
+            chua.chua.k3[2] = chua.k1[2] + chua.h2 * (chua.k2[1] - chua.k2[2] + chua.k2[3])
+      	    chua.k3[3] = chua.k1[3] - chua.bh2 * chua.k2[2] - chua.ch2 * chua.k2[3]
+      	    -- Stage 4.
+      	    temp = chua.M[1] + chua.h * chua.k3[1]
+      	    chua.k4[1] = chua.alpha * (chua.M[2] + chua.h * chua.k3[2] - chua.bnorplus1 * temp - 0.5 * (chua.anor - chua.bnor) * (m.abs(temp + 1) - m.abs(temp - 1)))
+      	    chua.k4[2] = chua.k1[2] + chua.h * (chua.k3[1] - chua.k3[2] + chua.k3[3])
+      	    chua.k4[3] = chua.k1[3] - chua.bh * chua.k3[2] - chua.ch * chua.k3[3]
+      	    -- TODO Unroll: M = M + (k1 + 2*k2 + 2*k3 + k4)*(h6)
+	    for j = 0, 3 do
+	    	chua.M[j] = chua.M[j] + (chua.k1[j] + 2 * chua.k2[j] + 2 * chua.k3[j] + chua.k4[j]) * (chua.h6)
+	    end
+	    -- Pick one of the following time series as the output signal:
+      	    -- TimeSeries(3,i+1) = E*M(1)
+	    local signal = chua.E * chua.M[1]
+	    -- V1[i] = E * M(1)
+      	    -- TimeSeries(2,i+1) = E*M(2)
+      	    -- V2[i] = E * M(2)
+      	    -- TimeSeries(1,i+1) = (E*G)*M(3)
+      	    -- I3[i] = (E * G) * M(3)
+	    luastate.output[sampleI] = signal
+	    sampleI = sampleI + 1
+	    luastate.output[sampleI] = signal
+	    sampleI = sampleI + 1
         end
 	return 0
 end
