@@ -60,6 +60,7 @@ struct LuaInstrumentState
   int inputSampleCount;
   float *input;
   int outputChannelCount;
+  int outputSampleCount;
   float *output;
   int startFrame;
   int currentFrame;
@@ -69,7 +70,9 @@ struct LuaInstrumentState
   // which contains state that specifically belongs to an instance of a Lua 
   // instrument. If such state exists, the NAME_init function must declare 
   // and define an instance of a C structure containing all elements of that 
-  // state, and set this pointer to the address of that structure.
+  // state, and set this pointer to the address of that structure. And, 
+  // the C allocator must be used to allocate this structure so that it will
+  // not be garbage-collected by the Lua runtime.
   void *instanceState;
 };
 
@@ -198,13 +201,27 @@ public:
 	state.inputChannelCount = inputChannels();
       }
     state.outputChannelCount = outputChannels();
-    state.output = new float[outputChannels() * framesToRun()];
     return nSamps();
   }
+  /**
+   * Allocates input and output buffers just before run() is called.
+   */
   virtual int configure()
   {
+    if (state.input) 
+      {
+	delete [] state.input;
+	state.input = 0;
+      }
     state.inputSampleCount = RTBUFSAMPS * inputChannels();
     state.input = new float[state.inputSampleCount];
+    if (state.output) 
+      {
+	delete [] state.output;
+	state.output = 0;
+      }
+    state.outputSampleCount = RTBUFSAMPS * outputChannels();
+    state.output = new float[state.outputSampleCount];
     return 0;
   }
   /**
@@ -278,7 +295,7 @@ public:
       }
     state.startFrame = state.endFrame;
     long frameCount = framesToRun();
-    state.endFrame = state.startFrame + frameCount;
+    state.endFrame += frameCount;
     doupdate();
     lua_rawgeti(L, LUA_REGISTRYINDEX, luaInstrumentClass.run_key);
     lua_pushlightuserdata(L, &state);

@@ -55,7 +55,7 @@ local cmix = ffi.load('/home/mkg/RTcmix/lib/librtcmix.so', true)
 -- Now we are ready to actually use RTcmix in the usual way.
 -- It seems to be necessary to pass the device selection to the creator.
 
-cmix.ffi_create(44100, 2, 4096, 'device=plughw:1', nil, nil)
+cmix.ffi_create(44100, 2, 4096, 'device=plughw', nil, nil)
 ffi.C.sleep(1)
 cmix.ffi_printOn()
 
@@ -141,6 +141,7 @@ ffi.cdef[=[
   	int inputSampleCount;
   	float *input;
   	int outputChannelCount;
+	int outputSampleCount;
   	float *output;
   	int startFrame;
   	int currentFrame;
@@ -150,7 +151,9 @@ ffi.cdef[=[
   	// which contains state that specifically belongs to an instance of a Lua 
   	// instrument. If such state exists, the NAME_init function must declare 
   	// and define an instance of a C structure containing all elements of that 
-  	// state, and set this pointer to the address of that structure.
+  	// state, and set this pointer to the address of that structure. And,
+	// the C allocator must be used to allocate this structure so that it will 
+	// not be garbage-collected by the Lua runtime.
   	void *instanceState;
   };
 ]=]
@@ -309,15 +312,66 @@ function CHUA_init(state)
 	print("V1:        ", chua.V1)
 	chua.E = 1.0
 	print(string.format("E:         %f", chua.E))
-    	-- chua.M[1] = chua.V1 /  chua.E
-    	-- chua.M[2] = chua.V2 /  chua.E
-    	-- chua.M[3] = chua.I3 / (chua.E * chua.G)
+    	chua.M[1] = chua.V1 /  chua.E
+    	chua.M[2] = chua.V2 /  chua.E
+    	chua.M[3] = chua.I3 / (chua.E * chua.G)
 	return 0
 end
 
 function CHUA_run(state)
 	local luastate = ffi.cast(LuaInstrumentState_ct, state)
 	local chua = ffi.cast(CHUAp_ct, luastate.instanceState)
+    	-- Recompute Runge-Kutta stuff every buffer in case control variables
+    	-- have changed.
+    	chua.h = chua.step_size * chua.G / chua.C2
+    	chua.h2 = chua.h / 2.0
+    	chua.h6 = chua.h / 6.0
+    	chua.anor = chua.Ga / chua.G
+    	chua.bnor = chua.Gb / chua.G
+    	chua.bnorplus1 = chua.bnor + 1.0
+    	chua.alpha = chua.C2 / chua.C1
+    	chua.beta = chua.C2 / (chua.L * chua.G * chua.G)
+    	chua.gammaloc = (chua.R0 * chua.C2) / (chua.L * chua.G)
+    	chua.bh = chua.beta * chua.h
+    	chua.bh2 = chua.beta * chua.h2
+    	chua.ch = chua.gammaloc * chua.h
+    	chua.ch2 = chua.gammaloc * chua.h2
+    	chua.omch2 = 1.0 - chua.ch2
+     	-- Standard 4th-order Runge-Kutta integration.
+	local i = 0
+	for currentFrame = luastate.startFrame, luastate.endFrame - 1 do
+      	    -- Stage 1.
+      	    chua.k1[1] = chua.alpha * (chua.M[2] - chua.bnorplus1 * chua.M[1] - (.5) * (chua.anor - chua.bnor) * (m.abs(chua.M[1] + 1) - m.abs(chua.M[1] - 1)))
+      	    chua.k1[2] = chua.M[1] - chua.M[2] + chua.M[3]
+      	    chua.k1[3] = -chua.beta * chua.M[2] - chua.gammaloc * chua.M[3]
+      	    -- Stage 2.
+      	    local temp = chua.M[1] + chua.h2 * chua.k1[1]
+
+      k2(1) = alpha*(M(2) + h2*k1(2) - bnorplus1*temp -
+                     (.5)*(anor - bnor)*(abs(temp + 1) - abs(temp - 1)));
+      k2(2) = k1(2) + h2*(k1(1) - k1(2) + k1(3));
+      k2(3) = omch2*k1(3) - bh2*k1(2);
+      // Stage 3.
+      temp = M(1) + h2*k2(1);
+      k3(1) = alpha*(M(2) + h2*k2(2) - bnorplus1*temp -
+                     (.5)*(anor - bnor)*(abs(temp + 1) - abs(temp - 1)));
+      k3(2) = k1(2) + h2*(k2(1) - k2(2) + k2(3));
+      k3(3) = k1(3) - bh2*k2(2) - ch2*k2(3);
+      // Stage 4.
+      temp = M(1) + h*k3(1);
+      k4(1) = alpha*(M(2) + h*k3(2) - bnorplus1*temp -
+                     (.5)*(anor - bnor)*(abs(temp + 1) - abs(temp - 1)));
+      k4(2) = k1(2) + h*(k3(1) - k3(2) + k3(3));
+      k4(3) = k1(3) - bh*k3(2) - ch*k3(3);
+      M = M + (k1 + 2*k2 + 2*k3 + k4)*(h6);
+      // TimeSeries(3,i+1) = E*M(1);
+      V1[i] = E * M(1);
+      // TimeSeries(2,i+1) = E*M(2);
+      V2[i] = E * M(2);
+      // TimeSeries(1,i+1) = (E*G)*M(3);
+      I3[i] = (E * G) * M(3);
+      // warn(csound, "%4d  V1: %f  V2: %f  I3: %f\n", i, V1[i], V2[i], I3[i]);
+        end
 	return 0
 end
 
@@ -328,8 +382,7 @@ end
 local outskip = 20.0
 local inskip = 0.0
 local dur = 20.0
-cmix.ffi_cmd_l("LUAINST", "CHUA", 14, outskip,	inskip,	dur,	1500.00000000000000,	0.10000000000000,	-0.00707925000000,	0.00001647000000,	100.00000000000000,	1.00000000000000,	-0.99955324000000,	-1.00028375000000,	-0.00222159000000,	-2.36201596260071, 0.00308917625807) 
---, 3.87075614929199)
+cmix.ffi_cmd_l_15("LUAINST", "CHUA", outskip,	inskip,	dur,	1500.00000000000000,	0.10000000000000,	-0.00707925000000,	0.00001647000000,	100.00000000000000,	1.00000000000000,	-0.99955324000000,	-1.00028375000000,	-0.00222159000000,	-2.36201596260071, 0.00308917625807, 3.87075614929199)
 
 --[[
 
