@@ -132,6 +132,7 @@ ffi.cdef[=[
   double pchmidi(unsigned char midinote);
   double octmidi(unsigned char midinote);
   void *calloc(size_t num, size_t size);	
+  double fabs(double x);
   struct LuaInstrumentState
   {
 	char *name;
@@ -339,38 +340,45 @@ function CHUA_run(state)
     	chua.omch2 = 1.0 - chua.ch2
      	-- Standard 4th-order Runge-Kutta integration.
 	local sampleI = 0
+	local signal = 0
 	for currentFrame = luastate.startFrame, luastate.endFrame - 1 do
       	    -- Stage 1.
-      	    chua.k1[1] = chua.alpha * (chua.M[2] - chua.bnorplus1 * chua.M[1] - 0.5 * (chua.anor - chua.bnor) * (m.abs(chua.M[1] + 1) - m.abs(chua.M[1] - 1)))
-      	    chua.k1[2] = chua.M[1] - chua.M[2] + chua.M[3]
+      	    -- chua.k1[1] = chua.alpha * (chua.M[2] - chua.bnorplus1 * chua.M[1] - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.M[1] + 1.0) - m.fabs(chua.M[1] - 1.0))) 
+	    local x1 = m.fabs(chua.M[1] + 1.0) - m.fabs(chua.M[1] - 1.0)
+      	    chua.k1[1] = chua.alpha * (chua.M[2] - chua.bnorplus1 * chua.M[1] - 0.5 * (chua.anor - chua.bnor) * x1)
       	    chua.k1[3] = -chua.beta * chua.M[2] - chua.gammaloc * chua.M[3]
       	    -- Stage 2.
-      	    local temp = chua.M[1] + chua.h2 * chua.k1[1]
-      	    chua.k2[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k1[2] - chua.bnorplus1 * temp - 0.5 * (chua.anor - chua.bnor) * (m.abs(temp + 1) - m.abs(temp - 1)))
+      	    chua.temp = chua.M[1] + chua.h2 * chua.k1[1]
+      	    -- chua.k2[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k1[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1)))
+	    local x2 = (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1))
+	    local x3 = (chua.bnorplus1 * chua.temp) - (0.5 * x2)
+      	    chua.k2[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k1[2] - x3)
+	    --[==[
             chua.k2[2] = chua.k1[2] + chua.h2 * (chua.k1[1] - chua.k1[2] + chua.k1[3])
       	    chua.k2[3] = chua.omch2 * chua.k1[3] - chua.bh2 * chua.k1[2]
       	    -- Stage 3.
-      	    temp = chua.M[1] + chua.h2 * chua.k2[1]
-      	    chua.k3[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k2[2] - chua.bnorplus1 * temp - 0.5 * (chua.anor - chua.bnor) * (m.abs(temp + 1) - m.abs(temp - 1)))
+      	    chua.temp = chua.M[1] + chua.h2 * chua.k2[1]
+      	    -- chua.k3[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k2[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1)))
             chua.chua.k3[2] = chua.k1[2] + chua.h2 * (chua.k2[1] - chua.k2[2] + chua.k2[3])
       	    chua.k3[3] = chua.k1[3] - chua.bh2 * chua.k2[2] - chua.ch2 * chua.k2[3]
       	    -- Stage 4.
-      	    temp = chua.M[1] + chua.h * chua.k3[1]
-      	    chua.k4[1] = chua.alpha * (chua.M[2] + chua.h * chua.k3[2] - chua.bnorplus1 * temp - 0.5 * (chua.anor - chua.bnor) * (m.abs(temp + 1) - m.abs(temp - 1)))
+      	    chua.temp = chua.M[1] + chua.h * chua.k3[1]
+      	    -- chua.k4[1] = chua.alpha * (chua.M[2] + chua.h * chua.k3[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1)))
       	    chua.k4[2] = chua.k1[2] + chua.h * (chua.k3[1] - chua.k3[2] + chua.k3[3])
       	    chua.k4[3] = chua.k1[3] - chua.bh * chua.k3[2] - chua.ch * chua.k3[3]
       	    -- TODO Unroll: M = M + (k1 + 2*k2 + 2*k3 + k4)*(h6)
-	    for j = 0, 3 do
-	    	chua.M[j] = chua.M[j] + (chua.k1[j] + 2 * chua.k2[j] + 2 * chua.k3[j] + chua.k4[j]) * (chua.h6)
+	    for j = 1, 3 do
+	    	chua.M[j] = chua.M[j] + (chua.k1[j] + 2 * chua.k2[j] + 2 * chua.k3[j] + chua.k4[j]) * chua.h6
 	    end
 	    -- Pick one of the following time series as the output signal:
       	    -- TimeSeries(3,i+1) = E*M(1)
-	    local signal = chua.E * chua.M[1]
+	    signal = chua.E * chua.M[1]
 	    -- V1[i] = E * M(1)
       	    -- TimeSeries(2,i+1) = E*M(2)
       	    -- V2[i] = E * M(2)
       	    -- TimeSeries(1,i+1) = (E*G)*M(3)
       	    -- I3[i] = (E * G) * M(3)
+	    --]==]
 	    luastate.output[sampleI] = signal
 	    sampleI = sampleI + 1
 	    luastate.output[sampleI] = signal
@@ -383,7 +391,7 @@ end
 
 -- Torus attractor from the gallery of attractors.
 
-local outskip = 20.0
+local outskip = 18
 local inskip = 0.0
 local dur = 20.0
 cmix.ffi_cmd_l_15("LUAINST", "CHUA", outskip,	inskip,	dur,	1500.00000000000000,	0.10000000000000,	-0.00707925000000,	0.00001647000000,	100.00000000000000,	1.00000000000000,	-0.99955324000000,	-1.00028375000000,	-0.00222159000000,	-2.36201596260071, 0.00308917625807, 3.87075614929199)
