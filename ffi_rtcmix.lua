@@ -350,15 +350,18 @@ function CHUA_run(state)
       	    -- Stage 2.
       	    chua.temp = chua.M[1] + chua.h2 * chua.k1[1]
       	    -- chua.k2[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k1[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1)))
-	    local x2 = (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1))
-	    local x3 = (chua.bnorplus1 * chua.temp) - (0.5 * x2)
-      	    chua.k2[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k1[2] - x3)
-	    --[==[
-            chua.k2[2] = chua.k1[2] + chua.h2 * (chua.k1[1] - chua.k1[2] + chua.k1[3])
-      	    chua.k2[3] = chua.omch2 * chua.k1[3] - chua.bh2 * chua.k1[2]
+	    local x1 = chua.M[2] + chua.h2 * chua.k1[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1))	    
+	    chua.k2[1] = chua.alpha * x1	    
+	    local x2 = chua.k1[1] - chua.k1[2] + chua.k1[3]
+            chua.k2[2] = chua.k1[2] + chua.h2 * x2
+      	    local x3 = chua.k1[3] - chua.bh2 * chua.k1[2]
+      	    chua.k2[3] = chua.omch2 * x3
       	    -- Stage 3.
-      	    chua.temp = chua.M[1] + chua.h2 * chua.k2[1]
-      	    -- chua.k3[1] = chua.alpha * (chua.M[2] + chua.h2 * chua.k2[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1)))
+      	    local x4 = chua.h2 * chua.k2[1]
+      	    chua.temp = chua.M[1] + x4
+      	    local x5 = chua.M[2] + chua.h2 * chua.k2[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1))
+      	    chua.k3[1] = chua.alpha * x5
+	    --[==[
             chua.chua.k3[2] = chua.k1[2] + chua.h2 * (chua.k2[1] - chua.k2[2] + chua.k2[3])
       	    chua.k3[3] = chua.k1[3] - chua.bh2 * chua.k2[2] - chua.ch2 * chua.k2[3]
       	    -- Stage 4.
@@ -366,7 +369,6 @@ function CHUA_run(state)
       	    -- chua.k4[1] = chua.alpha * (chua.M[2] + chua.h * chua.k3[2] - chua.bnorplus1 * chua.temp - 0.5 * (chua.anor - chua.bnor) * (m.fabs(chua.temp + 1) - m.fabs(chua.temp - 1)))
       	    chua.k4[2] = chua.k1[2] + chua.h * (chua.k3[1] - chua.k3[2] + chua.k3[3])
       	    chua.k4[3] = chua.k1[3] - chua.bh * chua.k3[2] - chua.ch * chua.k3[3]
-      	    -- TODO Unroll: M = M + (k1 + 2*k2 + 2*k3 + k4)*(h6)
 	    for j = 1, 3 do
 	    	chua.M[j] = chua.M[j] + (chua.k1[j] + 2 * chua.k2[j] + 2 * chua.k3[j] + chua.k4[j]) * chua.h6
 	    end
