@@ -150,8 +150,12 @@ function LindenmayerPITV:target_v(target, operation, operand)
 end
 
 function LindenmayerPITV:target_P(target, operation, operand)
+    local chord_ = nil
     if type(operand) == 'string' then
-        local p, i, t, v = self.chordSpaceGroup.fromChord(operand)
+        print(operand)
+        chord_ = ChordSpace.chordsForNames[operand]
+        print(chord_, chord_:iseOP())
+        local p, i, t, v = self.chordSpaceGroup:fromChord(chord_)
         self.turtle.P = p
     else
         local function_ = self.operations[operation]
@@ -161,7 +165,8 @@ end
 
 function LindenmayerPITV:target_I(target, operation, operand)
     if type(operand) == 'string' then
-        local p, i, t, v = chordSpaceGroup.fromChord(operand)
+        local chord = ChordSpace.chordsForNames[operand]
+        local p, i, t, v = chordSpaceGroup.fromChord(chord)
         self.turtle.I = i
     else
         local function_ = self.operations[operation]
@@ -171,7 +176,8 @@ end
 
 function LindenmayerPITV:target_T(target, operation, operand)
     if type(operand) == 'string' then
-        local p, i, t, v = chordSpaceGroup.fromChord(operand)
+        local chord = ChordSpace.chordsForNames[operand]
+        local p, i, t, v = chordSpaceGroup.fromChord(chord)
         self.turtle.T = t
     else
         local function_ = self.operations[operation]
@@ -181,7 +187,8 @@ end
 
 function LindenmayerPITV:target_V(target, operation, operand)
     if type(operand) == 'string' then
-        local p, i, t, v = chordSpaceGroup.fromChord(operand)
+        local chord = ChordSpace.chordsForNames[operand]
+        local p, i, t, v = chordSpaceGroup.fromChord(chord)
         self.turtle.V = v
     else
         local function_ = self.operations[operation]

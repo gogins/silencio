@@ -2627,7 +2627,7 @@ end
 -- and voicing for a chord.
 
 function ChordSpaceGroup:fromChord(chord, printme)
-    printme = printme or false
+    printme = printme or true
     if printme then
         print('fromChord: chord:    ', chord, chord:iseOP())
     end
