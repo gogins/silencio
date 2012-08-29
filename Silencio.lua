@@ -249,10 +249,10 @@ function Event:toBuffer(buffer)
     buffer[ 2] = self[DURATION]
     buffer[ 3] = self[KEY]
     buffer[ 4] = self[VELOCITY]
-    buffer[ 5] = self[PAN]
-    buffer[ 6] = self[HEIGHT]
-    buffer[ 7] = self[DEPTH]
-    buffer[ 8] = self[PHASE]
+    buffer[ 5] = self[PHASE]
+    buffer[ 6] = self[PAN]
+    buffer[ 7] = self[HEIGHT]
+    buffer[ 8] = self[DEPTH]
     buffer[ 9] = self[STATUS]
     buffer[10] = self[HOMOGENEITY]
 end
@@ -270,7 +270,7 @@ function Event:setOffTime(offTime)
 end
 
 function Event:__tostring()
-    return string.format('t %9.3f d %9.3f s %6.2f c %7.3f k %7.3f v %7.3f x %7.3f y %7.3f z %7.3f p %7.3f h %7.2f', self[TIME], self[DURATION], self[STATUS], self[CHANNEL], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[HOMOGENEITY])
+    return string.format('t %9.3f d %9.3f s %6.2f c %7.3f k %7.3f v %7.3f x %7.3f y %7.3f z %7.3f p %7.3f h %7.2f', self[TIME], self[DURATION], self[STATUS], self[CHANNEL], self[KEY], self[VELOCITY], self[PHASE], self[PAN], self[DEPTH], self[HEIGHT], self[HOMOGENEITY])
 end
 
 Score = {}
