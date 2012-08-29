@@ -5,9 +5,9 @@ local matrix = require("matrix")
 
 local printPass = false
 local failExits = true
-local exitAfterFailureCount = 3
+local exitAfterFailureCount = 1
 local failureCount = 0
-local printOP = false
+local printOP = true
 local printChordSpaceGroup = true
 local voicesToTest = 6
 
@@ -21,8 +21,8 @@ O, P, T, I, OP, OPT, OPI, and OPTI with respect to their representative or
 "normal" fundamental domains.
 
 If the formulas for the fundamental domains identify or produce duplicates,
-then the duplicates must be removed or accounted for in the tests. This
-could happen e.g. if Chord:iseE() identifies more than one chord as the
+then the duplicates must be accounted for in the tests. This
+is necessary e.g. if Chord:iseE() identifies more than one chord as the
 equivalent, but Chord:eE() sends all equivalent chords to one element of that
 class.
 
@@ -125,105 +125,6 @@ function printEquivalences(equivalenceClass, voices)
     print('')
 end
 
-----[[
-
-for voices = 1, 3 do
-    printEquivalences('OP', voices)
-    printEquivalences('OPT', voices)
-    printEquivalences('OPTT', voices)
-    printEquivalences('OPI', voices)
-    printEquivalences('OPTI', voices)
-    printEquivalences('OPTTI', voices)
-end
-
---]]
-
-local chordSpaceGroup = ChordSpaceGroup:new()
-chordSpaceGroup:initialize(4, 36)
-if printChordSpaceGroup then
-    chordSpaceGroup:list()
-    print()
-end
-
-function testChordSpaceGroup(group, chordName)
-    print(string.format('BEGAN test ChordSpaceGroup for %s...', chordName))
-    local originalChord = ChordSpace.chordsForNames[chordName]
-    print(string.format('Original chord:\n%s', originalChord:information()))
-    local P, I, T, V = chordSpaceGroup:fromChord(originalChord)
-    local reconstitutedChord = chordSpaceGroup:toChord(P, I, T, V)
-    print(string.format('Reconstituted chord:\n%s', reconstitutedChord:information()))
-    result(originalChord == reconstitutedChord, 'Reconstituted chord must be the same as the original chord.')
-    local revoicedOriginalChord = originalChord:clone()
-    revoicedOriginalChord[1] = revoicedOriginalChord[1] + 12
-    revoicedOriginalChord[2] = revoicedOriginalChord[2] + 24
-    print(string.format('Revoiced original chord:\n%s', revoicedOriginalChord:information()))
-    local P, I, T, V = chordSpaceGroup:fromChord(revoicedOriginalChord)
-    local reconstitutedRevoicedChord = chordSpaceGroup:toChord(P, I, T, V)
-    print(string.format('Reconstituted revoiced chord:\n%s', reconstitutedRevoicedChord:information()))
-    result(revoicedOriginalChord == reconstitutedRevoicedChord, 'Reconstituted revoiced chord must be the same as the original revoiced chord.')
-    local invertedChord = originalChord:I():eOP()
-    print(string.format('Inverted original chord:\n%s', invertedChord:information()))
-    local P, I, T, V = chordSpaceGroup:fromChord(invertedChord)
-    local reconstitutedInvertedChord = chordSpaceGroup:toChord(P, I, T, V)
-    print(string.format('Reconstituted inverted chord:\n%s', reconstitutedInvertedChord:information()))
-    result(invertedChord == reconstitutedInvertedChord, 'Reconstituted inverted chord must be the same as the original inverted chord.')
-    print(string.format('ENDED test ChordSpaceGroup for %s.', chordName))
-    print()
-end
-
-testChordSpaceGroup(chordSpaceGroup, 'Gb7')
-
-G7 = ChordSpace.chordsForNames['G7']
-print(G7:information())
-P, I, T, V = chordSpaceGroup:fromChord(G7)
-for T = 0, 11 do
-    print(string.format('T:         %d', T))
-    chord = chordSpaceGroup:toChord(P, 0, T, V)
-    print(chord:information())
-    chord = chordSpaceGroup:toChord(P, 1, T, V)
-    print(chord:information())
-    print()
-end
-
-for voiceCount = 3, 4 do
-
-    if true then
-
-    passes = true
-    chordSpaceGroup = ChordSpaceGroup:new()
-    chordSpaceGroup:initialize(voiceCount, 48)
-    chordSpaceGroup:list()
-    for V = 0, chordSpaceGroup.countV - 1 do
-        for P = 0, chordSpaceGroup.countP - 1 do
-            for I = 0, 1 do
-                for T = 0, ChordSpace.OCTAVE - 1 do
-                    local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
-                    print("From: ", P, I, T, V)
-                    print("      ", tostring(fromPITV))
-                    local p, i, t, v = chordSpaceGroup:fromChord(fromPITV, true)
-                    print("To:   ", p, i, t, v)
-                    local frompitv = chordSpaceGroup:toChord(p, i, t, v)
-                    print("      ", tostring(frompitv))
-                    print('')
-                    if (fromPITV ~= frompitv) then -- But some multiply equivalent: or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
-                        passes = false
-                        local fromPITV = chordSpaceGroup:toChord(P, I, T, V, true)
-                        local p, i, t, v = chordSpaceGroup:fromChord(fromPITV, true)
-                        local frompitv = chordSpaceGroup:toChord(p, i, t, v, true)
-                        print(fromPITV:information())
-                        print(frompitv:information())
-                        result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
-                    end
-                    --]]
-                end
-            end
-        end
-    end
-    result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
-    end
-end
---]]
-
 local range = ChordSpace.OCTAVE + 1
 
 --[[
@@ -316,10 +217,110 @@ local function testEquivalences(voices)
     end
 end
 
-for voices = 5, voicesToTest do
+for voices = 3, 5 do
     print(string.format('\nTESTING CHORDS OF %2d VOICES...\n', voices))
     testEquivalences(voices)
 end
+os.exit()
+
+----[[
+
+for voices = 1, 3 do
+    printEquivalences('OP', voices)
+    printEquivalences('OPT', voices)
+    printEquivalences('OPTT', voices)
+    printEquivalences('OPI', voices)
+    printEquivalences('OPTI', voices)
+    printEquivalences('OPTTI', voices)
+end
+
+--]]
+
+--[[
+local chordSpaceGroup = ChordSpaceGroup:new()
+chordSpaceGroup:initialize(4, 36)
+if printChordSpaceGroup then
+    chordSpaceGroup:list()
+    print()
+end
+
+function testChordSpaceGroup(group, chordName)
+    print(string.format('BEGAN test ChordSpaceGroup for %s...', chordName))
+    local originalChord = ChordSpace.chordsForNames[chordName]
+    print(string.format('Original chord:\n%s', originalChord:information()))
+    local P, I, T, V = chordSpaceGroup:fromChord(originalChord)
+    local reconstitutedChord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('Reconstituted chord:\n%s', reconstitutedChord:information()))
+    result(originalChord == reconstitutedChord, 'Reconstituted chord must be the same as the original chord.')
+    local revoicedOriginalChord = originalChord:clone()
+    revoicedOriginalChord[1] = revoicedOriginalChord[1] + 12
+    revoicedOriginalChord[2] = revoicedOriginalChord[2] + 24
+    print(string.format('Revoiced original chord:\n%s', revoicedOriginalChord:information()))
+    local P, I, T, V = chordSpaceGroup:fromChord(revoicedOriginalChord)
+    local reconstitutedRevoicedChord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('Reconstituted revoiced chord:\n%s', reconstitutedRevoicedChord:information()))
+    result(revoicedOriginalChord == reconstitutedRevoicedChord, 'Reconstituted revoiced chord must be the same as the original revoiced chord.')
+    local invertedChord = originalChord:I():eOP()
+    print(string.format('Inverted original chord:\n%s', invertedChord:information()))
+    local P, I, T, V = chordSpaceGroup:fromChord(invertedChord)
+    local reconstitutedInvertedChord = chordSpaceGroup:toChord(P, I, T, V)
+    print(string.format('Reconstituted inverted chord:\n%s', reconstitutedInvertedChord:information()))
+    result(invertedChord == reconstitutedInvertedChord, 'Reconstituted inverted chord must be the same as the original inverted chord.')
+    print(string.format('ENDED test ChordSpaceGroup for %s.', chordName))
+    print()
+end
+
+testChordSpaceGroup(chordSpaceGroup, 'Gb7')
+
+G7 = ChordSpace.chordsForNames['G7']
+print(G7:information())
+P, I, T, V = chordSpaceGroup:fromChord(G7)
+for T = 0, 11 do
+    print(string.format('T:         %d', T))
+    chord = chordSpaceGroup:toChord(P, 0, T, V)
+    print(chord:information())
+    chord = chordSpaceGroup:toChord(P, 1, T, V)
+    print(chord:information())
+    print()
+end
+
+for voiceCount = 3, 4 do
+
+    if true then
+
+    passes = true
+    chordSpaceGroup = ChordSpaceGroup:new()
+    chordSpaceGroup:initialize(voiceCount, 48)
+    chordSpaceGroup:list()
+    for V = 0, chordSpaceGroup.countV - 1 do
+        for P = 0, chordSpaceGroup.countP - 1 do
+            for I = 0, 1 do
+                for T = 0, ChordSpace.OCTAVE - 1 do
+                    local fromPITV = chordSpaceGroup:toChord(P, I, T, V)
+                    print("From: ", P, I, T, V)
+                    print("      ", tostring(fromPITV))
+                    local p, i, t, v = chordSpaceGroup:fromChord(fromPITV, true)
+                    print("To:   ", p, i, t, v)
+                    local frompitv = chordSpaceGroup:toChord(p, i, t, v)
+                    print("      ", tostring(frompitv))
+                    print('')
+                    if (fromPITV ~= frompitv) then -- But some multiply equivalent: or (p ~= P) or (i ~= I) or (t ~= T) or (v ~= V) then
+                        passes = false
+                        local fromPITV = chordSpaceGroup:toChord(P, I, T, V, true)
+                        local p, i, t, v = chordSpaceGroup:fromChord(fromPITV, true)
+                        local frompitv = chordSpaceGroup:toChord(p, i, t, v, true)
+                        print(fromPITV:information())
+                        print(frompitv:information())
+                        result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+                    end
+                end
+            end
+        end
+    end
+    result(passes, string.format('All of P, I, T, V for %d voices must translate back and forth.', voiceCount))
+    end
+end
+--]]
 
 local a = Chord:new{3, 3, 6}
 local b = Chord:new{3, 3, 6}
