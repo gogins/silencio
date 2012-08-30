@@ -2349,6 +2349,27 @@ function Chord:toScore(score, time_, duration_, channel_, velocity_, pan_)
     return score
 end
 
+-- Move the pitch to the closest pitch-class of the chord.
+
+function conformToChord(pitch, chord)
+    local pitchClass = pitch % ChordSpace.OCTAVE
+    local octave = pitch - pitchClass
+    local chordPitchClass = chord[1] % ChordSpace.OCTAVE
+    local distance = math.abs(chordPitchClass - pitchClass)
+    local closestPitchClass = chordPitchClass
+    local minimumDistance = distance
+    for voice = 2, #chord do
+        chordPitchClass = chord[voice] % ChordSpace.OCTAVE
+        distance = math.abs(chordPitchClass - pitchClass)
+        if distance < minimumDistance then
+            minimumDistance = distance
+            closestPitchClass = chordPitchClass
+        end
+    end
+    pitch = octave + closestPitchClass
+    return pitch
+end
+
 -- If the event is a note, moves its pitch
 -- to the closest pitch of the chord.
 -- If octaveEquivalence is true (the default),
