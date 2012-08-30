@@ -2351,7 +2351,7 @@ end
 
 -- Move the pitch to the closest pitch-class of the chord.
 
-function conformToChord(pitch, chord)
+function conformPitchToChord(pitch, chord)
     local pitchClass = pitch % ChordSpace.OCTAVE
     local octave = pitch - pitchClass
     local chordPitchClass = chord[1] % ChordSpace.OCTAVE
