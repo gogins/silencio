@@ -8,6 +8,28 @@ local ChordSpace = {}
 function ChordSpace.help()
 print [[
 
+Correction project:
+
+(1) Diff with ChordSpace.hpp and ensure that the
+    algorithms are IDENTICAL TO ChordSpace.hpp.
+(2) Restore ChordSpaceView and if the math is not
+    correct, or is improved in any way, ensure that both
+    files are corrected and improved with IDENTICAL
+    algorithms.
+
+Method:
+
+(1) Run down ChordSpace.lua and check EACH function
+    against ChordSpace.hpp. Correct the Lua code
+    if necessary. When each function is correct,
+    mark it as literally "-- EQUIVALENT"
+(2) Diff the chord space group files as a final test.
+    With the possible exception of rounding errors,
+    the files should be IDENTICAL.
+    
+So far, I am assuming that operators are indeed calling 
+their metamethods. VERIFY THIS WITH PRINTING.
+
 C H O R D S P A C E
 
 Copyright 2010, 2011 by Michael Gogins.
@@ -508,6 +530,11 @@ stack traceback:
 
 Hashing will need clamping. That might need a global g.
 
+2013-Jun-22
+
+Conforming this code to ChordSpace.cpp from CsoundAC, which appears to pass
+more tests.
+
 TODO:
 
 --  Redo basic unit tests to ensure nothing has been broken.
@@ -536,7 +563,7 @@ TODO:
 ChordSpace.help()
 
 -- Returns n!
-
+-- EQUIVALENT
 function ChordSpace.factorial (n)
 	if n == 0 then
 		return 1
@@ -546,10 +573,11 @@ function ChordSpace.factorial (n)
 end
 
 -- For taking numerical errors into account.
-
+-- EQUIVALENT
 ChordSpace.EPSILON = 1
 local epsilonFactor = 1000
 
+-- EQUIVALENT
 while true do
     ChordSpace.EPSILON = ChordSpace.EPSILON / 2
     local nextEpsilon = ChordSpace.EPSILON / 2
@@ -559,7 +587,7 @@ while true do
         break
     end
 end
-
+-- EQUIVALENT
 function ChordSpace.eq_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     if (math.abs(a - b) < (ChordSpace.EPSILON * factor)) then
@@ -567,7 +595,7 @@ function ChordSpace.eq_epsilon(a, b, factor)
     end
     return false
 end
-
+-- EQUIVALENT
 function ChordSpace.gt_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
@@ -579,7 +607,7 @@ function ChordSpace.gt_epsilon(a, b, factor)
     end
     return false
 end
-
+-- EQUIVALENT
 function ChordSpace.lt_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
@@ -591,7 +619,7 @@ function ChordSpace.lt_epsilon(a, b, factor)
     end
     return false
 end
-
+-- EQUIVALENT
 function ChordSpace.ge_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
@@ -603,7 +631,7 @@ function ChordSpace.ge_epsilon(a, b, factor)
     end
     return false
 end
-
+-- EQUIVALENT
 function ChordSpace.le_epsilon(a, b, factor)
     factor = factor or epsilonFactor
     local eq = ChordSpace.eq_epsilon(a, b, factor)
@@ -618,24 +646,25 @@ end
 
 -- The size of the octave, defined to be consistent with
 -- 12 tone equal temperament and MIDI.
-
+-- EQUIVALENT
 ChordSpace.OCTAVE = 12
 
 -- Middle C.
-
+-- EQUIVALENT
 ChordSpace.MIDDLE_C = 60
+-- EQUIVALENT
 ChordSpace.C4 = ChordSpace.MIDDLE_C
 
 -- Returns the pitch transposed by semitones, which may be any scalar.
 -- NOTE: Does NOT return the result under any equivalence class.
-
+-- EQUIVALENT
 local function T(pitch, semitones)
     return pitch + semitones
 end
 
 -- Returns the pitch reflected in the center, which may be any pitch.
 -- NOTE: Does NOT return the result under any equivalence class.
-
+-- EQUIVALENT
 local function I(pitch, center)
     center = center or 0
     return center - pitch
@@ -643,7 +672,7 @@ end
 
 -- Returns the Euclidean distance between chords a and b,
 -- which must have the same number of voices.
-
+-- EQUIVALENT
 function ChordSpace.euclidean(a, b)
     local sumOfSquaredDifferences = 0
     for voice = 1, #a do
@@ -655,11 +684,11 @@ end
 -- Chords represent simultaneously sounding pitches.
 -- The pitches are represented as semitones with 0 at the origin
 -- and middle C as 60.
-
+-- EQUIVALENT
 Chord = {}
 
 -- Returns a new chord object with no voices.
-
+-- EQUIVALENT
 function Chord:new(o)
     o = o or {duration = {}, channel = {}, velocity = {}, pan = {}}
     if not o.duration then
@@ -681,7 +710,7 @@ end
 
 -- Returns a string representation of the chord.
 -- Quadratic complexity, but short enough not to matter.
-
+-- EQUIVALENT
 function Chord:__tostring()
     local buffer = '{'
     for voice = 1, #self do
@@ -694,7 +723,7 @@ end
 -- Resizes a chord to the specified number of voices.
 -- Existing voices are not changed. Extra voices are removed.
 -- New voices are initialized to 0.
-
+-- NONEQUIVALENT In Eigen, data are lost.
 function Chord:resize(voices)
     while #self < voices do
         table.insert(self, 0)
@@ -711,51 +740,51 @@ function Chord:resize(voices)
         table.remove(self.pan)
     end
 end
-
+-- EQUIVALENT
 function Chord:setDuration(value)
     for i = 1, #self do
         self.duration[i] = value
     end
 end
-
+-- EQUIVALENT
 function Chord:getDuration(voice)
     voice = voice or 1
     return self.duration[voice]
 end
-
+-- EQUIVALENT
 function Chord:setChannel(value)
     for i = 1, #self do
         self.channel[i] = value
     end
 end
-
+-- EQUIVALENT
 function Chord:getChannel(voice)
     voice = voice or 1
     return self.channel[voice]
 end
-
+-- EQUIVALENT
 function Chord:setVelocity(value)
     for i = 1, #self do
         self.velocity[i] = value
     end
 end
-
+-- EQUIVALENT
 function Chord:getVelocity(voice)
     voice = voice or 1
     return self.velocity[voice]
 end
-
+-- EQUIVALENT
 function Chord:setPan(value)
     for i = 1, #self do
         self.pan[i] = value
     end
 end
-
+-- EQUIVALENT
 function Chord:getPan(voice)
     voice = voice or 1
     return self.pan[voice]
 end
-
+-- EQUIVALENT
 function Chord:count(pitch)
     local n = 0
     for voice = 1, #self do
@@ -768,7 +797,7 @@ end
 
 -- Redefines the metamethod to implement value semantics
 -- for ==, for the pitches in this only.
-
+-- EQUIVALENT
 function Chord:__eq(other)
     if not (#self == #other) then
         return false
@@ -781,7 +810,7 @@ function Chord:__eq(other)
     end
     return true
 end
-
+-- NO EQUIVALENT
 function Chord:__eq_epsilon(other)
     if not (#self == #other) then
         return false
@@ -795,7 +824,7 @@ function Chord:__eq_epsilon(other)
 end
 
 -- This hash function is used to give chords value semantics for sets.
-
+-- NO EQUIVALENT Not needed in C++, which already has value semantics.
 function Chord:__hash()
     local buffer = ''
     local comma = ','
@@ -812,7 +841,7 @@ end
 
 -- Redefines the metamethod to implement value semantics
 -- for <, for the pitches in this only.
-
+-- EQUIVALENT
 function Chord:__lt(other)
     local voices = math.min(#self, #other)
     for voice = 1, voices do
@@ -828,7 +857,7 @@ function Chord:__lt(other)
     end
     return false
 end
-
+-- EQUIVALENT
 function Chord:__le(other)
     if self:__eq(other) then
         return true
@@ -837,7 +866,7 @@ function Chord:__le(other)
 end
 
 -- Returns whether or not the chord contains the pitch.
-
+-- EQUIVALENT
 function Chord:contains(pitch)
     for voice, pitch_ in ipairs(self) do
         if pitch_ == pitch then
@@ -849,7 +878,7 @@ end
 
 -- Returns the lowest pitch in the chord,
 -- and also its voice index.
-
+-- EQUIVALENT
 function Chord:min()
     local lowestVoice = 1
     local lowestPitch = self[lowestVoice]
@@ -863,25 +892,25 @@ function Chord:min()
 end
 
 -- Returns the minimum interval in the chord.
-
+-- EQUIVALENT
 function Chord:minimumInterval()
-    local minimumInterval = math.abs(self[1] - self[2])
+    local minimumInterval_ = math.abs(self[1] - self[2])
     for v1 = 1, #self do
         for v2 = 1, #self do
             if t (v1 == v2) then
                 local interval = math.abs(self[v1] - self[v2])
-                if interval < minimumInterval then
-                    minimumInterval = interval
+                if interval < minimumInterval_ then
+                    minimumInterval_ = interval
                 end
             end
         end
     end
-    return minimumInterval
+    return minimumInterval_
 end
 
 -- Returns the highest pitch in the chord,
 -- and also its voice index.
-
+-- EQUIVALENT
 function Chord:max()
     local highestVoice = 1
     local highestPitch = self[highestVoice]
@@ -895,13 +924,24 @@ function Chord:max()
 end
 
 -- Returns the maximum interval in the chord.
-
+-- EQUIVALENT
 function Chord:maximumInterval()
-    return self:max() - self:min()
+    local maximumInterval_ = math.abs(self[1] - self[2])
+    for v1 = 1, #self do
+        for v2 = 1, #self do
+            if not (v1 == v2) then
+                local interval = math.abs(self[v1] - self[v2])
+                if interval > maximumInterval_ then
+                    maximumInterval_ = interval
+                end
+            end
+        end
+    end
+    return maximumInterval_
 end
 
 -- Returns a new chord whose pitches are the floors of this chord's pitches.
-
+-- EQUIVALENT
 function Chord:floor()
     local chord = self:clone()
     for voice = 1, #self do
@@ -911,7 +951,7 @@ function Chord:floor()
 end
 
 -- Returns a new chord whose pitches are the ceilings of this chord's pitches.
-
+-- EQUIVALENT
 function Chord:ceil()
     local chord = self:clone()
     for voice = 1, #self do
@@ -921,7 +961,7 @@ function Chord:ceil()
 end
 
 -- Returns a value copy of the chord.
-
+-- NO EQUIVALENT C++ has a copy constructor for this.
 function Chord:clone()
     local clone_ = Chord:new()
     for voice, pitch in ipairs(self) do
@@ -943,7 +983,7 @@ function Chord:clone()
 end
 
 -- Returns the origin of the chord's space.
-
+-- EQUIVALENT
 function Chord:origin()
     local clone_ = self:clone()
     for voice = 1, #clone_ do
@@ -951,12 +991,15 @@ function Chord:origin()
     end
     return clone_
 end
-
+-- EQUIVALENT
 function Chord:distanceToOrigin()
     local origin = self:origin()
     return ChordSpace.euclidean(self, origin)
 end
 
+-- Returns the Euclidean distance from this chord 
+-- to the unison diagonal of its chord space.
+-- EQUIVALENT
 function Chord:distanceToUnisonDiagonal()
     local unison = self:origin()
     local pitch = self:layer() / #self
@@ -968,7 +1011,7 @@ end
 
 -- Returns the maximally even chord in the chord's space,
 -- e.g. the augmented triad for 3 dimensions.
-
+-- EQUIVALENT
 function Chord:maximallyEven()
     local clone_ = self:clone()
     local g = ChordSpace.OCTAVE / #clone_
@@ -979,7 +1022,7 @@ function Chord:maximallyEven()
 end
 
 -- Returns the sum of the pitches in the chord.
-
+-- EQUIVALENT
 function Chord:layer()
     local s = 0
     for voice, pitch in ipairs(self) do
@@ -990,7 +1033,7 @@ end
 
 -- Transposes the chord by the indicated interval (may be a fraction).
 -- NOTE: Does NOT return the result under any equivalence class.
-
+-- EQUIVALENT
 function Chord:T(interval)
     local clone_ = self:clone()
     for voice = 1, #clone_ do
@@ -1000,9 +1043,9 @@ function Chord:T(interval)
 end
 
 -- Inverts the chord by another chord that is on the unison diagonal, by
--- default the origin. NOTE: Does NOT return the result under any equivalence
--- class.
-
+-- default the origin. 
+-- NOTE: Does NOT return the result under any equivalence class.
+-- EQUIVALENT
 function Chord:I(center)
     center = center or 0
     local inverse = self:clone()
@@ -1012,10 +1055,26 @@ function Chord:I(center)
     return inverse
 end
 
+-- Returns the remainder of the dividend divided by the divisor,
+-- according to the Euclidean definition.
+-- EQUIVALENT
+function ChordSpace.modulo(dividend, divisor) 
+	local quotient = 0.0
+    if divisor < 0.0 then
+        quotient = math.ceil(dividend / divisor)
+    end
+    if divisor > 0.0 then
+        quotient = math.floor(dividend / divisor)
+    end
+	local remainder = dividend - (quotient * divisor)
+	return remainder
+end
+
 -- Returns the equivalent of the pitch under pitch-class equivalence, i.e.
 -- the pitch is in the interval [0, OCTAVE).
 
 function ChordSpace.epc(pitch)
+    --[[
     --while pitch < 0 do
     while ChordSpace.lt_epsilon(pitch, 0) do
         pitch = pitch + ChordSpace.OCTAVE
@@ -1025,11 +1084,14 @@ function ChordSpace.epc(pitch)
         pitch = pitch - ChordSpace.OCTAVE
     end
     return pitch
+    ]]
+    local pc = ChordSpace.modulo(pitch, ChordSpace.OCTAVE)
+    return pc
 end
 
 -- Returns whether the chord is within the fundamental domain of
 -- pitch-class equivalence, i.e. is a pitch-class set.
-
+-- EQUIVALENT
 function Chord:isepcs()
     for voice = 1, #chord do
         --if not (self[voice] == ChordSpace.epc(chord[voice])) then
@@ -1039,21 +1101,25 @@ function Chord:isepcs()
     end
     return true
 end
-
--- Returns the equivalent of the chord under pitch-class equivalence,
--- i.e. the pitch-class set of the chord.
-
-function Chord:epcs()
+-- EQUIVALENT to normalize<EQUIVALENCE_RELATION_r>
+function Chord:er(range)
     local chord = self:clone()
     for voice = 1, #chord do
-        chord[voice] = ChordSpace.epc(chord[voice])
+        chord[voice] = ChordSpace.modulo(chord[voice], range)
     end
     return chord
 end
 
+-- Returns the equivalent of the chord under pitch-class equivalence,
+-- i.e. the pitch-class set of the chord.
+-- EQUIVALENT to normalize<EQUIVALENCE_RELATION_r> for octave.
+function Chord:epcs()
+    return self:er(ChordSpace.OCTAVE)
+end
+
 -- Returns whether the chord is within the fundamental domain of
 -- transposition to 0.
-
+-- EQUIVALENT
 function Chord:iset()
     local et = self:et()
     if not (et == self) then
@@ -1064,7 +1130,7 @@ end
 
 -- Returns the equivalent of the chord within the fundamental domain of
 -- transposition to 0.
-
+-- EQUIVALENT
 function Chord:et()
     local min_ = self:min()
     return self:T(-min_)
@@ -1072,7 +1138,7 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of the indicated range equivalence.
-
+-- EQUIVALENT
 function Chord:iseR(range)
     --[[ GVLS:
     local max_ = self:max()
@@ -1105,7 +1171,10 @@ function Chord:iseR(range)
         return false
     end
     local layer_ = self:layer()
-    if not (ChordSpace.le_epsilon(0, layer_) and ChordSpace.le_epsilon(layer_, range)) then
+    if not ChordSpace.le_epsilon(0, layer_) then
+        return false
+    end
+    if not ChordSpace.le_epsilon(layer_, range) then
         return false
     end
     return true
@@ -1114,16 +1183,16 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave equivalence.
-
+-- EQUIVALENT
 function Chord:iseO()
     return self:iseR(ChordSpace.OCTAVE)
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of a range equivalence.
-
+-- EQUIVALENT
 function Chord:eR(range)
-    local chord = self:clone()
+    --local normal = self:clone()
     --if chord:iseR(range) then
     --    return chord
     --end
@@ -1131,30 +1200,32 @@ function Chord:eR(range)
     -- but no voice can be > range.
     -- First, move all pitches inside the interval [0, OCTAVE),
     -- which is not the same as the fundamental domain.
-    chord = self:epcs()
+    -- EQUIVALENT to normalize<EQUIVALENCE_RELATION_r> for the octave.
+    local normal = self:er(range)
     -- Then, reflect voices that are outside of the fundamental domain
     -- back into it, which will revoice the chord, i.e.
     -- the sum of pitches is in [0, OCTAVE].
     --while chord:layer() > range do
-    while ChordSpace.gt_epsilon(chord:layer(), range) do
-        local maximumPitch, maximumVoice = chord:max()
+    while not ChordSpace.lt_epsilon(normal:layer(), range) do
+        local maximumPitch, maximumVoice = normal:max()
         -- Because no voice is above the range,
         -- any voices that need to be revoiced will now be negative.
-        chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
+        -- chord[maximumVoice] = maximumPitch - ChordSpace.OCTAVE
+        normal[maximumVoice] = maximumPitch - range
     end
-    return chord
+    return normal
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave equivalence.
-
+-- EQUIVALENT
 function Chord:eO()
     return self:eR(ChordSpace.OCTAVE)
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of permutational equivalence.
-
+-- EQUIVALENT
 function Chord:iseP()
     for voice = 2, #self do
         --if not (self[voice - 1] <= self[voice]) then
@@ -1167,7 +1238,7 @@ end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of permutational equivalence.
-
+-- EQUIVALENT if < is le_epsilon.
 function Chord:eP()
     clone_ = self:clone()
     table.sort(clone_)
@@ -1176,7 +1247,7 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of transpositional equivalence.
-
+-- EQUIVALENT
 function Chord:iseT()
     ----[[ GVLS:
     local layer_ = self:layer()
@@ -1197,7 +1268,7 @@ end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of transpositonal equivalence.
-
+-- EQUIVALENT
 function Chord:eT()
     ----[[ GVLS:
     local layer_ = self:layer()
@@ -1224,18 +1295,25 @@ end
 -- by g. I.e., returns the chord transposed such that its layer is 0 or, under
 -- transposition, the positive layer closest to 0. NOTE: Does NOT return the
 -- result under any other equivalence class.
-
+-- EQUIVALENT
 function Chord:eTT(g)
     g = g or 1
+    --[[
     local et = self:eT()
     local transposition = math.ceil(et[1]) - et[1]
     local ett = et:T(transposition)
     return ett
+    ]]
+    local normal = self:eT()
+    local ng = math.ceil(normal[1] / g)
+    local transposition = (ng * g) - normal[1]
+    normal = normal:T(transposition)
+    return normal
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of translational equivalence and the equal temperament generated by g.
-
+-- EQUIVALENT
 function Chord:iseTT(g)
     g = g or 1
     local ep = self:eP()
@@ -1247,7 +1325,7 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of inversional equivalence.
-
+-- EQUIVALENT
 function Chord:iseI(inverse)
     --[[ GLVS:
     local chord = self:clone()
@@ -1267,26 +1345,41 @@ function Chord:iseI(inverse)
         upperVoice = upperVoice - 1
     end
     return true
-    --]]
-    ----[[ MKG:
+    ]]
+    --[[ MKG:
     inverse = inverse or self:I()
     if not self:__le(inverse) then
         return false
     end
     return true
-    --]]
+    ]]
     --[[ MKG:
     inverse = self:I()
     if not self:__le(inverse) then
         return false
     end
     return true
-    --]]
+    ]]
+    local lowerVoice = 2
+    local upperVoice = #self
+    while lowerVoice < upperVoice do
+        local lowerInterval = self[lowerVoice] - self[lowerVoice - 1]
+        local upperInterval = self[upperVoice] - self[upperVoice - 1]
+        if ChordSpace.lt_epsilon(lowerInterval, upperInterval) then
+            return true
+        end
+        if ChordSpace.gt_epsilon(lowerInterval, upperInterval) then
+            return false
+        end
+        lowerVoice = lowerVoice + 1
+        upperVoice = upperVoice - 1
+    end
+    return true
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of inversional equivalence.
-
+-- EQUIVALENT
 function Chord:eI()
     if self:iseI() then
         return self:clone()
@@ -1296,7 +1389,7 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of range and permutational equivalence.
-
+-- EQUIVALENT
 function Chord:iseRP(range)
     --[[ GVLS:
     for voice = 2, #self do
@@ -1314,33 +1407,32 @@ function Chord:iseRP(range)
     return true
     --]]
     ----[[ MKG:
-    if not self:iseR(range) then
+    if not self:iseP() then
         return false
     end
-    if not self:iseP() then
+    if not self:iseR(range) then
         return false
     end
     return true
     --]]
 end
-
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave and permutational equivalence.
-
+-- EQUIVALENT
 function Chord:iseOP()
     return self:iseRP(ChordSpace.OCTAVE)
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of range and permutational equivalence.
-
+-- EQUIVALENT
 function Chord:eRP(range)
     return self:eR(range):eP()
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave and permutational equivalence.
-
+-- EQUIVALENT
 function Chord:eOP()
     return self:eRP(ChordSpace.OCTAVE)
 end
@@ -1348,36 +1440,36 @@ end
 -- Returns a copy of the chord cyclically permuted by a stride, by default 1.
 -- The direction of rotation is the same as musicians' first inversion, second
 -- inversion, and so on.
-
+-- EQUIVALENT I THINK
 function Chord:cycle(stride)
     stride = stride or 1
-    local clone_ = self:clone()
+    local permuted = self:clone()
     if stride < 0 then
         for i = 1, stride do
-            local tail = table.remove(clone_)
-            table.insert(clone_, 1, tail)
+            local tail = table.remove(permuted)
+            table.insert(permuted, 1, tail)
         end
-        return chord
+        return permuted
     end
     if stride > 0 then
         for i = 1, math.abs(stride) do
-            local head = table.remove(clone_, 1)
-            table.insert(clone_, head)
+            local head = table.remove(permuted, 1)
+            table.insert(permuted, head)
         end
     end
-    return clone_
+    return permuted
 end
 
 -- Returns the permutations of the pitches in a chord. The permutations from
 -- each particular permutation are always returned in the same order.
-
+-- EQUIVALENT IF CYCLE IS
 function Chord:permutations()
-    local chord = self:clone()
+    local permutation = self:clone()
     local permutations_ = {}
-    permutations_[1] = chord
+    permutations_[1] = permutation
     for i = 2, #self do
-        chord = chord:cycle()
-        permutations_[i] = chord
+        permutation = permutation:cycle()
+        permutations_[i] = permutation
     end
     table.sort(permutations_)
     return permutations_
@@ -1385,21 +1477,41 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of voicing equivalence.
-
-function Chord:iseV()
+-- EQUIVALENT (REIMPLEMENTED TO MATCH)
+function Chord:iseV(range)
+    --[[
     local eV = self:eV()
     --print(string.format('chord: %s  eV: %s', tostring(self), tostring(eV)))
     if not (self == eV) then
         return false
     end
     return true
+    ]]
+    range = range or ChordSpace.OCTAVE
+    local outer = self[1] + range - self[#self] 
+    local isNormal = true
+    for voice = 1, #self - 1 do
+        local inner = self[voice + 1] - self[voice]
+        if not ChordSpace.ge_epsilon(outer, inner) then
+            isNormal = false
+        end
+    end
+    return isNormal
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of voicing equivalence.
-
-function Chord:eV()
-    ----[[
+-- EQUIVALENT (REIMPLENTED)
+function Chord:eV(range)
+    range = range or ChordSpace.OCTAVE
+    local permutations = self:permutations()
+    for i = 1, #permutations do
+        local permutation = permutations[i]
+        if permutation:iseV(range) then
+            return permutation
+        end
+    end
+    --[[
     for index, voicing in ipairs(self:permutations()) do
         local wraparound = voicing[1] + ChordSpace.OCTAVE - voicing[#voicing]
         local iseV_ = true
@@ -1437,7 +1549,7 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of range, permutational, and transpositional equivalence.
-
+-- EQUIVALENT
 function Chord:iseRPT(range)
     --[[ GVLS:
     -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
@@ -1477,12 +1589,12 @@ function Chord:iseRPT(range)
     return true
     --]]
 end
-
+-- EQUIVALENT
 function Chord:iseRPTT(range)
-    if not self:iseP() then
+    if not self:iseR(range) then
         return false
     end
-    if not self:iseR(range) then
+    if not self:iseP() then
         return false
     end
     if not self:iseTT() then
@@ -1496,11 +1608,11 @@ end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, and transpositional equivalence.
-
+-- EQUIVALENT
 function Chord:iseOPT()
     return self:iseRPT(ChordSpace.OCTAVE)
 end
-
+-- EQUIVALENT
 function Chord:iseOPTT()
     return self:iseRPTT(ChordSpace.OCTAVE)
 end
@@ -1511,7 +1623,7 @@ end
 -- The revoicing will move the chord up or down in pitch.
 -- A positive direction is the same as a musician's first inversion,
 -- second inversion, etc.
-
+-- EQUIVALENT
 function Chord:v(direction)
     direction = direction or 1
     local chord = self:clone()
@@ -1530,7 +1642,7 @@ end
 
 -- Returns all the 'inversions' (in the musician's sense)
 -- or octavewise revoicings of the chord.
-
+-- EQUIVALENT
 function Chord:voicings()
     local chord = self:clone()
     local voicings = {}
@@ -1545,7 +1657,7 @@ end
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, and transpositional equivalence; the same
 -- as set-class type, or chord type.
-
+-- EQUIVALENT I THINK (g?)
 function Chord:eRPT(range)
     --[[
     local erp = self:eRP(range)
@@ -1570,7 +1682,7 @@ function Chord:eRPT(range)
     print('ERROR: Chord:eRPT() should not come here: ' .. tostring(self))
     --]]
 end
-
+-- EQUIVALENT
 function Chord:eRPTT(range)
     local erp = self:eRP(range)
     local voicings_ = erp:voicings()
@@ -1585,19 +1697,20 @@ end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave, permutational, and transpositional equivalence.
-
+-- EQUIVALENT
 function Chord:eOPT()
     return self:eRPT(ChordSpace.OCTAVE)
 end
-
+-- EQUIVALENT
 function Chord:eOPTT()
     return self:eRPTT(ChordSpace.OCTAVE)
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of range, permutational, and inversional equivalence.
-
+-- EQUIVALENT (REIMPLEMENTED)
 function Chord:iseRPI(range)
+    --[[
     if not self:iseRP(range) then
         return false
     end
@@ -1607,36 +1720,60 @@ function Chord:iseRPI(range)
         return false
     end
     return true
+    ]]
+    if not self:iseRP(range) then
+        return false
+    end
+    local inverse = self:I()
+    local inverseRP = inverse:eRP(range)
+    assert(inverse, 'Inverse is nil.')
+    if self <= inverseRP then
+        return true
+    end
+    return false    
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, and inversional equivalence.
-
+-- EQUIVALENT
 function Chord:iseOPI()
     return self:iseRPI(ChordSpace.OCTAVE)
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, and inversional equivalence.
-
+-- EQUIVALENT (REIMPLEMENTED)
 function Chord:eRPI(range)
+    --[[
     local erp = self:eRP(range)
     if erp:iseRPI(range) then
         return erp
     end
     return erp:I():eRP(range)
+    ]]
+    if self:iseRPI(range) then
+        return self:clone()
+    end
+    local normalRP = self:eRP(range)
+    local normalRPInverse = normalRP:I()
+    local normalRPInverseRP = normalRPInverse:eRP(range)
+    if normalRP <= normalRPInverseRP then
+        return normalRP
+    else
+        return normalRPInverseRP
+    end
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of octave, permutational, and inversional equivalence.
-
+-- EQUIVALENT
 function Chord:eOPI()
     return self:eRPI(ChordSpace.OCTAVE)
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of range, permutational, transpositional, and inversional equivalence.
-
+-- EQUIVALENT (REIMPLEMENTED)
 function Chord:iseRPTI(range)
     --[[ GVLS:
     -- GVLS: if not (self[#self] <= self[1] + ChordSpace.OCTAVE) then
@@ -1663,7 +1800,7 @@ function Chord:iseRPTI(range)
     end
     return true
     --]]
-    ----[[ MKG:
+    --[[ MKG:
     if not self:iseRPT(range) then
         return false
     end
@@ -1672,9 +1809,23 @@ function Chord:iseRPTI(range)
     end
     return true
     --]]
+    if not self:iseP() then
+        return false
+    end
+    if not self:iseR(range) then
+        return false
+    end
+    if not self:iseT() then
+        return false
+    end
+    if not self:iseV(range) then
+        return false
+    end
+    return true
 end
-
+-- EQUIVALENT (REIMPLEMENTED)
 function Chord:iseRPTTI(range)
+    --[[
     if not self:iseRPTT(range) then
         return false
     end
@@ -1682,15 +1833,25 @@ function Chord:iseRPTTI(range)
         return false
     end
     return true
+    ]]
+    if not self:iseRPTT(range) then
+        return false
+    end
+    local inverse = self:I()
+    local normalRPTT = inverse:eRPTT(range)
+    if self <= normalRPTT then
+        return true
+    end
+    return false
 end
 
 -- Returns whether the chord is within the representative fundamental domain
 -- of octave, permutational, transpositional, and inversional equivalence.
-
+-- EQUIVALENT
 function Chord:iseOPTI()
     return self:iseRPTI(ChordSpace.OCTAVE)
 end
-
+-- EQUIVALENT
 function Chord:iseOPTTI()
     return self:iseRPTTI(ChordSpace.OCTAVE)
 end
@@ -1698,35 +1859,54 @@ end
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, transpositional, and inversional
 -- equivalence.
-
+-- EQUIVALENT (REIMPLEMENTED)
 function Chord:eRPTI(range)
+    --[[
     local rpt = self:eRPT(range)
     if rpt:iseI() then
         return rpt
     end
     return rpt:I():eRPT(range)
+    ]]
+    local normalRPT = self:eRPT(range)
+    if normalRPT:iseI() then
+        return normalRPT
+    else 
+        local normalI = normalRPT:eRPI(range)
+        local normalRPT_ = normalI:eRPT(range)
+        return normalRPT_
+    end
 end
-
+-- EQUIVALENT (REIMPLEMENTED)
 function Chord:eRPTTI(range)
+    --[[
     local rpt = self:eRPTT(range)
     if rpt:iseRPTTI(range) then
         return rpt
     end
     return rpt:I():eRPTT(range)
+    ]]
+    local normalRPTT = self:eRPTT(range)
+    local inverse = normalRPTT:I()
+    local inverseNormalRPTT = inverse:eRPTT(range)
+    if normalRPTT <= inverseNormalRPTT then
+        return normalRPTT
+    end
+    return inverseNormalRPTT        
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
 -- domain of range, permutational, transpositional, and inversional
 -- equivalence.
-
+-- EQUIVALENT
 function Chord:eOPTI()
     return self:eRPTI(ChordSpace.OCTAVE)
 end
-
+-- EQUIVALENT
 function Chord:eOPTTI()
     return self:eRPTTI(ChordSpace.OCTAVE)
 end
-
+-- EQUIVALENT
 function Chord:name()
     local chordName = ChordSpace.namesForChords[self:__hash()]
     if chordName == nil then
