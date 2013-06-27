@@ -1,5 +1,17 @@
 #summary Installing and Running Silencio
 
+=The New Way=
+
+On your Android device, install the Csound 6 app for Android from [http://sourceforge.net/projects/csound/files/csound6/].
+
+Mount your phone as a USB drive on your computer and copy the entire silencio directory onto your SD card so that you can run the scripts.
+
+You will have to require the Silencio files with complete paths in your Lua code. More to come about this...
+
+=The Old Way=
+
+This should still work.
+
 On your Android phone, install the Android Scripting Environment from http://code.google.com/p/android-scripting/ and also install Lua for Android.
 
 Check out the Silencio Subversion repository onto your PC, or just download the few files currently in the repository.
