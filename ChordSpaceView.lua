@@ -59,10 +59,19 @@ KEY BINDINGS
 ]]
 end
 
-local ffi =         require("ffi")
-local gl =          require("gl")
-local glu =         require("glu")
-local glfw =        require("glfw")
+local ffi  = require( "ffi" )
+local glfw = require( "ffi/glfw" )
+local gl   = require( "ffi/OpenGL" )
+local glu  = require( "ffi/glu" )
+local bit  = require( "bit" )
+
+--local ffi =         require("ffi")
+--local gl =          require("gl")
+print('gl:', gl)
+--local glu =         require("glu")
+print('glu:', glu)
+--local glfw =        require("glfw")
+print('glfw:', glfw)
 local Silencio =    require("Silencio")
 --local ChordSpace =  require("Chords")
 local ChordSpace =  require("ChordSpace")
@@ -203,7 +212,7 @@ function ChordView:draw(picking)
         self:drawChord(chord, name, picking)
     end
     if not picking then
-        glfw.glfwSwapBuffers()
+        glfw.glfwSwapBuffers(self.window)
     end
 end
 
@@ -322,6 +331,11 @@ function ChordView:resize(width, height)
         i = i + 1
     end
     self.gridZs[i] = self.endZ
+          glu.gluLookAt(
+	 0,  1, 0,   -- Eye-position
+	 0, 20, 0,   -- View-point
+	 0,  0, 1    -- Up Vector
+      )
 end
 
 function ChordView:drawChord(chord, name, picking)
@@ -332,9 +346,10 @@ function ChordView:drawChord(chord, name, picking)
     local alphafactor = 0.5
     gl.glPushMatrix()
     gl.glTranslatef(chord[1], chord[2], chord[3])
+    --print(chord[1], chord[2], chord[3])
     gl.glBegin(gl.GL_QUADS)
     local quadric = glu.gluNewQuadric()
-    glu.gluQuadricNormals(quadric, glu.GLU_SMOOTH)
+    glu.gluQuadricNormals(quadric, 100000) -- gl.GL_SMOOTH)
     local alpha = 1
     local radius = 0
     local red = 1
@@ -361,9 +376,9 @@ function ChordView:drawChord(chord, name, picking)
         blue = blue * alphafactor
     end
     end end end
-    --local saturation = 1.0
-    --local value = 1 - (0.375 * (chord:layer() / 12.0))
-    local value = 1
+    local saturation = 1.0
+    local value = 1 - (0.375 * (chord:layer() / 12.0))
+    --local value = 1
     red = red * value
     blue = blue * value
     green = green * value
@@ -563,12 +578,22 @@ function ChordView:processHits(hits)
 end
 
 function ChordView:display()
-    glfw.glfwInit()
-    local dP = 2
-    local window = glfw.glfwOpenWindow( 800, 600, glfw.GLFW_WINDOWED, "Chord Space", nil)
-    glfw.glfwEnable(window, glfw.GLFW_STICKY_KEYS)
-    glfw.glfwDisable(window, glfw.GLFW_AUTO_POLL_EVENTS)
+    local dP = 2.0
+    assert( glfw.glfwInit() )
+    --glfw.glfwWindowHint( glfw.GLFW_DEPTH_BITS, 8 );
+    local window = assert(
+      ffi.gc( glfw.glfwCreateWindow( 1024, 768, glfw.GLFW_WINDOWED, "Chord View", nil ),
+          glfw.glfwDestroyWindow))
+    glfw.glfwDefaultWindowHints()
+    glfw.glfwMakeContextCurrent(window)
     glfw.glfwSwapInterval(1)
+    self.window = window
+    glfw.glfwShowWindow(self.window)
+    print('window:', self.window)
+    
+
+    glfw.glfwSetInputMode(window, glfw.GLFW_STICKY_KEYS, gl.GL_TRUE)
+    glfw.glfwSetInputMode(window, glfw.GLFW_CURSOR_MODE, glfw.GLFW_CURSOR_NORMAL)
     local redbits = glfw.glfwGetWindowParam(window, glfw.GLFW_RED_BITS)
     local greenbits = glfw.glfwGetWindowParam(window, glfw.GLFW_GREEN_BITS)
     local bluebits = glfw.glfwGetWindowParam(window, glfw.GLFW_BLUE_BITS)
@@ -586,8 +611,8 @@ function ChordView:display()
     local color = color_t()
     glfw.glfwGetWindowSize(window, newwidth, newheight)
     glfw.glfwGetWindowSize(window, oldwidth, oldheight)
-    glfw.glfwGetMousePos(window, newmousex, newmousey)
-    glfw.glfwGetMousePos(window, oldmousex, oldmousey)
+    glfw.glfwGetCursorPos(window, newmousex, newmousey)
+    glfw.glfwGetCursorPos(window, oldmousex, oldmousey)
     self:resize(newwidth[0], newheight[0])
     self.pickbuffercount = 1000
     self.pickbuffer = ffi.new('int[?]', self.pickbuffercount)
@@ -606,7 +631,6 @@ function ChordView:display()
     self.drawInverse = false
     local index = 1
     while true do
-        glfw.glfwPollEvents()
         -- Check for resizing.
         oldwidth[0] = newwidth[0]
         oldheight[0] = newheight[0]
@@ -615,7 +639,8 @@ function ChordView:display()
             self:resize(newwidth[0], newheight[0])
         end
         -- Get key input...
-       if glfw.glfwGetKey(window, glfw.GLFW_KEY_ESCAPE) == glfw.GLFW_PRESS then
+        glfw.glfwPollEvents()
+        if glfw.glfwGetKey(window, glfw.GLFW_KEY_ESCAPE) == glfw.GLFW_PRESS then
             break
         end
         if glfw.glfwGetKey(window, glfw.GLFW_KEY_C) == glfw.GLFW_PRESS then
@@ -830,7 +855,7 @@ function ChordView:display()
         end
         oldmousex[0] = newmousex[0]
         oldmousey[0] = newmousey[0]
-        glfw.glfwGetMousePos(window, newmousex, newmousey)
+        glfw.glfwGetCursorPos(window, newmousex, newmousey)
         local button = glfw.glfwGetMouseButton(window, glfw.GLFW_MOUSE_BUTTON_LEFT)
         if button == glfw.GLFW_PRESS then
             self:startPicking(newmousex[0], newmousey[0])
