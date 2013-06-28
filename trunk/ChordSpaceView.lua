@@ -580,7 +580,6 @@ end
 function ChordView:display()
     local dP = 2.0
     assert( glfw.glfwInit() )
-    --glfw.glfwWindowHint( glfw.GLFW_DEPTH_BITS, 8 );
     local window = assert(
       ffi.gc( glfw.glfwCreateWindow( 1024, 768, glfw.GLFW_WINDOWED, "Chord View", nil ),
           glfw.glfwDestroyWindow))

@@ -16,10 +16,10 @@ What we want here is the following:
 end
 
 local ffi =         require("ffi")
-local gl =          require("gl")
-local glu =         require("glu")
-local glfw =        require("glfw")
-local Silencio =    require("Silencio")
+local gl   =        require("ffi/OpenGL" )
+local glu  =        require("ffi/glu")
+local glfw =        require("ffi/glfw")
+local bit  =        require("bit")
 
 tx = 0
 ty = 0
@@ -156,7 +156,7 @@ function ScoreViewer:draw(picking)
         self:drawNote(note)
     end
     if not picking then
-        glfw.glfwSwapBuffers()
+        glfw.glfwSwapBuffers(self.window)
     end
 end
 
@@ -325,11 +325,15 @@ function ScoreViewer:processHits(hits)
 end
 
 function ScoreViewer:display()
-    glfw.glfwInit()
-    local window = glfw.glfwOpenWindow( 800, 600, glfw.GLFW_WINDOWED, "Score View", nil)
-    glfw.glfwEnable(window, glfw.GLFW_STICKY_KEYS)
-    glfw.glfwDisable(window, glfw.GLFW_AUTO_POLL_EVENTS)
+    assert( glfw.glfwInit() )
+    local window = assert(
+      ffi.gc( glfw.glfwCreateWindow( 1024, 768, glfw.GLFW_WINDOWED, "Chord View", nil ),
+          glfw.glfwDestroyWindow))
+    glfw.glfwDefaultWindowHints()
+    glfw.glfwMakeContextCurrent(window)
     glfw.glfwSwapInterval(1)
+    self.window = window
+    glfw.glfwShowWindow(self.window)
     local redbits = glfw.glfwGetWindowParam(window, glfw.GLFW_RED_BITS)
     local greenbits = glfw.glfwGetWindowParam(window, glfw.GLFW_GREEN_BITS)
     local bluebits = glfw.glfwGetWindowParam(window, glfw.GLFW_BLUE_BITS)
@@ -347,8 +351,8 @@ function ScoreViewer:display()
     local color = color_t()
     glfw.glfwGetWindowSize(window, newwidth, newheight)
     glfw.glfwGetWindowSize(window, oldwidth, oldheight)
-    glfw.glfwGetMousePos(window, newmousex, newmousey)
-    glfw.glfwGetMousePos(window, oldmousex, oldmousey)
+    glfw.glfwGetCursorPos(window, newmousex, newmousey)
+    glfw.glfwGetCursorPos(window, oldmousex, oldmousey)
     self:resize(newwidth[0], newheight[0])
     self.pickbuffercount = 1000
     self.pickbuffer = ffi.new('int[?]', self.pickbuffercount)
@@ -430,7 +434,7 @@ function ScoreViewer:display()
         end
         oldmousex[0] = newmousex[0]
         oldmousey[0] = newmousey[0]
-        glfw.glfwGetMousePos(window, newmousex, newmousey)
+        glfw.glfwGetCursorPos(window, newmousex, newmousey)
         local button = glfw.glfwGetMouseButton(window, glfw.GLFW_MOUSE_BUTTON_LEFT)
         if button == glfw.GLFW_PRESS then
             self:startPicking(newmousex[0], newmousey[0])
