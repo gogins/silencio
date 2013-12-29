@@ -203,7 +203,7 @@ TICKS_PER_BEAT = 96
 Event = {}
 
 function Event:new(o)
-    o = o or {0,0,144,0,0,0,0,0,0,0,1}
+    o = o or {0,0,144,0,0,0,0,0,0,0,1,data={}}
     setmetatable(o, self)
     self.__index = self
     return o
@@ -648,7 +648,9 @@ function Score:setScale(dimension, minimum, range)
     end
     for i, event in ipairs(self) do
         event[dimension] = event[dimension] - currentMinimum
-        event[dimension] = event[dimension] * range / currentRange
+        if range ~= nil then
+            event[dimension] = event[dimension] * range / currentRange
+        end
         event[dimension] = event[dimension] + minimum
     end
 end
@@ -859,7 +861,7 @@ function Score:tieOverlaps(tieExact)
                     else
                         later = (earlierEvent:getOffTime() > laterEvent[TIME])
                     end
-                    if earlierEvent[STATUS] == 144 and earlierEvent[CHANNEL] == laterEvent[CHANNEL]
+                    if earlierEvent[STATUS] == 144 and math.floor(earlierEvent[CHANNEL]) == math.floor(laterEvent[CHANNEL])
                         and math.floor(earlierEvent[KEY ] + 0.5) == math.floor(laterEvent[KEY] + 0.5)
                         and later then
                         earlierEvent:setOffTime(laterEvent:getOffTime())
@@ -895,12 +897,18 @@ end
 -- other Lua opcode, in Csound, to render a score
 -- that has been generated as part of a Csound performance.
 
-function Score:sendToCsound()
+function Score:sendToCsound(finish)
+    finish = finish or false
     self:sort()
     local buffer = ffi.new('double[11]')
     for index, event in ipairs(self) do
         event:toBuffer(buffer)
         self.csoundApi.csoundScoreEvent(self.csound, 105, buffer, 11)
+    end
+    if finish == true then
+        local endEvent = ffi.new('double[2]')
+        endEvent[0] = 5
+        csoundApi.csoundScoreEvent(csound, 145, endEvent, 2)
     end
 end
 

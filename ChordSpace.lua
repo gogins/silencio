@@ -26,8 +26,8 @@ Method:
 (2) Diff the chord space group files as a final test.
     With the possible exception of rounding errors,
     the files should be IDENTICAL.
-    
-So far, I am assuming that operators are indeed calling 
+
+So far, I am assuming that operators are indeed calling
 their metamethods. VERIFY THIS WITH PRINTING.
 
 C H O R D S P A C E
@@ -997,7 +997,7 @@ function Chord:distanceToOrigin()
     return ChordSpace.euclidean(self, origin)
 end
 
--- Returns the Euclidean distance from this chord 
+-- Returns the Euclidean distance from this chord
 -- to the unison diagonal of its chord space.
 -- EQUIVALENT
 function Chord:distanceToUnisonDiagonal()
@@ -1043,7 +1043,7 @@ function Chord:T(interval)
 end
 
 -- Inverts the chord by another chord that is on the unison diagonal, by
--- default the origin. 
+-- default the origin.
 -- NOTE: Does NOT return the result under any equivalence class.
 -- EQUIVALENT
 function Chord:I(center)
@@ -1058,7 +1058,7 @@ end
 -- Returns the remainder of the dividend divided by the divisor,
 -- according to the Euclidean definition.
 -- EQUIVALENT
-function ChordSpace.modulo(dividend, divisor) 
+function ChordSpace.modulo(dividend, divisor)
 	local quotient = 0.0
     if divisor < 0.0 then
         quotient = math.ceil(dividend / divisor)
@@ -1488,7 +1488,7 @@ function Chord:iseV(range)
     return true
     ]]
     range = range or ChordSpace.OCTAVE
-    local outer = self[1] + range - self[#self] 
+    local outer = self[1] + range - self[#self]
     local isNormal = true
     for voice = 1, #self - 1 do
         local inner = self[voice + 1] - self[voice]
@@ -1730,7 +1730,7 @@ function Chord:iseRPI(range)
     if self <= inverseRP then
         return true
     end
-    return false    
+    return false
 end
 
 -- Returns whether the chord is within the representative fundamental domain
@@ -1871,7 +1871,7 @@ function Chord:eRPTI(range)
     local normalRPT = self:eRPT(range)
     if normalRPT:iseI() then
         return normalRPT
-    else 
+    else
         local normalI = normalRPT:eRPI(range)
         local normalRPT_ = normalI:eRPT(range)
         return normalRPT_
@@ -1892,7 +1892,7 @@ function Chord:eRPTTI(range)
     if normalRPTT <= inverseNormalRPTT then
         return normalRPTT
     end
-    return inverseNormalRPTT        
+    return inverseNormalRPTT
 end
 
 -- Returns the equivalent of the chord within the representative fundamental
@@ -2531,7 +2531,7 @@ end
 
 -- Move the pitch to the closest pitch-class of the chord.
 
-function conformPitchToChord(pitch, chord)
+function ChordSpace.conformPitchToChord(pitch, chord)
     local pitchClass = pitch % ChordSpace.OCTAVE
     local octave = pitch - pitchClass
     local chordPitchClass = chord[1] % ChordSpace.OCTAVE
@@ -2557,7 +2557,7 @@ end
 -- of the chord; otherwise, the pitch of the note is moved to the closest
 -- absolute pitch of the chord.
 
-function conformToChord(event, chord, octaveEquivalence)
+function ChordSpace.conformToChord(event, chord, octaveEquivalence)
     octaveEquivalence = octaveEquivalence or true
     if event[STATUS] ~= 144 then
         return

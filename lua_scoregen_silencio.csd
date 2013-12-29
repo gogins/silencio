@@ -15,7 +15,7 @@ local ffi = require("ffi")
 local math = require("math")
 local string = require("string")
 local silencio = require("silencio")
-local csoundApi = ffi.load('csound64.dll.5.2')
+local csoundApi = ffi.load('csound64.dll')
 -- Declare the parts of the Csound API that we need.
 -- You must declare MYFLT as double or float as the case may be.
 ffi.cdef[[
@@ -113,10 +113,10 @@ e 4.0
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
- <x>72</x>
- <y>179</y>
- <width>400</width>
- <height>200</height>
+ <x>0</x>
+ <y>0</y>
+ <width>151</width>
+ <height>137</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="background">
@@ -124,7 +124,7 @@ e 4.0
   <g>77</g>
   <b>24</b>
  </bgcolor>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>5</x>
   <y>6</y>
@@ -153,7 +153,7 @@ e 4.0
   <borderradius>5</borderradius>
   <borderwidth>6</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBHSlider">
+ <bsbObject type="BSBHSlider" version="2">
   <objectName>kgain</objectName>
   <x>9</x>
   <y>33</y>
@@ -171,7 +171,7 @@ e 4.0
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBDisplay">
+ <bsbObject type="BSBDisplay" version="2">
   <objectName>kgain</objectName>
   <x>68</x>
   <y>6</y>
@@ -200,7 +200,7 @@ e 4.0
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>5</x>
   <y>59</y>
@@ -229,7 +229,7 @@ e 4.0
   <borderradius>5</borderradius>
   <borderwidth>6</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBController">
+ <bsbObject type="BSBController" version="2">
   <objectName>kcarrier</objectName>
   <x>10</x>
   <y>76</y>
@@ -262,7 +262,7 @@ e 4.0
    <b>0</b>
   </bgcolor>
  </bsbObject>
- <bsbObject version="2" type="BSBDisplay">
+ <bsbObject type="BSBDisplay" version="2">
   <objectName>kcarrier</objectName>
   <x>106</x>
   <y>76</y>
@@ -291,7 +291,7 @@ e 4.0
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBDisplay">
+ <bsbObject type="BSBDisplay" version="2">
   <objectName>kmodulator</objectName>
   <x>106</x>
   <y>112</y>
