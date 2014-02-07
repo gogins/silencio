@@ -213,12 +213,12 @@ end
 -- Note that MIDI channels are zero-based, Csound instrument numbers are one-based.
 
 function Event:csoundIStatement()
-    istatement = string.format("i %g %g %g %g %g %g %g %g %g %g %g", self[CHANNEL] + 1, self[TIME], self[DURATION], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[STATUS], self[HOMOGENEITY])
+    local istatement = string.format("i %g %g %g %g %g %g %g %g %g %g %g", self[CHANNEL] + 1, self[TIME], self[DURATION], self[KEY], self[VELOCITY], self[PAN], self[DEPTH], self[HEIGHT], self[PHASE], self[STATUS], self[HOMOGENEITY])
     return istatement
 end
 
 function Event:midiScoreEvent()
-    tipe = 'note'
+    local tipe = 'note'
     return {tipe, self[TIME] * TICKS_PER_BEAT * 2, self[DURATION] * TICKS_PER_BEAT * 2, self[CHANNEL], self[KEY], self[VELOCITY]}
 end
 
@@ -608,6 +608,17 @@ function Score:findScale(dimension)
     return minimum, range
 end
 
+function Score:getDuration()
+    local duration = 0
+    for i, event in ipairs(self) do
+        local value = event:getOffTime()
+        if value > duration then
+            duration = value
+        end
+    end
+    return duration
+end
+
 function Score:findScales()
     local minima = Event:new()
     local ranges = Event:new()
@@ -896,20 +907,20 @@ end
 -- to be called from the lua_exec opcode or
 -- other Lua opcode, in Csound, to render a score
 -- that has been generated as part of a Csound performance.
+--
+-- Note that in this mode, Csound will continue to play
+-- after the final event has finished. Csound must be stopped
+-- by some external means. A single f 0 statement of the
+-- desired duration in the Csound score will do.
 
-function Score:sendToCsound(finish)
-    finish = finish or false
+function Score:sendToCsound()
     self:sort()
     local buffer = ffi.new('double[11]')
     for index, event in ipairs(self) do
         event:toBuffer(buffer)
         self.csoundApi.csoundScoreEvent(self.csound, 105, buffer, 11)
     end
-    if finish == true then
-        local endEvent = ffi.new('double[2]')
-        endEvent[0] = 5
-        csoundApi.csoundScoreEvent(csound, 145, endEvent, 2)
-    end
+    self.csoundApi.csoundMessage(csound, 'Sent %.0f score events to Csound.\n', #self)
 end
 
 function Score:display()

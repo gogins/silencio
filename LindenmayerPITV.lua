@@ -97,6 +97,7 @@ function LindenmayerPITV:new(o)
         o.targets['I'] = self.target_I
         o.targets['T'] = self.target_T
         o.targets['V'] = self.target_V
+        o.targets['K'] = self.target_K
         o.targets['C'] = self.target_C
         o.targets['L'] = self.target_L
         o.targets['['] = self.target_push
@@ -194,6 +195,18 @@ function LindenmayerPITV:target_V(target, operation, operand)
         local function_ = self.operations[operation]
         self.turtle.V = function_(self, self.turtle.V, operand) % self.chordSpaceGroup.countV
     end
+end
+
+function LindenmayerPITV:target_K(target, operation, operand)
+    local p = math.floor(self.turtle.P + 0.5)
+    local i = math.floor(self.turtle.I + 0.5)
+    local t = math.floor(self.turtle.T + 0.5)
+    local v = math.floor(self.turtle.V + 0.5)
+    local chord = self.chordSpaceGroup:toChord(p, i, t, v)
+    local p, i, t, v = self.chordSpaceGroup:fromChord(chord:K())
+    self.turtle.P = p
+    self.turtle.I = i
+    self.turtle.T = t
 end
 
 function LindenmayerPITV:target_C(target, operation, operand)
