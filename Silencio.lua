@@ -66,6 +66,9 @@ print('Invoking script: "' .. arg[0] .. '".\n')
 end
 
 function Silencio.clone(object)
+    if object == nil then
+        return nil
+    end
     local lookup_table = {}
     local function _copy(object)
         if type(object) ~= "table" then
@@ -203,7 +206,7 @@ TICKS_PER_BEAT = 96
 Event = {}
 
 function Event:new(o)
-    o = o or {0,0,144,0,0,0,0,0,0,0,1,data={}}
+    o = o or {0,0,144,0,0,0,0,0,0,0,1,data=nil}
     setmetatable(o, self)
     self.__index = self
     return o

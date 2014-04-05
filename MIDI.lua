@@ -1,8 +1,11 @@
 #!/usr/bin/lua
 --require 'DataDumper'   -- http://lua-users.org/wiki/DataDumper
 local M = {} -- public interface
-M.Version = '5.6'
-M.VersionDate = '26jan2011'
+M.Version = '6.0'
+M.VersionDate = '20140108'
+-- 20140108 6.0 in lua5.2 require('posix') returns the posix table
+-- 20120504 5.9 add the contents of mid_opus_tracks()
+-- 20111129 5.7 _encode handles empty tracks; score2stats num_notes_by_channel
 -- 20111111 5.6 fix patch 45 and 46 in Number2patch, should be Pizz and Harp
 -- 20110115 5.5 add mix_opus_tracks()
 -- 20110126 5.4 "previous message repeated N times" to save space on stderr
@@ -131,7 +134,7 @@ end
 local function write_14_bit(integer)
 	-- encode a 14 bit quantity into two bytes,
 	return string.char(integer % 128, math.floor(integer/128) % 128)
-	-- return string.char((integer/128) % 128, integer % 128) 
+	-- return string.char((integer/128) % 128, integer % 128)
 end
 
 local function ber_compressed_int(integer)
@@ -358,7 +361,7 @@ The options:
 				E = {'text_event_0e',time, string.sub(trackdata,i,i+length-1)}
 			elseif command == 15 then
 				E = {'text_event_0f',time, string.sub(trackdata,i,i+length-1)}
-			
+
 			-- Now the sticky events -------------------------------------
 			elseif command == 47 then
 				E = {'end_track', time}
@@ -457,7 +460,7 @@ The options:
 		-- from the MIDI file spec.  So, I'm going to assume that
 		-- they CAN, in practice, occur.  I don't know whether it's
 		-- proper for you to actually emit these into a MIDI file.
-		
+
 		elseif first_byte == 242 then   -- DTime, Beats
 			--  <song position msg> ::=     F2 <data pair>
 			E = {'song_position', time, read_14_bit(string.sub(trackdata,i))}
@@ -545,11 +548,11 @@ local function _encode(events_lol)
 	local events = deepcopy(events_lol)
 
 	if not never_add_eot then -- One way or another, tack on an 'end_track'
-		if events then
+		if #events > 0 then   -- 5.7
 			local last = events[#events] -- 4.5, 4.7
 			if not (last[1] == 'end_track') then  -- no end_track already
 				if (last[1] == 'text_event' and last[3] == '') then -- 4.5,4.6
-					-- 0-length text event at track-end. 
+					-- 0-length text event at track-end.
 					if no_eot_magic then
 						-- Exceptional case: don't mess with track-final
 						-- 0-length text_events; just peg on an end_track
@@ -1045,6 +1048,17 @@ function M.merge_scores(scores)
 end
 
 function M.mix_opus_tracks(input_tracks) -- 5.5
+	-- must convert each track to absolute times !
+	local output_score = {1000, {}}
+	for ks,input_track in ipairs(input_tracks) do -- 5.8
+		local input_score = M.opus2score({1000, input_track})
+		for k,event in ipairs(input_score[2]) do
+			table.insert(output_score[2], event)
+		end
+	end
+	table.sort(output_score[2], function (e1,e2) return e1[2]<e2[2] end)
+	local output_opus = M.score2opus(output_score)
+	return output_opus[2]
 end
 
 function M.mix_scores(input_scores)
@@ -1123,7 +1137,8 @@ function M.play_score(score)
 	else
 		midi = M.score2midi(score)
 	end
-	pcall(function() require 'posix' end)
+	local posix  -- 6.0 in lua5.2 require posix returns the posix table
+	pcall(function() posix = require 'posix' end)
 	if posix and posix.fork then   -- 4.2
 		local pid = posix.fork()
         if pid == 0 then
@@ -1309,6 +1324,7 @@ function M.score2stats(opus_or_score)
  general_midi_mode (array),
  ntracks,
  nticks,
+ num_notes_by_channel (table of numbers),
  patch_changes_by_track (table of tables),
  patch_changes_total (array),
  percussion (a dictionary histogram of channel-9 events),
@@ -1322,6 +1338,7 @@ function M.score2stats(opus_or_score)
 	local channels_by_track = {}
 	local channels_total    = {}
 	local general_midi_mode = {}
+	local num_notes_by_channel = {} -- 5.7
 	local patches_used_by_track  = {}
 	local patches_used_total     = {}
 	local patch_changes_by_track = {}
@@ -1334,6 +1351,7 @@ function M.score2stats(opus_or_score)
 	if opus_or_score == nil then
 		return {bank_select={}, channels_by_track={}, channels_total={},
 		 general_midi_mode={}, ntracks=0, nticks=0,
+		 num_notes_by_channel={},
 		 patch_changes_by_track={}, patch_changes_total={},
 		 percussion={}, pitches={}, pitch_range_by_track={},
 		 ticks_per_quarter=0, pitch_range_sum=0
@@ -1348,6 +1366,7 @@ function M.score2stats(opus_or_score)
 		local patch_changes_this_track = {} -- 4.7
 		for k,event in ipairs(opus_or_score[i]) do
 			if event[1] == 'note' then
+				num_notes_by_channel[event[4]] = (num_notes_by_channel[event[4]] or 0) + 1
 				if event[4] == 9 then
 					percussion[event[5]] = (percussion[event[5]] or 0) + 1
 				else
@@ -1367,6 +1386,7 @@ function M.score2stats(opus_or_score)
 				end
 			elseif event[1] == 'note_on' then
 				is_a_score = false   -- 4.6
+				num_notes_by_channel[event[3]] = (num_notes_by_channel[event[3]] or 0) + 1
 				if event[3] == 9 then
 					percussion[event[4]] = (percussion[event[4]] or 0) + 1
 				else
@@ -1429,6 +1449,7 @@ function M.score2stats(opus_or_score)
 		general_midi_mode=general_midi_mode,
 		ntracks=#opus_or_score-1,
 		nticks=nticks,
+		num_notes_by_channel=num_notes_by_channel,
 		patch_changes_by_track=patch_changes_by_track,
 		patch_changes_total=sorted_keys(patch_changes_total),
 		percussion=percussion,
@@ -1800,6 +1821,11 @@ written to a .mid file, or to stdout.
 For a description of the "opus" and "score" formats,
 see opus2midi() and score2opus().
 
+The score track is returned sorted by the end-times of the notes,
+so if you need it sorted by their start-times you have to do that yourself:
+
+  table.sort(score[itrack], function (e1,e2) return e1[2]<e2[2] end)
+
 =item I<play_score> (opus_or_score)
 
 Converts the "score" to midi, and feeds it into 'aplaymidi -'.
@@ -1851,6 +1877,7 @@ Returns a table of some basic stats about the score, like:
  general_midi_mode (array),
  ntracks,
  nticks,
+ num_notes_by_channel (table of numbers)
  patch_changes_by_track (table of arrays),
  patch_changes_total (array),
  percussion (a dictionary histogram of channel-9 events),
