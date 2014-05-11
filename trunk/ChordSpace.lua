@@ -565,11 +565,11 @@ ChordSpace.help()
 -- Returns n!
 -- EQUIVALENT
 function ChordSpace.factorial (n)
-	if n == 0 then
-		return 1
-	else
-		return n * ChordSpace.factorial(n - 1)
-	end
+  if n == 0 then
+    return 1
+  else
+    return n * ChordSpace.factorial(n - 1)
+  end
 end
 
 -- For taking numerical errors into account.
@@ -1059,15 +1059,15 @@ end
 -- according to the Euclidean definition.
 -- EQUIVALENT
 function ChordSpace.modulo(dividend, divisor)
-	local quotient = 0.0
+   local quotient = 0.0
     if divisor < 0.0 then
         quotient = math.ceil(dividend / divisor)
     end
     if divisor > 0.0 then
         quotient = math.floor(dividend / divisor)
     end
-	local remainder = dividend - (quotient * divisor)
-	return remainder
+    local remainder = dividend - (quotient * divisor)
+    return remainder
 end
 
 -- Returns the equivalent of the pitch under pitch-class equivalence, i.e.
@@ -2184,7 +2184,7 @@ function ChordSpace.allOfEquivalenceClass(voices, equivalence, g)
         equivalenceMapper = Chord.iseOPT
     end
     if equivalence == 'OPTT' then
-        equivalenceMapper = Chord.iseOPT
+        equivalenceMapper = Chord.iseOPTT
     end
     if equivalence == 'OPI' then
         equivalenceMapper = Chord.iseOPI

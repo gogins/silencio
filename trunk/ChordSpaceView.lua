@@ -74,7 +74,7 @@ print('glu:', glu)
 print('glfw:', glfw)
 local Silencio =    require("Silencio")
 --local ChordSpace =  require("Chords")
-local ChordSpace =  require("ChordSpace")
+local ChordSpace =  require("ChordSpaces")
 
 tx = 0
 ty = 0
@@ -589,7 +589,7 @@ function ChordView:display()
     self.window = window
     glfw.glfwShowWindow(self.window)
     print('window:', self.window)
-    
+
 
     glfw.glfwSetInputMode(window, glfw.GLFW_STICKY_KEYS, gl.GL_TRUE)
     glfw.glfwSetInputMode(window, glfw.GLFW_CURSOR_MODE, glfw.GLFW_CURSOR_NORMAL)
@@ -907,7 +907,7 @@ ChordSpaceView.help()
 chordView = ChordView:new()
 chordView.iterateInversions = false
 chordView.octaves = 1
-chordView.equivalence = 'OP'
+chordView.equivalence = 'OPTTI'
 chordView.constructChordsByOperation = false
 chordView:createChords()
 chordView:findSize()
