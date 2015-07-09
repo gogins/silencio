@@ -2564,21 +2564,8 @@ function ChordSpace.conformToChord(event, chord, octaveEquivalence)
     else
         local pitch = event[KEY]
         if octaveEquivalence then
-            local pitchClass = pitch % ChordSpace.OCTAVE
-            local octave = pitch - pitchClass
-            local chordPitchClass = chord[1] % ChordSpace.OCTAVE
-            local distance = math.abs(chordPitchClass - pitchClass)
-            local closestPitchClass = chordPitchClass
-            local minimumDistance = distance
-            for voice = 2, #chord do
-                chordPitchClass = chord[voice] % ChordSpace.OCTAVE
-                distance = math.abs(chordPitchClass - pitchClass)
-                if distance < minimumDistance then
-                    minimumDistance = distance
-                    closestPitchClass = chordPitchClass
-                end
-            end
-            event[KEY] = octave + closestPitchClass
+            pitch = ChordSpace.conformPitchToChord(pitch, chord)
+            event[KEY] = pitch
         else
             local chordPitch = chord[1]
             local distance = math.abs(chordPitch - pitch)
@@ -2617,9 +2604,11 @@ end
 
 function ChordSpace.apply(score, chord, start, end_, octaveEquivalence)
     octaveEquivalence = octaveEquivalence or true
-    local slice = score:slice(start, end_)
-    for index, event in ipairs(slice) do
-        conformToChord(event, chord, octaveEquivalence)
+    local s = score:slice(start, end_)
+    if #slice > 0 then
+        for index, event in ipairs(s) do
+            ChordSpace.conformToChord(event, chord, octaveEquivalence)
+        end
     end
 end
 

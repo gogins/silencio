@@ -895,14 +895,14 @@ end
 
 function Score:slice(begin, end_)
     self:sort()
-    local slice = Score:new()
+    local s = Score:new()
     for index, event in ipairs(self) do
         local time_ = event[TIME]
-        if time_ >= begin and time < end_ then
-            table.insert(slice, event)
+        if time_ >= begin and time_ < end_ then
+            table.insert(s, event)
         end
     end
-    return slice
+    return s
 end
 
 -- Sends all events in this, at once, to a running
