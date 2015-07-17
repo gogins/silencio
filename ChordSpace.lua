@@ -215,6 +215,24 @@ Q(c, n, m)      Contexual transposition;
                 or T(c, -n) if c is an I-form of M. Not a generalized form
                 of L or R; but, like them, K and Q generate the T-I group.
 
+J(c, n [, i [, g] ])  Contextual inversion;
+                J(c, n [, i ], g] ]) returns all (or, optionally, the ith) 
+                inversion(s) of chord c that preserve n pitch-classes of c. 
+                The remaining pitches of c invert "around" the invariant 
+                pitch-classes. If there is no such inversion, an empty list is 
+                returned. If there is more than one such inversion, a list of 
+                them is returned, ordered by pitch.
+                Algorithm: 
+                (1) Create an empty set of inverted chords.
+                (2) For each pitch-class from 0 to 11 step g (g is the 
+                    generator of transposition, e.g. g = 1 for TET):
+                    (a) Invert c in the pitch-class.
+                    (b) Test if n pitch-classes of c are invariant. 
+                    (c) If so, add the inverted chord to the set of 
+                        inversions in octave-equivalent and 
+                        permutation-equivalent form.
+                (3) Return the sorted set of inversions (or, optionally, the 
+                    ith inversion in the set).
 ]]
 end
 --[[
