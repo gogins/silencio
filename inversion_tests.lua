@@ -3,6 +3,7 @@ ChordSpace = require("ChordSpace")
 
 local original = ChordSpace.chordsForNames['CM']
 print(original:information())
+print()
 
 function invariantPcs(a_, b_) 
     local a = a_:eOP()
@@ -39,25 +40,26 @@ function J(chord, n, g, i)
     return result
 end
 
+print("Inversions of CM")
 for i=0, 12 do
     local inversion = original:I(i):eOP()
     print(i, inversion, invariantPcs(original, inversion))
 end
-
+print()
 print("J(1)")
 local J1 = J(original, 1)
 for i, j in ipairs(J1) do
     print(i, j)
 end
-
+print()
 print("J(2)")
 local J2 = J(original, 2)
 for i, j in ipairs(J2) do
     print(i, j)
 end
-
+print()
 print("J(2, 1, 2)")
 local J212 = J(original, 2, 1, 2)
 print(J212)
-
+print()
 

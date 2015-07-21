@@ -813,6 +813,19 @@ function Chord:count(pitch)
     return n
 end
 
+function ChordSpace.invariantPcs(a_, b_) 
+    local a = a_:eOP()
+    local b = b_:eOP()
+    local count = 0
+    for voice = 1, #a do
+        local p = a[voice]
+        if a:count(p) == b:count(p) then
+            count = count + 1
+        end
+    end
+    return count
+end
+
 -- Redefines the metamethod to implement value semantics
 -- for ==, for the pitches in this only.
 -- EQUIVALENT
@@ -2386,6 +2399,28 @@ function Chord:Q(x, m, g)
         return self:T(-x)
     end
     return self:clone()
+end
+
+function Chord:J(n, g, i)
+    g = g or 1
+    local inversions = {}
+    local index = 0
+    for I = 1, 11, g do
+        local inversion = self:I(I)
+        if ChordSpace.invariantPcs(self, inversion) == n then
+            index = index + 1
+            table.insert(inversions, inversion:eOP())
+        end
+    end
+    local result = ChordSpace.sortedSet(inversions)
+    if i ~= nil then
+        if i > #result then
+            return nil
+        else
+            return result[i]
+        end
+    end
+    return result
 end
 
 -- Returns the voice-leading between chords a and b,
