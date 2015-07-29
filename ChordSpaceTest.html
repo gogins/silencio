@@ -261,6 +261,40 @@ test('R',  'ChordSpace.nameForChord(CM.nrR())');
 wryte('CM.nrR().eOP()');
 test('D',  'ChordSpace.nameForChord(CM.nrD())');
 wryte('CM.nrD().eOP()');
-
+test('Chord information',  'CM7.information()');
+test('K',  'CM7.K().information()');
+var minor = ChordSpace.chordForName('Cm');
+var major = ChordSpace.chordForName('CM');
+var CM = major.clone();
+var result = CM.Q(1, minor);  
+test('Q',  'CM.Q(1, minor)');
+wryte('CM.Q(1, major).information()');
+wryte('CM.Q(1, minor).information()');
+test('J',  'CM.J(1)');
+test('ChordSpace.voiceleading',  'ChordSpace.voiceleading(major,minor)');
+test('ChordSpace.parallelFifth',  'ChordSpace.parallelFifth(major,minor)');
+wryte('ChordSpace.parallelFifth(major.T(7),major)');
+test('ChordSpace.voiceleadingSmoothness',  'ChordSpace.voiceleadingSmoothness(major,minor)');
+test('ChordSpace.voiceleadingClosestRange',  'ChordSpace.voiceleadingClosestRange(major.T(12),minor.T(4),36)');
+test('Chord.note',  'CM.note(2)');
+test('Chord.notes',  'CM7.notes()');
+var score = new Silencio.Score();
+test('Chord.toScore',  'CM7.toScore(score)');
+test('ChordSpace.conformPitchToChord',  'ChordSpace.conformPitchToChord(8+12,minor)');
+var event = new Silencio.Event();
+event.key = 24+9;
+test('ChordSpace.conformToChord',  'ChordSpace.conformToChord(event, CM7)');
+event.key = 24+9;
+wryte('ChordSpace.conformToChord(event, CM7.T(24))');
+event.key = 24+9;
+wryte('ChordSpace.conformToChord(event, CM7.T(24), false)');
+var c1 = CM7.T(3).K();
+var c2 = CM.I(4).Q(2, minor);
+ChordSpace.insert(score, c1, 2, 2);
+ChordSpace.insert(score, c2, 2, 2);
+ChordSpace.insert(score, c1, 2, 2);
+test('Score.slice', 'score.slice(2, 3)');
+test('ChordSpace.gather',  'ChordSpace.gather(score, 2, 3)');
+ 
 </script>
 </html>
