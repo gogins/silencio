@@ -2,7 +2,7 @@
 
 ## Update 25 August 2015
 
-I have now ported all of Silencio, including ChordSpaces, from Lua to JavaScript. As time permits and projects demand, I will probably port selected parts of other people's algorithmic composition code to JavaScript. CMask/PMask is one candidate, Xenakis sieves are another. This is to support my project of integrating HTML and JavaScript with Csound for a complete, self-contained "playpen" for computer music composers, especially for algorithmic composition.
+I have now ported all of Silencio, including all of ChordSpace except the chord space group, from Lua to JavaScript. As time permits and projects demand, I will probably port selected parts of other people's algorithmic composition code to JavaScript. Tendency masks are one candidate, Xenakis sieves are another. This is to support my project of integrating HTML and JavaScript with Csound for a complete, self-contained "playpen" for computer music composers, especially for algorithmic composition.
 
 ## Introduction
 
