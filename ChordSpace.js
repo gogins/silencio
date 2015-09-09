@@ -34,9 +34,7 @@ while (true) {
     };
 };
 
-ChordSpace.help = function() {
-  text = `
-
+/**
 C H O R D S P A C E
 
 Copyright 2010, 2011, 2015 by Michael Gogins.
@@ -243,7 +241,7 @@ J(c, n [, g [, i]])  Contextual inversion;
 `;
     return text;
 };
-
+*/
 // Returns n!
 ChordSpace.factorial = function(n) {
   if (n == 0) {
@@ -1416,25 +1414,25 @@ Chord.prototype.information = function() {
     var eopti = this.eOPTI().et();
     var eOP = this.eOP();
     var chordName = eOP.name();
-    return sprintf(`pitches:  %s  %s
-I:        %s
-eO:       %s  iseO:    %s
-eP:       %s  iseP:    %s
-eT:       %s  iseT:    %s
-          %s
-eI:       %s  iseI:    %s
-eV:       %s  iseV:    %s
-          %s
-eOP:      %s  iseOP:   %s
-pcs:      %s
-eOPT:     %s  iseOPT:  %s
-eOPTT:    %s
-          %s
-eOPI:     %s  iseOPI:  %s
-eOPTI:    %s  iseOPTI: %s
-eOPTTI:   %s
-          %s
-layer:      %6.2f`,
+    return sprintf("pitches:  %s  %s\n\
+I:        %s\n\
+eO:       %s  iseO:    %s\n\
+eP:       %s  iseP:    %s\n\
+eT:       %s  iseT:    %s\n\
+          %s\n\
+eI:       %s  iseI:    %s\n\
+eV:       %s  iseV:    %s\n\
+          %s\n\
+eOP:      %s  iseOP:   %s\n\
+pcs:      %s\n\
+eOPT:     %s  iseOPT:  %s\n\
+eOPTT:    %s\n\
+          %s\n\
+eOPI:     %s  iseOPI:  %s\n\
+eOPTI:    %s  iseOPTI: %s\n\
+eOPTTI:   %s\n\
+          %s\n\
+layer:      %6.2f",
 this, chordName,
 this.I(),
 this.eO(),    this.iseO(),
@@ -1862,6 +1860,154 @@ ChordSpace.gather = function(score, start, end_) {
         };
     };
     return chord;
+};
+
+/**
+ * New LSys with chord operations.
+ */
+ChordSpace.LSys = function() {
+    Silencio.LSys.call(this);
+    return this;
+};
+
+ChordSpace.LSys.prototype = new Silencio.LSys();
+
+ChordSpace.LSys.prototype.generate = function(n) {
+  csound.message('ChordSpace.LSys.prototype.generate\n')
+  this.sentence = this.axiom.split(' ');
+  for (var g = 0; g < n; g++) {
+    var next = [];
+    for (var i=0; this.sentence.length > i; i++) {
+      var c = this.sentence[i];
+      var r = this.rules[c];
+      if (r) {
+        next = next.concat(r.split(' '));
+      } else {
+        next = next.concat(c.split(' '));
+      }
+    }
+    this.sentence = next; //.join("");
+  }
+};
+
+ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
+  // This was too goopy to call the super.
+  if (c === 'F') {
+    if (size === undefined) {
+      t.startNote();
+      t.go(context);
+    } else {
+      t.move();
+    }
+  }
+  else if (c === 'f') t.move();
+  else if (c === '+') t.turnRight();
+  else if (c === '-') t.turnLeft();
+  else if (c === '[') t.push();
+  else if (c === ']') t.pop();
+  else if (c === 'I') t.upInstrument();
+  else if (c === 'i') t.downInstrument();
+  else if (c === 'V') t.upVelocity();
+  else if (c === 'v') t.downVelocity();
+  else if (c === 'T') t.upTempo();
+  else if (c === 't') t.downTempo();
+  else if (c === 'K') t.K();
+  else {
+    var parts = c.split(',');
+    var cc = parts [0];
+           if (cc === 'T') {
+      t.T(Number(parts[1]));
+    } else if (cc === 'I') {
+      t.I(Number(parts[1]));
+    } else if (cc === 'Q') {
+      t.Q(Number(parts[1]));
+    } else if (cc === 'J') {
+      t.J(Number(parts[1], Number(parts[2])));
+    } else if (cc === 't') {
+      var operation = parts[1];
+      var operand = Number(parts[2]);
+      if (operation === '=') {
+        t.tempo = operand;
+      } else if (operation === '+') {
+        t.tempo += operand;
+      } else if (operation === '-') {
+        t.tempo -= operand;
+      } else if (operation === '*') {
+        t.tempo *= operand;
+      } else if (operation === '/') {
+        t.tempo /= operand;
+        csound.message('tempo:' + t.tempo + '\n');
+      }
+    };
+  };
+  if (size === undefined) {
+    if (c === 'F') {
+      t.endNote(this.score);
+    }
+    this.prior = c;
+  } else {
+      this.findSize(t, size);
+  }
+};
+
+/**
+ * Conforms the pitch of each event in this, if it has a chord,
+ * to the closest pitch-class in that chord, not under octave equivalence.
+ */
+ChordSpace.LSys.prototype.conformToChords = function () {
+    for (var i = 0; i < this.score.size(); i++) {
+        var event = this.score.get(i);
+        if (event.chord !== null) {
+            ChordSpace.conformToChord(event, event.chord, false);
+        };
+    };
+};
+
+/**
+ * New Turtle with chord operations T,x, I,x, K, Q,x, J,n,i
+ * for transposition, inversion, switch of modality, contextual
+ * transposition, and contextual inversion.
+ */
+ChordSpace.Turtle = function(len, theta, chord, modality) {
+    Silencio.Turtle.call(this, len, theta);
+    this.chord = chord.clone();
+    this.modality = modality.clone();
+    this.tempo = 1;
+    return this;
+};
+
+ChordSpace.Turtle.prototype = new Silencio.Turtle();
+
+ChordSpace.Turtle.prototype.endNote = function(score) {
+  this.event.end = this.p.x;
+  if (this.event.duration > 0) {
+    var event = this.event.clone();
+    event.chord = this.chord;
+    score.data.push(event);
+  }
+}
+
+ChordSpace.Turtle.prototype.T = function(n) {
+    this.chord = this.chord.T(n);
+};
+
+ChordSpace.Turtle.prototype.I = function(c) {
+    this.chord = this.chord.I(c);
+};
+
+ChordSpace.Turtle.prototype.K = function() {
+    this.chord = this.chord.K();
+};
+
+ChordSpace.Turtle.prototype.Q = function(n) {
+    this.chord = this.chord.Q(n, this.modality);
+};
+
+ChordSpace.Turtle.prototype.J = function(n, i) {
+    var inversions = this.chord.J(n);
+    if (inversions.length > i) {
+        this.chord = inversions[i];
+    };
 };
 
 //////////////////////////////////////////////////////////////////////////////
