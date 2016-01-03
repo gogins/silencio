@@ -3,7 +3,7 @@ S I L E N C I O
 
 Copyright (C) 2014 by Michael Gogins
 
-This software is licensed under the terms of the 
+This software is licensed under the terms of the
 GNU Lesser General Public License
 
 Part of Silencio, an algorithmic music composition library for Csound.
@@ -12,23 +12,23 @@ DEVELOPMENT LOG
 
 2015-07-15
 
-Silencio.js was relatively easy, ChordSpace.js is going to be harder. The main 
-problems are that JavaScript does not permit operator overloading, and it does 
+Silencio.js was relatively easy, ChordSpace.js is going to be harder. The main
+problems are that JavaScript does not permit operator overloading, and it does
 not implement deep clones or deep value comparisons out of the box.
 
- I will omit the chord space group stuff because it will not always be 
- possible to save the chord space group files, which are necessarily for 
+ I will omit the chord space group stuff because it will not always be
+ possible to save the chord space group files, which are necessarily for
  efficient use with chords of more than 3 or 4 voices.
 
-It is now clear that Lua (and especially LuaJIT) is a rather superior 
+It is now clear that Lua (and especially LuaJIT) is a rather superior
 language; and yet, JavaScript provides everything that I need.
 
-TO DO 
+TO DO
 
 --  Implement various scales found in 20th and 21st century harmony
     along with 'splitting' and 'merging' operations.
 
---  Implement tendency masks. 
+--  Implement tendency masks.
 
 --  Implement Xenakis sieves.
 
@@ -53,7 +53,7 @@ An Event is a homogeneous vector with the following dimensions:
 11 Homogeneity, normally always 1.
 
 NOTE: ECMASCRIPT 5 doesn't support inheritance from Array
-in a clean and complete way, so we don't even try. 
+in a clean and complete way, so we don't even try.
 */
 
 function eq_epsilon(a, b) {
@@ -116,8 +116,8 @@ function Event() {
     set: function(value) { this.data[1] = value; }
   });
   Object.defineProperty(this,"end",{
-    get: function() { 
-      return this.data[0] + this.data[1]; 
+    get: function() {
+      return this.data[0] + this.data[1];
     },
     set: function(end_) {
         var duration_ = end_ - this.data[0];
@@ -182,7 +182,7 @@ Event.COUNT = 11;
 Event.prototype.toString = function() {
   var text = '';
   for (var i = 0; i < this.data.length; i++) {
-    text = text.concat(' ', this.data[i].toFixed(6)); 
+    text = text.concat(' ', this.data[i].toFixed(6));
   }
   text = text.concat('\n');
   return text;
@@ -225,7 +225,7 @@ function Score() {
 Score.prototype.add = function(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) {
   var event = new Event();
   for (var i = 0; i < event.length; i++) {
-    if (arguments[i] !== undefined) {
+    if (typeof arguments[i] !== 'undefined') {
       event[i] = arguments[i];
      }
   }
@@ -245,7 +245,7 @@ Score.prototype.clear = function () {
 Score.prototype.getDuration = function () {
   this.sort();
   this.findScale(0);
-  var duration = 0; 
+  var duration = 0;
   for (var i = 0; i < this.data.length; i++) {
     var event = this.data[i];
     if (i == 0) {
@@ -261,7 +261,7 @@ Score.prototype.getDuration = function () {
 }
 
 Score.prototype.log = function (what) {
-  if (what === undefined) {
+  if (typeof what === 'undefined') {
     what = '';
   } else {
     what = what + ': ';
@@ -274,24 +274,25 @@ Score.prototype.log = function (what) {
 
 Score.prototype.setDuration = function (duration) {
   this.sort();
+  // Translate to start at time 0.
   var start = this.data[0].time;
   for (var i = 0; i < this.data.length; i++) {
     var event = this.data[i];
-    event.data[0] = event.data[0] - start;  
+    event.time = event.time - start;
   }
-  var currentDuration = this.data[0].end;
-  for (var i = 0; i < this.data.length; i++) {
-    var event = this.data[i];
-    if (event.end > currentDuration) {
-      currentDuration = event.end;
-    }
-  }
+  // Find current duration.
+  var currentDuration = this.getDuration();
+  csound.message('Old score duration is: ' + currentDuration + '\n');
+  // Rescale to fit specified duration.
   var factor = Math.abs(duration / currentDuration);
+  csound.message('Rescaling score times by: ' + factor + '\n');
   for (var i = 0; i < this.data.length; i++) {
     var event = this.data[i];
-    event.data[0] = event.data[0] * factor; 
-    event.data[1] = event.data[1] * factor; 
+    event.time = event.time * factor;
+    event.duration = event.duration * factor;
   }
+  var newDuration = this.getDuration();
+  csound.message('New score duration is: ' + newDuration + '\n');
 }
 
 Score.prototype.sendToCsound = function(csound, extra) {
@@ -317,14 +318,14 @@ Score.prototype.findScale = function(dimension) {
   for (var i = 0; i < this.data.length; i++) {
     var value = this.data[i].data[dimension];
     if (i === 0) {
-      min = value; 
-      max = value; 
+      min = value;
+      max = value;
     } else {
       if (value < min) {
-        min = value; 
+        min = value;
       }
       if (value > max) {
-        max = value; 
+        max = value;
       }
     }
   }
@@ -341,7 +342,7 @@ Score.prototype.setScale = function(dimension, minimum, range) {
     currentRange = 1;
   }
   var rescale = range / currentRange;
-  if (range === undefined) {
+  if (typeof range === 'undefined') {
     rescale = 1;
   }
   var translate = minimum;
@@ -349,8 +350,8 @@ Score.prototype.setScale = function(dimension, minimum, range) {
     var value = this.data[i].data[dimension];
     value -= toOrigin;
     value *= rescale;
-    value += translate; 
-    this.data[i].data[dimension] = value; 
+    value += translate;
+    this.data[i].data[dimension] = value;
   }
 }
 
@@ -384,12 +385,12 @@ Score.prototype.tieOverlaps = function(tieExact) {
             if ((Math.floor(earlierEvent.channel) === Math.floor(laterEvent.channel)) &&
                 (Math.round(earlierEvent.key) === Math.round(laterEvent.key)))
           {
-              console.log('Tieing: ' + earlierI + ' ' + earlierEvent.toString());
-              console.log('    to: ' + laterI + ' ' + laterEvent.toString());
+              //console.log('Tieing: ' + earlierI + ' ' + earlierEvent.toString());
+              //console.log('    to: ' + laterI + ' ' + laterEvent.toString());
             earlierEvent.end = laterEvent.end;
               laterEvent.duration = 0;
               laterEvent.velocity = 0;
-              console.log('Result: ' + earlierI + ' ' +  earlierEvent.toString() + '\n');
+              //console.log('Result: ' + earlierI + ' ' +  earlierEvent.toString() + '\n');
               break;
           }
         }
@@ -597,14 +598,14 @@ LSys.prototype.generate = function(n) {
 LSys.prototype.draw = function(t, context, W, H) {
   context.fillStyle = 'black';
   context.fillRect(0, 0, W, H);
-  // Draw for size. 
+  // Draw for size.
   t.reset();
   var size = [t.p.x, t.p.y, t.p.x, t.p.y];
   for (var i=0; this.sentence.length > i; i++) {
     var c = this.sentence[i];
     this.interpret(c, t, context, size);
   }
-  // Draw to show. 
+  // Draw to show.
   var xsize = size[2] - size[0];
   var ysize = size[3] - size[1];
   var xscale = Math.abs(W / xsize);
@@ -652,7 +653,7 @@ Turtle.prototype.endNote = function(score) {
 LSys.prototype.interpret = function(c, t, context, size) {
   //csound.message('c:' + c + '\n');
   if (c === 'F') {
-    if (size === undefined) {
+    if (typeof size === 'undefined') {
       t.startNote();
       t.go(context);
     } else {
@@ -670,7 +671,7 @@ LSys.prototype.interpret = function(c, t, context, size) {
   else if (c === 'v') t.downVelocity();
   else if (c === 'T') t.upTempo();
   else if (c === 't') t.downTempo();
-  if (size === undefined) {
+  if (typeof size === 'undefined') {
     if (c === 'F') {
       t.endNote(this.score);
     }
@@ -767,6 +768,7 @@ function Recurrent(generators, transitions, depth, index, cursor, score)
 
 console.log('browser:  ' + navigator.appName)
 console.log('platform: ' + navigator.platform)
+
 var Silencio = {
   eq_epsilon: eq_epsilon,
   gt_epsilon: gt_epsilon,

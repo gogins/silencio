@@ -1378,6 +1378,7 @@ for (var rootName in pitchClassesForNames) {
         fill(rootName, rootPitch, "7b5",               "C            E    Gb          Bb  ");
         fill(rootName, rootPitch, "7b9",               "C  Db        E       G        Bb  ");
         fill(rootName, rootPitch, "7b9b5",             "C  Db        E    Gb          Bb  ");
+        fill(rootName, rootPitch, "7#9",               "C  D#        E    Gb          Bb  ");
         fill(rootName, rootPitch, "9",                 "C     D      E       G        Bb  ");
         fill(rootName, rootPitch, "9#11",              "C     D      E F#    G        Bb  ");
         fill(rootName, rootPitch, "13",                "C     D      E F     G     A  Bb  ");
@@ -1389,7 +1390,7 @@ ChordSpace.namesForChords = namesForChords;
 ChordSpace.chordsForNames = chordsForNames;
 
 Chord.prototype.name = function() {
-    var chordName = ChordSpace.namesForChords[this.hash()];
+    var chordName = ChordSpace.namesForChords[this.eOP().hash()];
     if (typeof chordName === 'undefined') {
         chordName = '';
     };
@@ -1522,11 +1523,11 @@ Chord.prototype.K = function(range) {
 // Returns whether the chord is a transpositional form of Y with interval size g.
 // Only works in equal temperament.
 // FIXME: Check this in Lua and C++.
-Chord.prototype.Tform = function(Y, g) {
+Chord.prototype.Tform = function(Y_, g) {
     var eopx = this.eOP();
     var i = 0;
     while (i < ChordSpace.OCTAVE) {
-        var ty = Y.T(i);
+        var ty = Y_.T(i);
         var eopty = ty.eOP();
         if (eopx.eq_epsilon(eopty) === true) {
             return true;
@@ -1867,6 +1868,7 @@ ChordSpace.gather = function(score, start, end_) {
  */
 ChordSpace.LSys = function() {
     Silencio.LSys.call(this);
+    this.chordsForTimes = {};
     return this;
 };
 
@@ -1874,6 +1876,7 @@ ChordSpace.LSys.prototype = new Silencio.LSys();
 
 ChordSpace.LSys.prototype.generate = function(n) {
   csound.message('ChordSpace.LSys.prototype.generate\n')
+  this.chordsForTimes = {};
   this.sentence = this.axiom.split(' ');
   for (var g = 0; g < n; g++) {
     var next = [];
@@ -1890,42 +1893,59 @@ ChordSpace.LSys.prototype.generate = function(n) {
   }
 };
 
+ChordSpace.LSys.prototype.insertChordAtTime = function(t) {
+    var tyme = t.event.time;
+    //console.log('Inserting ' + t.chord.toString() + ' at time ' + tyme + '.');
+    this.chordsForTimes[tyme] = t.chord.clone();
+}
+
 ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
   // This was too goopy to call the super.
-  if (c === 'F') {
-    if (size === undefined) {
+  var parts = c.split(',');
+  var opcode = parts[0];
+  var operation = null;
+  var operand = null;
+  if (parts.length > 1) {
+    operation = parts[1];
+  }
+  if (parts.length > 2) {
+    operand = Number(parts[2]);
+  }
+  if (opcode === 'F') {
+    if (typeof size === 'undefined') {
       t.startNote();
       t.go(context);
     } else {
       t.move();
     }
   }
-  else if (c === 'f') t.move();
-  else if (c === '+') t.turnRight();
-  else if (c === '-') t.turnLeft();
-  else if (c === '[') t.push();
-  else if (c === ']') t.pop();
-  else if (c === 'I') t.upInstrument();
-  else if (c === 'i') t.downInstrument();
-  else if (c === 'V') t.upVelocity();
-  else if (c === 'v') t.downVelocity();
-  else if (c === 'T') t.upTempo();
-  else if (c === 't') t.downTempo();
-  else if (c === 'K') t.K();
-  else {
-    var parts = c.split(',');
-    var cc = parts [0];
-           if (cc === 'T') {
+  else if (opcode === 'f') t.move();
+  else if (opcode === '+') t.turnRight();
+  else if (opcode === '-') t.turnLeft();
+  else if (opcode === '[') t.push();
+  else if (opcode === ']') t.pop();
+  else if (opcode === 'I') t.upInstrument();
+  else if (opcode === 'i') t.downInstrument();
+  else if (opcode === 'V') t.upVelocity();
+  else if (opcode === 'v') t.downVelocity();
+  else if (opcode === 'C') {
+    this.insertChordAtTime(t);
+  } else if (opcode === 'K') {
+    t.K();
+    this.insertChordAtTime(t);
+  } else if (opcode === 'T') {
       t.T(Number(parts[1]));
-    } else if (cc === 'I') {
+    this.insertChordAtTime(t);
+  } else if (opcode === 'I') {
       t.I(Number(parts[1]));
-    } else if (cc === 'Q') {
+    this.insertChordAtTime(t);
+  } else if (opcode === 'Q') {
       t.Q(Number(parts[1]));
-    } else if (cc === 'J') {
+    this.insertChordAtTime(t);
+  } else if (opcode === 'J') {
       t.J(Number(parts[1], Number(parts[2])));
-    } else if (cc === 't') {
-      var operation = parts[1];
-      var operand = Number(parts[2]);
+    this.insertChordAtTime(t);
+  } else if (opcode === 't') {
       if (operation === '=') {
         t.tempo = operand;
       } else if (operation === '+') {
@@ -1936,31 +1956,48 @@ ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
         t.tempo *= operand;
       } else if (operation === '/') {
         t.tempo /= operand;
-        csound.message('tempo:' + t.tempo + '\n');
-      }
     };
-  };
-  if (size === undefined) {
+        csound.message('tempo:' + t.tempo + '\n');
+    };
+  if (typeof size === 'undefined') {
     if (c === 'F') {
       t.endNote(this.score);
-    }
+    };
     this.prior = c;
   } else {
       this.findSize(t, size);
-  }
+  };
 };
 
 /**
- * Conforms the pitch of each event in this, if it has a chord,
- * to the closest pitch-class in that chord, not under octave equivalence.
+ * Conforms the pitch of each event in this,
+ * to the closest pitch-class in the chord that applies to the event's time.
  */
 ChordSpace.LSys.prototype.conformToChords = function () {
-    for (var i = 0; i < this.score.size(); i++) {
-        var event = this.score.get(i);
-        if (event.chord !== null) {
-            ChordSpace.conformToChord(event, event.chord, false);
-        };
-    };
+    var times = [];
+    for (var begin in this.chordsForTimes) {
+        if (this.chordsForTimes.hasOwnProperty(begin)) {
+            times.push(begin);
+        }
+    }
+    times.sort(function(a, b)
+        {
+            if (parseFloat(a) < parseFloat(b)) {
+                return -1;
+            }
+            if (parseFloat(a) > parseFloat(b)) {
+                return 1;
+            }
+            return 0;
+        });
+    var end = this.score.getDuration();
+    for (var i = times.length - 1; i >= 0; i--) {
+        var begin = times[i];
+        var chord = this.chordsForTimes[begin];
+        console.log('Applying:' + chord.toString() + ' from ' + begin + ' to ' + end + '.');
+        ChordSpace.apply(this.score, begin, end, chord, false);
+        end = begin;
+    }
 };
 
 /**
