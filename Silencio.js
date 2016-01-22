@@ -203,7 +203,9 @@ Event.prototype.toIStatement = function() {
 }
 
 Event.prototype.temper = function(tonesPerOctave) {
-  tonesPerOctave = tonesPerOctave || 12;
+  if (typeof tonesPerOctave === 'undefined') {
+      tonesPerOctave = 12;
+  }
   var octave = this.key / 12;
   var tone = Math.floor((octave * tonesPerOctave) + 0.5);
   octave = tone / tonesPerOctave;
@@ -275,25 +277,24 @@ Score.prototype.log = function (what) {
 
 Score.prototype.setDuration = function (duration) {
   this.sort();
-  // Translate to start at time 0.
   var start = this.data[0].time;
   for (var i = 0; i < this.data.length; i++) {
     var event = this.data[i];
-    event.time = event.time - start;
+    event.data[0] = event.data[0] - start;
   }
-  // Find current duration.
-  var currentDuration = this.getDuration();
-  csound.message('Old score duration is: ' + currentDuration + '\n');
-  // Rescale to fit specified duration.
-  var factor = Math.abs(duration / currentDuration);
-  csound.message('Rescaling score times by: ' + factor + '\n');
+  var currentDuration = this.data[0].end;
   for (var i = 0; i < this.data.length; i++) {
     var event = this.data[i];
-    event.time = event.time * factor;
-    event.duration = event.duration * factor;
+    if (event.end > currentDuration) {
+      currentDuration = event.end;
+    }
   }
-  var newDuration = this.getDuration();
-  csound.message('New score duration is: ' + newDuration + '\n');
+  var factor = Math.abs(duration / currentDuration);
+  for (var i = 0; i < this.data.length; i++) {
+    var event = this.data[i];
+    event.data[0] = event.data[0] * factor;
+    event.data[1] = event.data[1] * factor;
+  }
 }
 
 Score.prototype.sendToCsound = function(csound, extra) {

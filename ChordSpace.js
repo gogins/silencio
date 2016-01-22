@@ -547,11 +547,11 @@ ChordSpace.chord_compare_epsilon = function(a, b) {
 Chord.prototype.hash = function() {
     var buffer = '';
     for (var voice = 0; voice < this.voices.length; voice++) {
-        var digit = this.voices[voice].toString();
+        var value = sprintf("%11.6f", this.voices[voice]).trim();
         if (voice === 0) {
-            buffer = buffer.concat(digit);
+            buffer = buffer.concat(value);
         } else {
-            buffer = buffer.concat(',', digit);
+            buffer = buffer.concat(',', value);
         };
     }
     return buffer;
@@ -590,7 +590,7 @@ Chord.prototype.minimumInterval = function() {
 // Returns the highest pitch in the chord,
 // and also its voice index.
 Chord.prototype.max = function() {
-    var highestVoice = 1;
+    var highestVoice = 0;
     var highestPitch = this.voices[highestVoice];
     for(var voice = 1; voice < this.voices.length; voice++) {
         if (this.voices[voice] > highestPitch) {
@@ -762,6 +762,10 @@ Chord.prototype.epcs = function() {
     return this.er(ChordSpace.OCTAVE);
 };
 
+Chord.prototype.eopcs = function() {
+    return this.er(ChordSpace.OCTAVE).eP();
+};
+
 // Returns the equivalent of the chord within the fundamental domain of
 // transposition to 0.
 Chord.prototype.et = function() {
@@ -811,7 +815,7 @@ Chord.prototype.eR = function(range) {
     // First, move all pitches inside the interval [0,  range),
     // which is not the same as the fundamental domain.
     var normal = this.er(range);
-    // Then, reflect voiceN that are outside of the fundamental domain
+    // Then, reflect voices that are outside of the fundamental domain
     // back into it, which will revoice the chord, i.e.
     // the sum of pitches will then be in [0,  range].
     while (ChordSpace.lt_epsilon(normal.layer(), range) === false) {
@@ -819,7 +823,7 @@ Chord.prototype.eR = function(range) {
         var maximumPitch = max_[0];
         var maximumVoice = max_[1];
         // Because no voice is above the range,
-        // any voiceN that need to be revoiced will now be negative.
+        // any voices that need to be revoiced will now be negative.
         normal.voices[maximumVoice] = maximumPitch - range;
     };
     return normal;
@@ -927,18 +931,12 @@ Chord.prototype.eI = function() {
 // Returns whether the chord is within the representative fundamental domain
 // of range and permutational equivalence.
 Chord.prototype.iseRP = function(range) {       
-    for (var voice = 1; voice < this.size(); voice++) {
-        if (ChordSpace.le_epsilon(this.voices[voice - 1], this.voices[voice]) === false) {
+    if (!this.iseP() === true) {
             return false;
-        };
-    };
-    if (ChordSpace.le_epsilon(this.voices[this.size() - 1], (this.voices[0] + range)) === false) {
+    }
+    if (!this.iseR(range) === true) {
         return false;
-    };
-    var layer_ = this.layer();
-    if (!(ChordSpace.le_epsilon(0, layer_) && ChordSpace.le_epsilon(layer_, range))) {
-        return false;
-    };
+    }
     return true;
 };
 
@@ -1282,14 +1280,13 @@ pitchClassesForNames["Bb"] = 10;
 pitchClassesForNames["B" ] = 11;
 ChordSpace.pitchClassesForNames = pitchClassesForNames;
 
-chordsForNames = {};
-namesForChords = {};
+var chordsForNames = {};
+var namesForChords = {};
 
 var fill = function(rootName, rootPitch, typeName, typePitches) {
     typePitches = typePitches.trim();
     var chordName = rootName + typeName;
     var chord = new ChordSpace.Chord();
-    // FIXME: re is incorrect.
     var splitPitches = typePitches.split(/\s+/g);
     if (typeof splitPitches !== 'undefined') {
         chord.resize(splitPitches.length);
@@ -1300,9 +1297,9 @@ var fill = function(rootName, rootPitch, typeName, typePitches) {
                 chord.voices[voice] = rootPitch + pitch;
             }
         };
-        chord = chord.eOP();
-        chordsForNames[chordName] = chord;
-        namesForChords[chord.hash()] = chordName;
+        var eop = chord.eOP();
+        chordsForNames[chordName] = eop;
+        namesForChords[eop.hash()] = chordName;
     };
 };
 
@@ -1411,10 +1408,10 @@ Chord.prototype.information = function() {
     var et = this.eT().et();
     var evt = this.eV().et();
     var eopt = this.eOPT().et();
-    var epcs = this.epcs().eP();
+    var epcs = this.eopcs();
     var eopti = this.eOPTI().et();
     var eOP = this.eOP();
-    var chordName = eOP.name();
+    var chordName = this.name();
     return sprintf("pitches:  %s  %s\n\
 I:        %s\n\
 eO:       %s  iseO:    %s\n\
@@ -1823,6 +1820,16 @@ ChordSpace.conformToChord = function(event, chord, octaveEquivalence) {
     return event;
 };
 
+ChordSpace.conformScoreToChord = function(score, chord, octaveEquivalence) {
+    octaveEquivalence = typeof octaveEquivalence !== 'undefined' ? octaveEquivalence : true;
+    for (var i = 0; i < score.size(); i++) {
+        var event = score.data[i];
+        if (event.status === 144) {
+            event.key = ChordSpace.conformPitchToChord(event.key, chord, octaveEquivalence);
+        };
+    };
+    return event;
+};
 // Inserts the notes of the chord into the score at the specified time.
 // The internal duration, instrument, and loudness are used if present,
 // if not the specified values are used.
@@ -1893,25 +1900,10 @@ ChordSpace.LSys.prototype.generate = function(n) {
   }
 };
 
-ChordSpace.LSys.prototype.insertChordAtTime = function(t) {
-    var tyme = t.event.time;
-    //console.log('Inserting ' + t.chord.toString() + ' at time ' + tyme + '.');
-    this.chordsForTimes[tyme] = t.chord.clone();
-}
 
 ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
   // This was too goopy to call the super.
-  var parts = c.split(',');
-  var opcode = parts[0];
-  var operation = null;
-  var operand = null;
-  if (parts.length > 1) {
-    operation = parts[1];
-  }
-  if (parts.length > 2) {
-    operand = Number(parts[2]);
-  }
-  if (opcode === 'F') {
+  if (c === 'F') {
     if (typeof size === 'undefined') {
       t.startNote();
       t.go(context);
@@ -1919,33 +1911,40 @@ ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
       t.move();
     }
   }
-  else if (opcode === 'f') t.move();
-  else if (opcode === '+') t.turnRight();
-  else if (opcode === '-') t.turnLeft();
-  else if (opcode === '[') t.push();
-  else if (opcode === ']') t.pop();
-  else if (opcode === 'I') t.upInstrument();
-  else if (opcode === 'i') t.downInstrument();
-  else if (opcode === 'V') t.upVelocity();
-  else if (opcode === 'v') t.downVelocity();
-  else if (opcode === 'C') {
-    this.insertChordAtTime(t);
-  } else if (opcode === 'K') {
+  else if (c === 'f') t.move();
+  else if (c === '+') t.turnRight();
+  else if (c === '-') t.turnLeft();
+  else if (c === '[') t.push();
+  else if (c === ']') t.pop();
+  else if (c === 'I') t.upInstrument();
+  else if (c === 'i') t.downInstrument();
+  else if (c === 'V') t.upVelocity();
+  else if (c === 'v') t.downVelocity();
+  else if (c === 'T') t.upTempo();
+  else if (c === 't') t.downTempo();
+  else if (c === 'C') {
+      this.chordsForTimes[t.event.start] = t.chord.clone();
+  } else if (c === 'K') {
     t.K();
-    this.insertChordAtTime(t);
-  } else if (opcode === 'T') {
+      this.chordsForTimes[t.event.start] = t.chord.clone();
+  } else {
+    var parts = c.split(',');
+    var cc = parts [0];
+           if (cc === 'T') {
       t.T(Number(parts[1]));
-    this.insertChordAtTime(t);
-  } else if (opcode === 'I') {
+      this.chordsForTimes[t.event.start] = t.chord.clone();
+    } else if (cc === 'I') {
       t.I(Number(parts[1]));
-    this.insertChordAtTime(t);
-  } else if (opcode === 'Q') {
+      this.chordsForTimes[t.event.start] = t.chord.clone();
+    } else if (cc === 'Q') {
       t.Q(Number(parts[1]));
-    this.insertChordAtTime(t);
-  } else if (opcode === 'J') {
+      this.chordsForTimes[t.event.start] = t.chord.clone();
+    } else if (cc === 'J') {
       t.J(Number(parts[1], Number(parts[2])));
-    this.insertChordAtTime(t);
-  } else if (opcode === 't') {
+      this.chordsForTimes[t.event.start] = t.chord.clone();
+    } else if (cc === 't') {
+      var operation = parts[1];
+      var operand = Number(parts[2]);
       if (operation === '=') {
         t.tempo = operand;
       } else if (operation === '+') {
@@ -1956,17 +1955,18 @@ ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
         t.tempo *= operand;
       } else if (operation === '/') {
         t.tempo /= operand;
-    };
         csound.message('tempo:' + t.tempo + '\n');
+      }
+    };
     };
   if (typeof size === 'undefined') {
     if (c === 'F') {
       t.endNote(this.score);
-    };
+    }
     this.prior = c;
   } else {
       this.findSize(t, size);
-  };
+  }
 };
 
 /**
@@ -1975,26 +1975,15 @@ ChordSpace.LSys.prototype.interpret = function(c, t, context, size) {
  */
 ChordSpace.LSys.prototype.conformToChords = function () {
     var times = [];
-    for (var begin in this.chordsForTimes) {
-        if (this.chordsForTimes.hasOwnProperty(begin)) {
-            times.push(begin);
+    for (var tyme in this.chordsForTimes) {
+        if (this.chordsForTimes.hasOwnProperty(tyme)) {
+            times.append(tyme);
         }
     }
-    times.sort(function(a, b)
-        {
-            if (parseFloat(a) < parseFloat(b)) {
-                return -1;
-            }
-            if (parseFloat(a) > parseFloat(b)) {
-                return 1;
-            }
-            return 0;
-        });
-    var end = this.score.getDuration();
-    for (var i = times.length - 1; i >= 0; i--) {
+    var end = this.score.duration();
+    for (var i = 0; i < times.length; i++) {
         var begin = times[i];
-        var chord = this.chordsForTimes[begin];
-        console.log('Applying:' + chord.toString() + ' from ' + begin + ' to ' + end + '.');
+        var chord = this.chordsForTimes[tyme];
         ChordSpace.apply(this.score, begin, end, chord, false);
         end = begin;
     }
