@@ -1969,10 +1969,10 @@ ChordSpace.LSys.prototype.conformToChords = function () {
     var times = [];
     for (var tyme in this.chordsForTimes) {
         if (this.chordsForTimes.hasOwnProperty(tyme)) {
-            times.append(tyme);
+            times.push(tyme);
         }
     }
-    var end = this.score.duration();
+    var end = this.score.getDuration();
     for (var i = 0; i < times.length; i++) {
         var begin = times[i];
         var chord = this.chordsForTimes[tyme];
