@@ -1975,7 +1975,7 @@ ChordSpace.LSys.prototype.conformToChords = function () {
     var end = this.score.getDuration();
     for (var i = 0; i < times.length; i++) {
         var begin = times[i];
-        var chord = this.chordsForTimes[tyme];
+        var chord = this.chordsForTimes[begin];
         ChordSpace.apply(this.score, begin, end, chord, false);
         end = begin;
     }
