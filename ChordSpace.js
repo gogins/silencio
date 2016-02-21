@@ -457,7 +457,7 @@ Chord.prototype.count = function(pitch) {
 Chord.prototype.toString = function() {
     var buffer = '[';
     for (var voice = 0; voice < this.voices.length; voice++) {
-        buffer = buffer + sprintf('%12.7f ', this.voices[voice]);
+        buffer = buffer + this.voices[voice] + ' '; //sprintf('%12.7f ', this.voices[voice]);
     }
     buffer = buffer + ']';
     return buffer;
@@ -540,7 +540,7 @@ ChordSpace.chord_compare_epsilon = function(a, b) {
 Chord.prototype.hash = function() {
     var buffer = '';
     for (var voice = 0; voice < this.voices.length; voice++) {
-        var value = sprintf("%11.6f", this.voices[voice]).trim();
+        var value = this.voices[voice]; //sprintf("%11.6f", this.voices[voice]).trim();
         if (voice === 0) {
             buffer = buffer.concat(value);
         } else {
