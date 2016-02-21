@@ -10,6 +10,9 @@ Part of Silencio, an algorithmic music composition library for Csound.
 
 This parametric Lindenmayer system for generating musical scores is defined
 as follows. See http://hardlikesoftware.com/projects/lsystem/lsystem.html.
+For the original definition of this type of system, see Przemyslaw
+Prusinkiewicz and Aristid Lindenmayer, _The Algorithmic Beauty of Plants_
+(New York: Springer Verlag, 1996 [1990]), pp. 40-50.
 
 Name: JavaScript identifier.
 
@@ -132,31 +135,46 @@ ParametricLindenmayer.Word.prototype.rewrite = function(lsystem, current_product
     if (typeof rule === 'undefined') {
         current_production.push(this.clone());
     } else {
-        if (lsystem.evaluate_condition_expression(this, rule) === true) {
-            for (var i = 0; i < rule.production.length; i++) {
-                var child = rule.production[i].clone();
+        var productions_for_conditions = rule.productions_for_conditions;
+        for (var condition in productions_for_conditions) {
+            if (productions_for_conditions.hasOwnProperty(condition)) {
+                var production = productions_for_conditions[condition];
+                if (lsystem.evaluate_condition_expression(this, condition) === true) {
+                    for (var i = 0; i < production.length; i++) {
+                        var child = production[i].clone();
                 lsystem.evaluate_actual_parameter_expressions(this, child);
                 current_production.push(child);
             }
+                }
         } else {
             console.log('Condition "false", skipping rewriting of ' + this.text + '.');
         }
     }
 }
+}
 
 ParametricLindenmayer.Rule = function(word_, condition_, production_) {
+    if (typeof word_ === typeof '') {
     this.word = new ParametricLindenmayer.Word(word_);
-    this.condition = condition_;
-    this.production = [];
+    } else {
+        this.word = word_.clone();
+    }
+    this.productions_for_conditions = {};
+    this.add_condition(condition_, production_);
+}
+
+ParametricLindenmayer.Rule.prototype.add_condition = function(condition_, production_) {
+    var production = [];
     var words = production_.split(';');
     for(var i = 0; i < words.length; i++) {
         var word = words[i];
         if (typeof word !== 'undefined' && word !== null) {
             if (word.length > 0) {
-                this.production.push(new ParametricLindenmayer.Word(word));
+                production.push(new ParametricLindenmayer.Word(word));
             }
         }
     }
+    this.productions_for_conditions[condition_] = production;
 }
 
 ParametricLindenmayer.PLSystem = function() {
@@ -304,7 +322,7 @@ ParametricLindenmayer.PLSystem.prototype.evaluate_actual_parameter_expressions =
     }
 }
 
-ParametricLindenmayer.PLSystem.prototype.evaluate_condition_expression = function(parent_word, rule) {
+ParametricLindenmayer.PLSystem.prototype.evaluate_condition_expression = function(parent_word, condition) {
     try {
         var prologue = '';
         var formal_parameters = this.formal_parameters_for_commands[parent_word.key];
@@ -320,7 +338,7 @@ ParametricLindenmayer.PLSystem.prototype.evaluate_condition_expression = functio
                 prologue += value_assignment;
             }
         }
-        return ParametricLindenmayer.evaluate_with_minimal_scope(prologue + rule.condition);
+        return ParametricLindenmayer.evaluate_with_minimal_scope(prologue + condition);
     } catch (err) {
         console.log(err.stack);
         throw err;
@@ -349,9 +367,15 @@ ParametricLindenmayer.PLSystem.prototype.add_command = function(word_text, comma
     this.formal_parameters_for_commands[word.key] = formal_parameters;
 }
 
-ParametricLindenmayer.PLSystem.prototype.add_rule = function(word, condition, production) {
-    var rule = new ParametricLindenmayer.Rule(word, condition, production);
+ParametricLindenmayer.PLSystem.prototype.add_rule = function(word_, condition, production) {
+    var word = new ParametricLindenmayer.Word(word_);
+    var rule = this.rule_for_word(word);
+    if (typeof rule === 'undefined') {
+        rule = new ParametricLindenmayer.Rule(word, condition, production);
     this.rules_for_words[rule.word.key] = rule;
+    } else {
+        rule.add_condition(condition, production);
+    }
 }
 
 ParametricLindenmayer.PLSystem.prototype.command_for_word = function(word) {
