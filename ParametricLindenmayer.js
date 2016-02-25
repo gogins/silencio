@@ -451,13 +451,13 @@ ParametricLindenmayer.PLSystem.prototype.conformToChords = function () {
         }
     }
     times = times.sort(function(a, b){return a - b; });
-    times = times.reverse();
-    var end = this.score.getEnd();
-    for (var i = 0; i < times.length; i++) {
+    var length_ = times.length;
+    times.push(this.score.getEnd());
+    for (var i = 0; i < length_; i++) {
         var begin = times[i];
+        var end = times[i + 1];
         var chord = this.chords_for_times[begin];
-        ChordSpace.apply(this.score, begin, end, chord, false);
-        end = begin;
+        ChordSpace.apply(this.score, chord, begin, end, false);
     }
 }
 

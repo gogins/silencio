@@ -507,7 +507,7 @@ Score.prototype.slice = function(begin, end_) {
         var event = this.data [index];
         var time_ = event.time;
         if (time_ >= begin && time_ < end_) {
-            s.append(event.clone ());
+            s.append(event);
         };
     };
     return s;
