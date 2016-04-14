@@ -214,7 +214,7 @@ Event.prototype.temper = function(tonesPerOctave) {
 
 Event.prototype.clone = function() {
   other = new Event();
-  other.data = this.data.slice();
+  other.data = this.data.slice(0);
   return other;
 }
 
@@ -263,20 +263,6 @@ Score.prototype.getDuration = function () {
   return duration;
 }
 
-Score.prototype.getEnd = function () {
-  for (var i = 0; i < this.data.length; i++) {
-    var event = this.data[i];
-    if (i === 0) {
-        var end = event.end;
-    } else {
-        if (end < event.end) {
-            end = event.end;
-        }
-    }
-  }
-  return end;
-}
-
 Score.prototype.log = function (what) {
   if (typeof what === 'undefined') {
     what = '';
@@ -321,9 +307,24 @@ Score.prototype.sendToCsound = function(csound, extra) {
   jscore = 'f 0 ' + duration + ' 0\n';
     }
   for (var i = 0; i < this.data.length; i++) {
-    jscore += this.data[i].toIStatement() + '\n';
-  }
-  csound.readScore(jscore);
+        var event = this.data[i];
+        var pfields = [];
+        pfields.push(event.data[3]);
+        pfields.push(event.data[0]);
+        pfields.push(event.data[1]);
+        pfields.push(event.data[4]);
+        pfields.push(event.data[5]);
+        pfields.push(event.data[6]);
+        pfields.push(event.data[7]);
+        pfields.push(event.data[8]);
+        pfields.push(event.data[9]);
+    }
+    csound.scoreEvent('i', pfields);
+  //for (var i = 0; i < this.data.length; i++) {
+  //  jscore += this.data[i].toIStatement() + '\n';
+  //}
+  // Still too slow!...
+  //csound.inputMessage(jscore);
 }
 
 Score.prototype.findScales = function() {
@@ -438,13 +439,12 @@ Score.prototype.draw = function(canvas, W, H) {
   csound.message("ranges:  " + this.ranges + "\n");
   var xsize = this.getDuration();
   var ysize = this.ranges.key;
-  var ymax = this.minima.key + ysize;
-  var xscale = Math.abs(W / xsize) * 0.875;
-  var yscale = Math.abs(H / ysize) * 0.875;
-  var xmove = - this.minima.time * 0.875;
-  var ymove = - (ymax / 0.9875);
+  var xscale = Math.abs(W / xsize);
+  var yscale = Math.abs(H / ysize);
+  var xmove = - this.minima.time;
+  var ymove = - this.minima.key;
   var context = canvas.getContext("2d");
-  context.scale(xscale, -yscale);
+  context.scale(xscale, yscale);
   context.translate(xmove, ymove);
   csound.message("score:  " + xsize + ", " + ysize + "\n");
   csound.message("canvas: " + W + ", " + H + "\n");
@@ -464,18 +464,18 @@ Score.prototype.draw = function(canvas, W, H) {
     var y = this.data[i].key;
     var hue = this.data[i].channel - this.minima.channel;
     hue = hue / channelRange;
-    hue *= 180;
     var value = this.data[i].velocity - this.minima.velocity;
     value = value / velocityRange;
     value = .5 + value / 2;
     var hsv = "hsv("+hue+","+1+","+value+")";
     context.strokeStyle = tinycolor(hsv).toHexString();
-    //csound.message('note: ' + i + ' time: ' + x1 + ' key:  ' + y + " color: " + context.strokeStyle + "\n");
-    //context.strokeStyle = '#008000';
+    //csound.message("color: " + context.strokeStyle + "\n");
+    //context.strokeStyle = 'red';
     context.beginPath();
     context.moveTo(x1, y);
     context.lineTo(x2, y);
     context.stroke();
+    //csound.message("note " + i + ": " + x1 + ", " + x2 + ", " + y + "\n");
   }
 }
 
@@ -507,7 +507,7 @@ Score.prototype.slice = function(begin, end_) {
         var event = this.data [index];
         var time_ = event.time;
         if (time_ >= begin && time_ < end_) {
-            s.append(event);
+            s.append(event.clone ());
         };
     };
     return s;
@@ -791,7 +791,6 @@ function Recurrent(generators, transitions, depth, index, cursor, score)
 
 console.log('browser:  ' + navigator.appName)
 console.log('platform: ' + navigator.platform)
-
 var Silencio = {
   eq_epsilon: eq_epsilon,
   gt_epsilon: gt_epsilon,

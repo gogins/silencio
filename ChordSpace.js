@@ -457,7 +457,7 @@ Chord.prototype.count = function(pitch) {
 Chord.prototype.toString = function() {
     var buffer = '[';
     for (var voice = 0; voice < this.voices.length; voice++) {
-        buffer = buffer + this.voices[voice] + ' '; //sprintf('%12.7f ', this.voices[voice]);
+        buffer = buffer + sprintf('%12.7f ', this.voices[voice]);
     }
     buffer = buffer + ']';
     return buffer;
@@ -540,7 +540,7 @@ ChordSpace.chord_compare_epsilon = function(a, b) {
 Chord.prototype.hash = function() {
     var buffer = '';
     for (var voice = 0; voice < this.voices.length; voice++) {
-        var value = this.voices[voice]; //sprintf("%11.6f", this.voices[voice]).trim();
+        var value = sprintf("%11.6f", this.voices[voice]).trim();
         if (voice === 0) {
             buffer = buffer.concat(value);
         } else {
@@ -1776,30 +1776,25 @@ Chord.prototype.toScore = function(score, time_, duration_, channel_, velocity_,
 // FIXME: Correct Lua and C++.
 ChordSpace.conformPitchToChord = function(pitch, chord, octaveEquivalence) {
     octaveEquivalence = typeof octaveEquivalence !== 'undefined' ? octaveEquivalence : true;
-    var pitchClass = ChordSpace.epc(pitch);
+    var pitchClass = ChordSpace.modulo(pitch, ChordSpace.OCTAVE);
     var octave = pitch - pitchClass;
-    var chordPitchClass = ChordSpace.epc(chord.voices[0]);
+    var chordPitchClass = ChordSpace.modulo(chord.voices[0], ChordSpace.OCTAVE);
     var distance = Math.abs(chordPitchClass - pitchClass);
     var closestPitchClass = chordPitchClass;
     var minimumDistance = distance;
     for (var voice = 1; voice < chord.size(); voice++) {
-        chordPitchClass = ChordSpace.epc(chord.voices[voice]);
+        chordPitchClass = ChordSpace.modulo(chord.voices[voice], ChordSpace.OCTAVE);
         distance = Math.abs(chordPitchClass - pitchClass);
         if (ChordSpace.lt_epsilon(distance, minimumDistance) === true) {
             minimumDistance = distance;
             closestPitchClass = chordPitchClass;
         }
     }
-    var new_pitch = pitch;
     if (octaveEquivalence === true) {
-        new_pitch = closestPitchClass;
+        return closestPitchClass;
     } else {
-        new_pitch = octave + closestPitchClass;
+        return octave + closestPitchClass;
     }
-    if (ChordSpace.eq_epsilon(pitch, new_pitch) === false) {
-        console.log('Changed ' + pitch + ' (' + pitchClass + ') to ' + new_pitch + ' (' + closestPitchClass + ')');
-    }
-    return new_pitch
 }
 
 // If the event is a note, moves its pitch
@@ -1847,7 +1842,6 @@ ChordSpace.apply = function(score, chord, start, end_, octaveEquivalence) {
     octaveEquivalence = typeof octaveEquivalence !== 'undefined' ? octaveEquivalence : true;
     var s = score.slice(start, end_);
     for (var index = 0; index < s.size(); index++) {
-        var event = s.data[index];
         ChordSpace.conformToChord(event, chord, octaveEquivalence);
     }
     return s;
@@ -1858,9 +1852,9 @@ ChordSpace.apply = function(score, chord, start, end_, octaveEquivalence) {
 // and up to but not including the end time.
 ChordSpace.gather = function(score, start, end_) {
     var chord = new ChordSpace.Chord();
-    var s = score.slice(start, end_);
-    for(var index = 0; index < s.size(); index++) {
-        var event = s.get(index);
+    var slice = score.slice(start, end_);
+    for(var index = 0; index < slice.size(); index++) {
+        var event = slice.get(index);
         var pitch = event.key;
         if (chord.contains(pitch) === false) {
             chord.add(pitch);
@@ -1978,10 +1972,10 @@ ChordSpace.LSys.prototype.conformToChords = function () {
             times.push(tyme);
         }
     }
-    var end = this.score.getDuration();
+    var end = this.score.duration();
     for (var i = 0; i < times.length; i++) {
         var begin = times[i];
-        var chord = this.chordsForTimes[begin];
+        var chord = this.chordsForTimes[tyme];
         ChordSpace.apply(this.score, begin, end, chord, false);
         end = begin;
     }
