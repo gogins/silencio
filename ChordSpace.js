@@ -13,7 +13,6 @@ Part of Silencio, an algorithmic music composition library for Csound.
     
 // All JavaScript dependencies of ChordSpace.js:
 // var Silencio = require("Silencio");
-// var sprintf = require("sprintf");
 
 var ChordSpace = {}
 
@@ -540,7 +539,7 @@ ChordSpace.chord_compare_epsilon = function(a, b) {
 Chord.prototype.hash = function() {
     var buffer = '';
     for (var voice = 0; voice < this.voices.length; voice++) {
-        var value = sprintf("%11.6f", this.voices[voice]).trim();
+        var value = this.voices[voice].toFixed(6).trim();
         if (voice === 0) {
             buffer = buffer.concat(value);
         } else {
