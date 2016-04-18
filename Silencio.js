@@ -275,6 +275,19 @@ Score.prototype.log = function (what) {
   }
 }
 
+Score.prototype.getEnd = function () {
+  for (var i = 0; i < this.data.length; i++) {
+    var event = this.data[i];
+    if (i === 0) {
+        var end = event.end;
+    } else {
+        if (end < event.end) {
+            end = event.end;
+        }
+    }
+  }
+  return end;
+}
 Score.prototype.setDuration = function (duration) {
   this.sort();
   var start = this.data[0].time;
