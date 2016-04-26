@@ -319,25 +319,24 @@ Score.prototype.sendToCsound = function(csound, extra) {
   var duration = this.getDuration() + extra;
   jscore = 'f 0 ' + duration + ' 0\n';
     }
-  for (var i = 0; i < this.data.length; i++) {
-        var event = this.data[i];
-        var pfields = [];
-        pfields.push(event.data[3]);
-        pfields.push(event.data[0]);
-        pfields.push(event.data[1]);
-        pfields.push(event.data[4]);
-        pfields.push(event.data[5]);
-        pfields.push(event.data[6]);
-        pfields.push(event.data[7]);
-        pfields.push(event.data[8]);
-        pfields.push(event.data[9]);
-    }
-    csound.scoreEvent('i', pfields);
   //for (var i = 0; i < this.data.length; i++) {
-  //  jscore += this.data[i].toIStatement() + '\n';
+    //    var event = this.data[i];
+    //    var pfields = [];
+    //    pfields.push(event.data[3]);
+    //    pfields.push(event.data[0]);
+    //    pfields.push(event.data[1]);
+    //    pfields.push(event.data[4]);
+    //    pfields.push(event.data[5]);
+    //    pfields.push(event.data[6]);
+    //    pfields.push(event.data[7]);
+    //    pfields.push(event.data[8]);
+    //    pfields.push(event.data[9]);
+    //    csound.scoreEvent('i', pfields);
   //}
-  // Still too slow!...
-  //csound.inputMessage(jscore);
+  for (var i = 0; i < this.data.length; i++) {
+    jscore += this.data[i].toIStatement() + '\n';
+  }
+  csound.readScore(jscore);
 }
 
 Score.prototype.findScales = function() {
@@ -457,7 +456,7 @@ Score.prototype.draw = function(canvas, W, H) {
   var xmove = - this.minima.time;
   var ymove = - this.minima.key;
   var context = canvas.getContext("2d");
-  context.scale(xscale, yscale);
+  context.scale(xscale, -yscale);
   context.translate(xmove, ymove);
   csound.message("score:  " + xsize + ", " + ysize + "\n");
   csound.message("canvas: " + W + ", " + H + "\n");
@@ -474,9 +473,9 @@ Score.prototype.draw = function(canvas, W, H) {
   for (var i = 0; i < this.data.length; i++) {
     var x1 = this.data[i].time;
     var x2 = this.data[i].end;
-    var y = this.data[i].key;
+    var y = - ysize + this.data[i].key;
     var hue = this.data[i].channel - this.minima.channel;
-    hue = hue / channelRange;
+    hue = 100 * (hue / channelRange);
     var value = this.data[i].velocity - this.minima.velocity;
     value = value / velocityRange;
     value = .5 + value / 2;
@@ -488,7 +487,7 @@ Score.prototype.draw = function(canvas, W, H) {
     context.moveTo(x1, y);
     context.lineTo(x2, y);
     context.stroke();
-    //csound.message("note " + i + ": " + x1 + ", " + x2 + ", " + y + "\n");
+    //console.log(this.data[i].toString() + ' x1: ' + x1 + ' x2: ' + x2 + ' y: ' + y + ' hsv: ' + hsv + '.');
   }
 }
 
@@ -512,15 +511,23 @@ Score.prototype.get = function(index) {
 // Returns the sub-score containing events
 // starting at or later than the begin time,
 // and up to but not including the end time.
-// The events in the slice are references.
-Score.prototype.slice = function(begin, end_) {
+// The events in the slice are values unless
+// by_reference is true.
+Score.prototype.slice = function(begin, end_, by_reference) {
+      if (typeof by_reference === 'undefined') {
+      by_reference = false;
+    }
     this.sort();
     var s = new Silencio.Score();
     for (var index = 0; index < this.size(); index++) {
         var event = this.data [index];
         var time_ = event.time;
         if (time_ >= begin && time_ < end_) {
+            if (by_reference === true) {
+                s.append(event);
+            } else {
             s.append(event.clone ());
+            }
         };
     };
     return s;
