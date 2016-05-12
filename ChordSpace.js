@@ -1841,6 +1841,7 @@ ChordSpace.apply = function(score, chord, start, end_, octaveEquivalence) {
     octaveEquivalence = typeof octaveEquivalence !== 'undefined' ? octaveEquivalence : true;
     var s = score.slice(start, end_, true);
     for (var index = 0; index < s.size(); index++) {
+        var event = s.data[index];
         ChordSpace.conformToChord(event, chord, octaveEquivalence);
     }
     console.log('Conform to: ' + chord.name() + ' from: ' + start + ' to: ' + end_ + ' notes: ' + s.data.length + '.');
