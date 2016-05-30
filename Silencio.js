@@ -223,6 +223,7 @@ function Score() {
   this.minima = new Event();
   this.maxima = new Event();
   this.ranges = new Event();
+  this.context = null;
 }
 Score.prototype.add = function(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) {
   var event = new Event();
@@ -334,7 +335,7 @@ Score.prototype.sendToCsound = function(csound, extra) {
     //    csound.scoreEvent('i', pfields);
   //}
   for (var i = 0; i < this.data.length; i++) {
-    jscore += this.data[i].toIStatement() + '\n';
+    jscore += this.data[i].toIStatement();
   }
   csound.readScore(jscore);
 }
@@ -445,19 +446,30 @@ Score.prototype.tieOverlaps = function(tieExact) {
   csound.message("After tieing: " + this.data.length + "\n");
 }
 
+Score.prototype.progress = function(score_time) {
+    if (context !== null) {
+        context.fillStyle = "LawnGreen";
+        context.fillRect(0, 60, score_time, .01);
+    }
+}
+
 Score.prototype.draw = function(canvas, W, H) {
   this.findScales();
+  // Draw the score in the central 90% of the canvas.
   csound.message("minima:  " + this.minima + "\n");
   csound.message("ranges:  " + this.ranges + "\n");
   var xsize = this.getDuration();
   var ysize = this.ranges.key;
-  var xscale = Math.abs(W / xsize);
-  var yscale = Math.abs(H / ysize);
-  var xmove = - this.minima.time;
-  var ymove = - this.minima.key;
-  var context = canvas.getContext("2d");
+  var inner_scale = .9
+  // Create a border.
+  var xscale = Math.abs(W * inner_scale / xsize);
+  var yscale = Math.abs(H * inner_scale / ysize);
+  var xmove = this.minima.time;
+  var ymove = this.minima.key;
+  context = canvas.getContext("2d");
   context.scale(xscale, -yscale);
-  context.translate(xmove, ymove);
+  //context.translate(-xmove, -ymove - ysize);
+  context.translate(-xmove + (xsize * (1 - inner_scale)/2), (-ymove - ysize) - (ysize * (1 - inner_scale)/2));
   csound.message("score:  " + xsize + ", " + ysize + "\n");
   csound.message("canvas: " + W + ", " + H + "\n");
   csound.message("scale:  " + xscale + ", " + yscale + "\n");
@@ -473,7 +485,7 @@ Score.prototype.draw = function(canvas, W, H) {
   for (var i = 0; i < this.data.length; i++) {
     var x1 = this.data[i].time;
     var x2 = this.data[i].end;
-    var y = - ysize + this.data[i].key;
+    var y = this.data[i].key;
     var hue = this.data[i].channel - this.minima.channel;
     hue = 100 * (hue / channelRange);
     var value = this.data[i].velocity - this.minima.velocity;
@@ -489,6 +501,7 @@ Score.prototype.draw = function(canvas, W, H) {
     context.stroke();
     //console.log(this.data[i].toString() + ' x1: ' + x1 + ' x2: ' + x2 + ' y: ' + y + ' hsv: ' + hsv + '.');
   }
+  return context;
 }
 
 Score.prototype.toString = function() {
@@ -497,6 +510,18 @@ Score.prototype.toString = function() {
         var event = this.data[i];
         result = result.concat(event.toString());
     };
+    return result;
+};
+
+Score.prototype.toCsoundScore = function(extra) {
+    var result = '';
+    for (var i = 0; i < this.data.length; i++) {
+        var event = this.data[i];
+        result = result.concat(event.toIStatement());
+    };
+    if (typeof extra !== 'undefined') {
+        result.concat('e ' + extra);
+    }
     return result;
 };
 

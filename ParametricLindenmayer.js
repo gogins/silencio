@@ -75,6 +75,7 @@ var ParametricLindenmayer = {};
 
 ParametricLindenmayer.Turtle = function(note_, chord_, modality_) {
     this.step = [1,0,0,0,0,0,0,0,0,0,1];
+    this.scale = [1,1,1,1,1,1,1,1,1,1,1];
     if (typeof note_ === 'undefined') {
         this.note = new Silencio.Event();
     } else {
@@ -83,18 +84,19 @@ ParametricLindenmayer.Turtle = function(note_, chord_, modality_) {
     if (typeof chord_ === 'undefined') {
         this.chord = new ChordSpace.Chord();
     } else {
-        this.chord = chord_;
+        this.chord = chord_.clone();
     }
     if (typeof modality_ === 'undefined') {
         this.modlity_ = new ChordSpace.Chord();
     } else {
-        this.modality = modality_;
+        this.modality = modality_.clone();
     }
 }
 
 ParametricLindenmayer.Turtle.prototype.clone = function() {
     clone_ = new ParametricLindenmayer.Turtle();
     clone_.step = this.step.slice();
+    clone_.scale = this.scale.slice();
     clone_.note = this.note.clone();
     clone_.chord = this.chord.clone();
     clone_.modality = this.modality.clone();
@@ -186,20 +188,26 @@ ParametricLindenmayer.PLSystem = function() {
     this.identity_command = function(lsystem, turtle_) { return turtle_;};
     // Default Commands.
     this.add_command('Assign(dimension, value)', function(lsystem, turtle, dimension, value) {
-        turtle.note.dimension = value;
+        turtle.note.data[dimension] = value;
+        return turtle;
+    });
+    this.add_command('Scale(dimension, value)', function(lsystem, turtle, dimension, value) {
+        turtle.scale[dimension] = value;
         return turtle;
     });
     this.add_command('Move(dimension, value)', function(lsystem, turtle, dimension, value) {
         turtle.note.data[dimension] += value;
         return turtle;
     });
-    this.add_command('Step(s)', function(lsystem, turtle, s) {
+    this.add_command('Steps(s)', function(lsystem, turtle, s) {
         var step_ = numeric.mul(turtle.step, s);
+        var step_ = numeric.mul(step_, turtle.scale);
         turtle.note.data = numeric.add(turtle.note.data, step_);
         return turtle;
     });
     this.add_command('Step()', function(lsystem, turtle) {
-        turtle.note.data = numeric.add(turtle.note.data, turtle.step);
+        var scaled_step = numeric.mul(turtle.step, turtle.scale);
+        turtle.note.data = numeric.add(turtle.note.data, scaled_step);
         return turtle;
     });
     // http://wscg.zcu.cz/wscg2004/Papers_2004_Short/N29.pdf: main rotations.
@@ -209,7 +217,8 @@ ParametricLindenmayer.PLSystem = function() {
         rotation[from_axis][to_axis] = - Math.sin(angle);
         rotation[to_axis][from_axis] =   Math.sin(angle);
         rotation[to_axis][to_axis] =     Math.cos(angle);
-        turtle.step = numeric.dot(rotation, turtle.step);
+        // The step is a row vector, not a column vector.
+        turtle.step = numeric.dotVM(turtle.step, rotation);
         return turtle;
     });
     this.add_command('Assign(i,t,d,k,v,p)', function(lsystem, turtle, i,t,d,k,v,p) {
@@ -222,12 +231,12 @@ ParametricLindenmayer.PLSystem = function() {
         return turtle;
     });
     this.add_command('Move(i,t,d,k,v,p)', function(lsystem, turtle, i,t,d,k,v,p) {
-        turtle.note.channel += i;
-        turtle.note.time += t;
-        turtle.note.duration += d;
-        turtle.note.key += k;
-        turtle.note.velocity += v;
-        turtle.note.pan += p;
+        turtle.note.channel += (i * turtle.scale[3]);
+        turtle.note.time = (turtle.note.time + (t * turtle.scale[0]));
+        turtle.note.duration += (d * turtle.scale[1]);
+        turtle.note.key += (k * turtle.scale[4]);
+        turtle.note.velocity += (v * turtle.scale[5]);
+        turtle.note.pan += (p * turtle.scale[6]);
         return turtle;
     });
     this.add_command('Note(i,t,d,k,v,p)', function(lsystem, turtle, i,t,d,k,v,p) {
@@ -298,7 +307,7 @@ ParametricLindenmayer.evaluate_with_minimal_scope = function(code) {
 
 ParametricLindenmayer.PLSystem.prototype.evaluate_actual_parameter_expressions = function(parent_word, child_word) {
     try {
-        var prologue = '';
+        var prologue = 'var iteration = ' + this.iteration + ';';
         var formal_parameters = this.formal_parameters_for_commands[child_word.key];
         if (typeof formal_parameters !== 'undefined') {
              for (var i = 0; i < formal_parameters.length; i++) {
@@ -324,7 +333,7 @@ ParametricLindenmayer.PLSystem.prototype.evaluate_actual_parameter_expressions =
 
 ParametricLindenmayer.PLSystem.prototype.evaluate_condition_expression = function(parent_word, condition) {
     try {
-        var prologue = '';
+        var prologue = 'var iteration = ' + this.iteration + ';';
         var formal_parameters = this.formal_parameters_for_commands[parent_word.key];
         if (typeof formal_parameters !== 'undefined') {
              for (var i = 0; i < formal_parameters.length; i++) {
@@ -398,8 +407,8 @@ ParametricLindenmayer.PLSystem.prototype.generate = function(iterations) {
         this.iterations = iterations;
     }
     var initial_production = this.axiom;
-    var current_production = []
-    for (var iteration = 0; iteration < this.iterations; iteration++) {
+    var current_production = [];
+    for (this.iteration = 0; this.iteration < this.iterations; this.iteration++) {
         current_production.length = 0;
         for (var wordIndex = 0; wordIndex < initial_production.length; wordIndex++) {
             var parent = initial_production[wordIndex].clone();
