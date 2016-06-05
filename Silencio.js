@@ -199,6 +199,7 @@ Event.prototype.toIStatement = function() {
   text = text.concat(' ', this.data[7].toFixed(6));
   text = text.concat(' ', this.data[8].toFixed(6));
   text = text.concat(' ', this.data[9].toFixed(6));
+  text = text.concat('\n');
   return text;
 }
 
