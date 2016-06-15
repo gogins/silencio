@@ -56,6 +56,116 @@ NOTE: ECMASCRIPT 5 doesn't support inheritance from Array
 in a clean and complete way, so we don't even try.
 */
 
+/**
+ * Deserialize the file, which must contain JSON, and return either
+ * the JSON or the parsed object.
+ * If the pathname is undefined, then use the location + ".json".
+ * Returns the object for success, or null for failure.
+ */
+var restoreFromLocalFile = function(toObject, filepath) {
+    try {
+        if (typeof filepath === 'undefined') {
+            filepath = window.location.pathname.slice(1);
+            filepath = fs.realpathSync(filepath);
+            filepath = filepath + '.json';
+        }
+        console.log('loading from filepath: ' + filepath);
+        var json = fs.readFileSync(filepath);
+        console.log('json: ' + json);
+        if (toObject === true) {
+            var parsed_object = JSON.parse(json);
+            console.log('parsed object: ' + parsed_object);
+            return parsed_object;
+        }
+        return json;
+    } catch (err) {
+        console.log(err.message);
+    }
+}
+
+/**
+ * Translate the object to JSON and save it on the local filesystem.
+ * If the object is already a JSON string, do not translate it.
+ * If the filepath is undefined, then use the location + ".json";
+ * in this case, obviously, the location must be indeed be a local
+ * filepath. Returns true for success, and false for failure.
+ */
+var saveToLocalFile = function(fromObject, object, filepath) {
+    try {
+        if (fromObject) {
+            var json = JSON.stringify(object);
+        } else {
+            var json = object;
+        }
+        if (typeof filepath === 'undefined') {
+            filepath = window.location.pathname.slice(1);
+            filepath = fs.realpathSync(filepath);
+            filepath = filepath + '.json';
+        }
+        console.log('json: ' + json);
+        console.log('saving to filepath: ' + filepath);
+        fs.writeFileSync(filepath, json);
+        return true;
+    } catch (err) {
+        console.log(err.message);
+        return false;
+    }
+}
+
+/**
+ * Restore dat.gui parameters as JSON from:
+ * Local storage, if it exists (this happens in dat.gui itself); otherwise,
+ * from the local file system, if the file exists; otherwise,
+ * using the default parameters in JSON form.
+ * NOTE: 'load' element for dat.gui constructor is a JSON _object_,
+ * not a string.
+ */
+var restoreDatGuiJson = function(default_parameters_json) {
+    var parameters_filesystem_json = Silencio.restoreFromLocalFile(false);
+    if (parameters_filesystem_json != null) {
+        console.log('Restored dat.gui parameters from local filesystem: ' + parameters_filesystem_json);
+        return JSON.parse(parameters_filesystem_json);
+    } else {
+        console.log('Restored dat.gui parameters from default: ' + parameters_default_json);
+        return parameters_default_json;
+    }
+}
+
+/**
+ * Save the parameters object for dat.gui as JSON to the local file system.
+ * Returns true for success, and false for failure.
+ */
+var saveDatGuiJson = function() {
+    try {
+        // Obviously, assumes that local storage does contain the dat.gui JSON parameters!
+        var json = localStorage.getItem(localStorage.key(0));
+        console.log('typeof json:' + (typeof json));
+        saveToLocalFile(false, json);
+        return true;
+    } catch (err) {
+        console.log(err.message);
+        return false;
+    }
+}
+
+/**
+ * Parse the Csound orchestra for hints to create a user interface using
+ * nw.gui sliders; create that user interface in the HTML window; and create
+ * and compile a "Controls" instrument ro receive values from that user
+ * interface.
+ *
+ * The hints are in the form of special comments following global variable
+ * declarations associated with an instrument definition:
+ * g<x>_<instrname>_<variablename> init <default_value> ;|Instrument Name|Control Name|Minimum Valuie|Maximum Value|Increment|
+ */
+var createNwSlider = function(line, window, nwfolder) {
+
+}
+
+var createNwUi = function(orc, csound, window) {
+     var channels = [];
+}
+
 function eq_epsilon(a, b) {
   var epsilon_factor = 100 * Number.EPSILON;
   if (Math.abs(a - b) > epsilon_factor) {
@@ -848,7 +958,11 @@ var Silencio = {
   Turtle: Turtle,
   LSys: LSys,
   RecurrentResult: RecurrentResult,
-  Recurrent: Recurrent
+  Recurrent: Recurrent,
+  saveToLocalFile: saveToLocalFile,
+  restoreFromLocalFile: restoreFromLocalFile,
+  saveDatGuiJson: saveDatGuiJson,
+  restoreDatGuiJson: restoreDatGuiJson
 };
 // Node: Export function
 if (typeof module !== "undefined" && module.exports) {
