@@ -97,6 +97,12 @@ var saveToLocalFile = function(fromObject, object, filepath) {
         } else {
             var json = object;
         }
+        if (typeof json === 'undefined') {
+            throw "saveToLocalFile: json is undefined.";
+        }
+        if (json === null || json === 'null') {
+            throw "saveToLocalFile: json is null.";
+        }
         if (typeof filepath === 'undefined') {
             filepath = window.location.pathname.slice(1);
             filepath = fs.realpathSync(filepath);
@@ -122,7 +128,7 @@ var saveToLocalFile = function(fromObject, object, filepath) {
  */
 var restoreDatGuiJson = function(default_parameters_json) {
     var parameters_filesystem_json = Silencio.restoreFromLocalFile(false);
-    if (parameters_filesystem_json != null) {
+    if (parameters_filesystem_json != null && parameters_filesystem_json != 'null') {
         console.log('Restored dat.gui parameters from local filesystem: ' + parameters_filesystem_json);
         return JSON.parse(parameters_filesystem_json);
     } else {
@@ -135,12 +141,11 @@ var restoreDatGuiJson = function(default_parameters_json) {
  * Save the parameters object for dat.gui as JSON to the local file system.
  * Returns true for success, and false for failure.
  */
-var saveDatGuiJson = function() {
+var saveDatGuiJson = function(gui) {
     try {
-        // Obviously, assumes that local storage does contain the dat.gui JSON parameters!
-        var json = localStorage.getItem(localStorage.key(0));
+        var json = gui.getSaveObject();
         console.log('typeof json:' + (typeof json));
-        saveToLocalFile(false, json);
+        saveToLocalFile(true, json);
         return true;
     } catch (err) {
         console.log(err.message);

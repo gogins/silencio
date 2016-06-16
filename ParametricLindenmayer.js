@@ -135,7 +135,9 @@ ParametricLindenmayer.Word.prototype.clone = function() {
 ParametricLindenmayer.Word.prototype.rewrite = function(lsystem, current_production) {
     var rule = lsystem.rule_for_word(this);
     if (typeof rule === 'undefined') {
-        current_production.push(this.clone());
+        var rule_less = this.clone();
+        lsystem.evaluate_actual_parameter_expressions(null, rule_less);
+        current_production.push(rule_less);
     } else {
         var productions_for_conditions = rule.productions_for_conditions;
         for (var condition in productions_for_conditions) {
@@ -308,6 +310,7 @@ ParametricLindenmayer.evaluate_with_minimal_scope = function(code) {
 ParametricLindenmayer.PLSystem.prototype.evaluate_actual_parameter_expressions = function(parent_word, child_word) {
     try {
         var prologue = 'var iteration = ' + this.iteration + ';';
+        if (parent_word !== null) {
         var formal_parameters = this.formal_parameters_for_commands[child_word.key];
         if (typeof formal_parameters !== 'undefined') {
              for (var i = 0; i < formal_parameters.length; i++) {
@@ -320,6 +323,7 @@ ParametricLindenmayer.PLSystem.prototype.evaluate_actual_parameter_expressions =
                 var value_assignment = 'var ' + formal_parameter_name + ' = ' + parent_actual_parameter_value + ';';
                 prologue += value_assignment;
             }
+        }
         }
         for (var parameterIndex = 0; parameterIndex < child_word.actual_parameter_expressions.length; parameterIndex++) {
             var child_word_actual_parameter_expression = child_word.actual_parameter_expressions[parameterIndex];
