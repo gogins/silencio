@@ -1,5 +1,9 @@
 # silencio
 
+## Update 2 August 2016
+
+I am now hosting some examples of pieces and code that use Silencio at https://github.com/gogins/gogins.github.io.
+
 ## Update 25 August 2015
 
 I have now ported all of Silencio, including all of ChordSpace except the chord space group, from Lua to JavaScript. As time permits and projects demand, I will probably port selected parts of other people's algorithmic composition code to JavaScript. Tendency masks are one candidate, Xenakis sieves are another. This is to support my project of integrating HTML and JavaScript with Csound for a complete, self-contained "playpen" for computer music composers, especially for algorithmic composition.
@@ -17,3 +21,5 @@ As a result, while the original Silencio ran on Android devices only in regular 
 In short, you can really compose on a phone now. I am now spending time seeing just what that is like, and so far it is very different and surprisingly good.
 
 Of course, Silencio will still run in standalone Lua on personal computers, and it will run in Csound with LuaJIT/FFI on personal computers as well.
+
+Please note, examples for Silence may be found at https://github.com/gogins/gogins.github.io.
