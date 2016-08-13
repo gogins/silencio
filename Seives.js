@@ -211,31 +211,6 @@ Residue.prototype.union = function(other) {
 }
 
 
-var Sieve = function(definition, range_) {
-    this.definition = definition;
-    if (typeof range_ === 'undefined') {
-        this.range_ = range(0, 100);
-    }
-    this.state = 'expression';
-    this.expression_type = null;
-    this.incompressible = true;
-    this.residues_for_ids = {}
-    this.residue_count = 0;
-    
-    
-    
-}
-
-Sieve.LGROUP = '{'
-Sieve.RGROUP = '}'
-Sieve.AND = '&'
-Sieve.OR = '|'
-Sieve.XOR = '^'
-Sieve.BOUNDS = [Sieve.LGROUP, Sieve.RGROUP, Sieve.AND, Sieve.OR, Sieve.XOR]
-Sieve.NOT = '-'
-Sieve.RESIDUAL = '0123456789@'.split('');
-
-
 /**
  * Returns the greatest common divisor of integers a and b.
  */
@@ -287,6 +262,30 @@ function meziriac(a, b) {
     }
     return n1;
 }
+
+var Sieve = function(definition, range_) {
+    this.definition = definition;
+    if (typeof range_ === 'undefined') {
+        this.range_ = range(0, 100);
+    }
+    this.state = 'expression';
+    this.expression_type = null;
+    this.incompressible = true;
+    this.residues_for_ids = {}
+    this.residue_count = 0;
+    
+    
+    
+}
+
+Sieve.LGROUP = '{'
+Sieve.RGROUP = '}'
+Sieve.AND = '&'
+Sieve.OR = '|'
+Sieve.XOR = '^'
+Sieve.BOUNDS = [Sieve.LGROUP, Sieve.RGROUP, Sieve.AND, Sieve.OR, Sieve.XOR]
+Sieve.NOT = '-'
+Sieve.RESIDUAL = '0123456789@'.split('');
 
 var Sieves = {
     Complement: Complement,
