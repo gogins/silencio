@@ -3,14 +3,14 @@ C H O R D S P A C E
 
 Copyright (C) 2014 by Michael Gogins
 
-This software is licensed under the terms of the 
+This software is licensed under the terms of the
 GNU Lesser General Public License
 
 Part of Silencio, an algorithmic music composition library for Csound.
 */
 
 (function() {
-    
+
 // All JavaScript dependencies of ChordSpace.js:
 // var Silencio = require("Silencio");
 

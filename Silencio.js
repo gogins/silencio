@@ -347,7 +347,6 @@ function Score() {
 }
 Score.prototype.add = function(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11) {
   var event = new Event();
-
   for (var i = 0; i < event.data.length; i++) {
     if (typeof arguments[i] !== 'undefined') {
       event.data[i] = arguments[i];
@@ -409,6 +408,7 @@ Score.prototype.getEnd = function () {
   }
   return end;
 }
+
 Score.prototype.setDuration = function (duration) {
   this.sort();
   var start = this.data[0].time;
