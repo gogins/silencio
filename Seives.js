@@ -8,55 +8,37 @@ GNU Lesser General Public License
 
 Part of Silencio, an HTML5 algorithmic music composition library for Csound.
 
-This file implements Xenakis sieves using the concepts of Christopher Ariza.
-The composition of residuals with logical operators can specify any finite 
-sequence of natural numbers. A facility for deriving a sieve from a given 
-sequence is not provided. These sieves operate only on the natural numbers.
+This file implements Xenakis sieves based loosely on the concepts of 
+Christopher Ariza. The composition of residuals with logical operators can 
+specify any finite sequence of natural numbers. A facility for deriving a 
+sieve from a given sequence is not provided. These sieves operate only on the 
+natural numbers.
 
-The notation for a residual is from Ariza:
+This code is simpler than Ariza's and does not parse strings. Sieves are
+expected be constructed in code, and are not simplified. Sieves may be composed 
+by means of recursive trees:
 
-modulus[@shift] 
+s1 = Sieve(5, 3)
+s2 = Sieve(4, 13)
+s3 = s1.intersection(s2)
+var sequence = [];
+for (var i = 0; i < 100; i++) {
+    sequence.push(s3(i));
+}
 
-A sieve consists of one or more residuals combined using logical operators:
+Sieves may be used in two modes: real-time (driven by a callback, e.g. from a 
+timer) and non-real-time (producing a complete sequence upon request).
 
-residual [[operator residual] ... ]
-
-The operators are, in order of precedence, - (complement), & (intersection), 
-and | (union).
-
-Parentheses may be used for grouping.
-
-An example of the notation for a sieve is:
-
-(-(13@3 | 13@5 | 13@7 | 13@9) & 11@2) | (-(11@4 | 11@8) & 13@9) | (13@0 | 13@1 | 13@6)
+addTimeout(s3,100);
 
 */
 
 (function() {
     
-/**
- * Returns a Python-type range as an array of integers.
- */
-function range(start, stop, step) {
-    if (typeof stop == 'undefined') {
-        stop = start;
-        start = 0;
-    }
-    if (typeof step == 'undefined') {
-        step = 1;
-    }
-    if ((step > 0 && start >= stop) || (step < 0 && start <= stop)) {
-        return [];
-    }
-    var result = [];
-    for (var i = start; step > 0 ? i < stop : i > stop; i += step) {
-        result.push(i);
-    }
-    return result;
-}
-
-function Residue(modulus, shift, complement_, range_) {
+function Sieve(modulus, shift, complement_) {
     this.modulus = modulus;
+    this.intersections = [];
+    this.unions = [];
     if (typeof shift === 'undefined') {
         shift = 0;
     }
@@ -70,16 +52,10 @@ function Residue(modulus, shift, complement_, range_) {
     } else {
         this.complement_ = complement_;
     }
-    if (typeof range_ === 'undefined') {
-        this.range_ = range(0, 100);
-    } else {
-        this.range_ == range_;
-    }
 }
 
-Residue.prototype.clone = function() {
-    // NOTE: range is copied as a reference, not as a value.
-    other = new Residue(this.modulus, this.shift, this.complement_, this.range_);
+Sieve.prototype.clone = function() {
+    other = new Sieve(this.modulus, this.shift, this.complement_);
     return other;
 }
 
@@ -87,7 +63,7 @@ Residue.prototype.clone = function() {
  * Returns a subset of the sequence for this residue; if the range_ parameter 
  * is not used, then the default range (0, 100) is used.
  */
-Residue.prototype.subset = function(n, range_) {
+Sieve.prototype.subset = function(n, range_) {
     if (typeof n === 'undefined') {
         n = 0;
     }
@@ -118,7 +94,7 @@ Residue.prototype.subset = function(n, range_) {
     }
 }
 
-Residue.prototype.equal = function(other) {
+Sieve.prototype.equal = function(other) {
     if (typeof other === 'undefined') {
         return false;
     }
@@ -134,7 +110,7 @@ Residue.prototype.equal = function(other) {
     return true;
 }
 
-Residue.prototype.not_equal = function(other) {
+Sieve.prototype.not_equal = function(other) {
     if (this.equal(other) {
         return false;
     } else {
@@ -142,7 +118,7 @@ Residue.prototype.not_equal = function(other) {
     }
 }
 
-Residue.prototype.compare = function(other) {
+Sieve.prototype.compare = function(other) {
     if (this.modulus < other.modulus) {
         return -1;
     }
@@ -165,7 +141,7 @@ Residue.prototype.compare = function(other) {
     return 0;
 }
 
-Residue.prototype.compute_intersection = function(modulus_1, modulus_1, shift_1, shift_2) {
+Sieve.prototype.compute_intersection = function(modulus_1, modulus_1, shift_1, shift_2) {
     let divisor = gcd(modulus_1, modulus_2);
     let c_1 = modulus_1 / divisor;
     let c_2 = modulus_2 / divisor;
@@ -189,110 +165,25 @@ Residue.prototype.compute_intersection = function(modulus_1, modulus_1, shift_1,
     }    
 }
     
-Residue.prototype.complement = function() {
+Sieve.prototype.complement = function() {
     let complement_ = !this.complement_;
-    return new Residue(this.modulus, this.shift, complement_, this.range_);
+    return new Sieve(this.modulus, this.shift, complement_, this.range_);
 }
 
-Residue.prototype.intersection = function(other) {
+Sieve.prototype.intersection = function(other) {
     if (this.complement_ || other.complement_) {
-        throw "Error: Cannot compute an intersection with a complemented Residue."
+        throw "Error: Cannot compute an intersection with a complemented Sieve."
     }
     let result = this.compute_itersection(self.modulus, other.modulus, self.shift, other.shift);
     let self_set = new Set(this.range_);
     let other_set = new Set(other.range_);
     let union_set = new Set([...self_set, ...other_set]);
     let union_range = [...union_set];
-    return new Residue(result.modulus, result.shift, false, union_range);    
+    return new Sieve(result.modulus, result.shift, false, union_range);    
 }
 
-Residue.prototype.union = function(other) {
-    // Don't think this can be computed.
-}
-
-
-/**
- * Returns the greatest common divisor of integers a and b.
- */
-function gcd(a, b) {
-    if (a < 0) {
-        a = -a;
-    }
-    if (b < 0) {
-        b = -b;
-    }
-    if (b > a) {
-        var temp = a; 
-        a = b; 
-        b = temp;
-    }
-    while (true) {
-        if (b === 0) {
-            return a;
-        }
-        a %= b;
-        if (a === 0) {
-            return b;
-        }
-        b %= a;
-    }
-}
-
-/**
- * Returns the least common multiple of integers a and b.
- */
-function lcm(a, b) {
-    return Math.abs(a * b) / gcd(a, b); 
-}
-
-function meziriac(a, b) {
-    var n1 = 0;
-    if (b === 1) {
-        n1 = 1;
-    } else if (a === b) {
-        n1 = 0;
-    } else {
-        while (n1 < 100000) {
-            var test = (n1 * a) % b;
-            if (test === 1) {
-                break;
-            }
-            n1 = n1 + 1;
-        }
-    }
-    return n1;
-}
-
-var Sieve = function(definition, range_) {
-    this.definition = definition;
-    if (typeof range_ === 'undefined') {
-        this.range_ = range(0, 100);
-    }
-    this.state = 'expression';
-    this.expression_type = null;
-    this.incompressible = true;
-    this.residues_for_ids = {}
-    this.residue_count = 0;
-    
-    
-    
-}
-
-Sieve.LGROUP = '{'
-Sieve.RGROUP = '}'
-Sieve.AND = '&'
-Sieve.OR = '|'
-Sieve.XOR = '^'
-Sieve.BOUNDS = [Sieve.LGROUP, Sieve.RGROUP, Sieve.AND, Sieve.OR, Sieve.XOR]
-Sieve.NOT = '-'
-Sieve.RESIDUAL = '0123456789@'.split('');
 
 var Sieves = {
-    Complement: Complement,
-    gcd: gcd,
-    lcm: lcm,
-    meziriac: meziriac,
-    range: range,
     Sieve: Sieve
 };
 

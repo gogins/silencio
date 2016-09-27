@@ -6,7 +6,7 @@ Copyright (C) 2014 by Michael Gogins
 This software is licensed under the terms of the
 GNU Lesser General Public License
 
-Part of Silencio, an HTML5 algorithmic music composition library for Csound.
+Part of Silencio, an algorithmic music composition library for Csound.
 
 DEVELOPMENT LOG
 
@@ -16,16 +16,12 @@ Silencio.js was relatively easy, ChordSpace.js is going to be harder. The main
 problems are that JavaScript does not permit operator overloading, and it does
 not implement deep clones or deep value comparisons out of the box.
 
-I will omit the chord space group stuff because it will not always be
-possible to save the chord space group files, which are necessarily for
-efficient use with chords of more than 3 or 4 voices.
+ I will omit the chord space group stuff because it will not always be
+ possible to save the chord space group files, which are necessarily for
+ efficient use with chords of more than 3 or 4 voices.
 
 It is now clear that Lua (and especially LuaJIT) is a rather superior
 language; and yet, JavaScript provides everything that I need.
-
-2016-08-04
-
-I am going to start using some ECMAScript 6 features supported by Chrome.
 
 TO DO
 
@@ -436,11 +432,11 @@ Score.prototype.sendToCsound = function(csound, extra) {
         jscore = '';
     } else {
         extra = 5.0;
-  this.sort();
-  var duration = this.getDuration() + extra;
-  jscore = 'f 0 ' + duration + ' 0\n';
+        this.sort();
+        var duration = this.getDuration() + extra;
+        jscore = 'f 0 ' + duration + ' 0\n';
     }
-  //for (var i = 0; i < this.data.length; i++) {
+    //for (var i = 0; i < this.data.length; i++) {
     //    var event = this.data[i];
     //    var pfields = [];
     //    pfields.push(event.data[3]);
@@ -453,7 +449,7 @@ Score.prototype.sendToCsound = function(csound, extra) {
     //    pfields.push(event.data[8]);
     //    pfields.push(event.data[9]);
     //    csound.scoreEvent('i', pfields);
-  //}
+    //}
   for (var i = 0; i < this.data.length; i++) {
     jscore += this.data[i].toIStatement();
   }
@@ -543,7 +539,7 @@ Score.prototype.tieOverlaps = function(tieExact) {
           {
               //console.log('Tieing: ' + earlierI + ' ' + earlierEvent.toString());
               //console.log('    to: ' + laterI + ' ' + laterEvent.toString());
-            earlierEvent.end = laterEvent.end;
+              earlierEvent.end = laterEvent.end;
               laterEvent.duration = 0;
               laterEvent.velocity = 0;
               //console.log('Result: ' + earlierI + ' ' +  earlierEvent.toString() + '\n');
@@ -671,7 +667,7 @@ Score.prototype.slice = function(begin, end_, by_reference) {
             if (by_reference === true) {
                 s.append(event);
             } else {
-            s.append(event.clone ());
+                s.append(event.clone());
             }
         };
     };
