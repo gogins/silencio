@@ -30,13 +30,15 @@ Both the Lua and the JavaScript versions of Silencio are designed to be used wit
 
 5. Csound for PNaCl: Lua (I think) and JavaScript (for sure) versions.
 
+Currently, the environments I recommend for musicians are csound.node running in [NW.js](http://nwjs.io/) on the desktop, and [Csound for Android](https://play.google.com/store/apps/details?id=com.csounds.Csound6&hl=en) for mobile devices.
+
 ## News
 
 ### 12 October 2016
 
 I have added a WebGL-based 3-dimensional, zoomable piano roll score display to Silencio.js. And I have re-organized this repository to make it easier to understand and use.
 
-Tarmo Johannes and I are working to update CsoundQt to use the Qt SDK's QtWebEngine in place of the Chromium Embedded Framework, which will simplify the code and bring HTML5 with Csound to OSX as well as Windows and Linux.
+Tarmo Johannes and I are working to update [CsoundQt](https://github.com/CsoundQt/CsoundQt) to use the Qt SDK's QtWebEngine for HTML rendering and JavaScript in place of the Chromium Embedded Framework, which will simplify the code and bring HTML5 with Csound to OSX and Linux as well as Windows.
 
 ### 2 August 2016
 
