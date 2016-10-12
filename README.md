@@ -1,7 +1,7 @@
 # silencio
 
-Michael Gogins
-http://michaelgogins.tumblr.com
+Michael Gogins<br>
+http://michaelgogins.tumblr.com<br>
 michael /dot/ gogins /at/ gmail /dot/ com
 
 ## Introduction
@@ -11,6 +11,8 @@ This code is licensed under the terms of the GNU Library General Public License,
 Generative music, algorithmic composition, score generation, call it what you will. Silencio is the first system for algorithmic composition that is designed to run on smartphones and tablets as well as personal computers. 
 
 Silencio includes advanced score generators based on recurrent iterated function systems and parametric Lindenmayer systems, and includes code for chord transformations and voice-leading based on the work of [Dmitri Tymoczko](http://dmitri.mycpanel.princeton.edu/) and other mathematical music theorists. I have been performing works composed with Silencio at conferences and festivals for several years.
+
+Please note, some full-scale examples for Silencio may be found at https://github.com/gogins/gogins.github.io.
 
 The original version of Silencio is written in the Lua programming language, and runs best on Mike Pall's marvelous [LuaJIT/FFI](http://luajit.org/). The current version of Silencio is written in portable JavaScript because that makes more capabilities available to Csound than any other programming environment, including animated 3-dimensional graphics and symbolic mathematics. 
 
@@ -27,8 +29,6 @@ Both the Lua and the JavaScript versions of Silencio are designed to be used wit
 4. csound.node for Windows and Linux: Lua and JavaScript versions.
 
 5. Csound for PNaCl: Lua (I think) and JavaScript (for sure) versions.
-
-Please note, some full-scale examples for Silencio may be found at https://github.com/gogins/gogins.github.io.
 
 ## News
 
