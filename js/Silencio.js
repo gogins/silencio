@@ -700,12 +700,13 @@ Score.prototype.draw3D = function(canvas) {
     var light2 = new THREE.AmbientLight(0x404040, .5);
     this.scene.add(light2);
     // Plot the notes.
-    var geometry = new THREE.BoxBufferGeometry(1, 1, 1);
     for (var i = 0; i < this.data.length; i++) {
         var begin = this.data[i].time;
         var end = this.data[i].end;
+        var duration = end - begin;
         var key = this.data[i].key;
         var channel = this.data[i].channel - this.minima.channel;
+        var geometry = new THREE.BoxBufferGeometry(duration, 1, 1);
         hue = channel / channelRange;
         var value = this.data[i].velocity - this.minima.velocity;
         value = value / velocityRange;
@@ -718,10 +719,7 @@ Score.prototype.draw3D = function(canvas) {
         material.emissive = material.color;
         material.emissiveIntensity = 2 / 3;
         var note = new THREE.Mesh(geometry, material);
-        note.scale.x = end - begin;
-        note.scale.y = 1;
-        note.scale.z = 1;
-        note.position.x = begin + (note.scale.x / 2);
+        note.position.x = begin + duration / 2;// + note.scale.x;
         note.position.y = key;
         note.position.z = channel;
         this.scene.add(note);
@@ -730,42 +728,43 @@ Score.prototype.draw3D = function(canvas) {
     // first C lower than or equal to the lowest pitch in the score.
     var line_material = new THREE.LineBasicMaterial();
     time_minimum = 0;
+    instrument_minimum = 0;
     if (key_minimum % 12 !== 0) {
         key_minimum -= (key_minimum % 12);
     }
+    var grid_geometry = new THREE.BoxBufferGeometry(10, 12, 1);
     for (var t = time_minimum; t <= time_maximum + 10; t = t + 10) {
         for (var k = key_minimum; k <= key_maximum; k = k + 12) {
-            var box = new THREE.LineSegments(new THREE.EdgesGeometry(geometry), line_material);
+            var box = new THREE.LineSegments(new THREE.EdgesGeometry(grid_geometry), line_material);
             ///box = new THREE.EdgesGeometry(box);
             box.material.color.setRGB(0, 0.25, 0);
             box.material.opacity = .25;
             box.material.transparent = true;
-            box.scale.x = 10;
-            box.scale.y = 12;
-            box.scale.z = 0;
             box.position.x = t + 5;
             box.position.y = k + 6;
-            box.position.z = 0 + .5;
+            box.position.z = 0;
+            box.scale.z = 0;
             this.scene.add(box);
         }
     }
     // Put a ball at the origin, to indicate the orientation of the score.
-    var sphere_geometry = new THREE.SphereGeometry(1, 10, 10);
-    var sphere_material = new THREE.MeshLambertMaterial();
-    sphere_material.color.setRGB(0, 255, 0);
-    var origin = new THREE.Mesh(sphere_geometry, sphere_material);
+    var origin_geometry = new THREE.SphereGeometry(1, 10, 10);
+    var origin_material = new THREE.MeshLambertMaterial();
+    origin_material.color.setRGB(0, 255, 0);
+    var origin = new THREE.Mesh(origin_geometry, origin_material);
     origin.position.x = time_minimum;
     origin.position.y = key_minimum;
-    origin.position.z = 0.5;
+    origin.position.z = 0;
     this.scene.add(origin);
     // Put a ball at the start of middle C, to indicate the current Csound 
     // score time.
+    var cursor_geometry = new THREE.SphereGeometry(1, 1, 1);
     var cursor_material = new THREE.MeshLambertMaterial();
     cursor_material.color.setRGB(255, 0, 0);
-    this.score_cursor = new THREE.Mesh(sphere_geometry, cursor_material);
+    this.score_cursor = new THREE.Mesh(cursor_geometry, cursor_material);
     this.score_cursor.position.x = time_minimum;
     this.score_cursor.position.y = 60;
-    this.score_cursor.position.z = 0.5;
+    this.score_cursor.position.z = 0;
     this.scene.add(this.score_cursor);
     var onResize = function() {
         canvas.width  = canvas.clientWidth;
