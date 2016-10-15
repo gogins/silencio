@@ -14,7 +14,7 @@ specify any finite sequence of natural numbers. A facility for deriving a
 sieve from a given sequence is not provided. These sieves operate only on the 
 natural numbers.
 
-This code is simpler than Ariza's and does not parse strings. Sieves are
+This code is simpler than Ariza's as it does not parse strings. Sieves are
 expected be constructed in code, and are not simplified. Sieves may be composed 
 by means of recursive trees:
 
