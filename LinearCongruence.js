@@ -70,30 +70,57 @@ Lehmer.prototype.iterate = function() {
  */
 function LehmerMatrix(size_) {
     this.generators = [];
-    this.patch = [];
+    this.connections = [];
+    this.value = 0;
+    this.iteration = 0;
     for (var i = 0; i < size_; i++) {
         this.generators.push(new Lehmer());
-        this.patch.push({"enabled": false, "routing":'a', "value": 0});
     }
 }
 
 LehmerMatrix.prototype.enable = function(index) {
-    this.patch[index].enabled = true;
+    this.matrix[index].enabled = true;
 }
 
 LehmerMatrix.prototype.disable = function(index) {
-    this.patch[index].enabled = false;
+    this.matrix[index].enabled = false;
 }
 
 /**
- * Input must be one of 'a', 'b', or 'modulus'.
+ * The sink_input must be one of 'a', 'b', or 'modulus'.
  */
-LehmerMatrix.prototype.route = function(index, input) {
-    this.patch[index].routing = input;
+LehmerMatrix.prototype.connect = function(source_index, sink_index, sink_input_, stride) {
+    var source = this.generators[source_index];
+    var sink = this.generators[sink_index];
+    var sink_input_values = {}
+    var sink_input = none;
+    if (typeof stride === 'undefined') {
+        stride = 1;
+    }
+    if (sink_input_ === 'a') {
+        sink_input = sink.set_a;
+    } else if (sink_input_) === 'b') {
+        sink_input = sink.set_b;
+    } else if (sink_input_ === 'modulus') {
+        sink_input = sink.set_modulus;
+    }
+    this.connections.push({source: source, sink: sink, sink_input: sink_input, sink_input_value: 0, stride: stride});
 }
 
-
-
+LehmerMatrix.prototype.iterate = function() {
+    // First reset the inputs.
+    for (var int i = 0; i < this.connections.length; i++) {
+        this.connections[i].sink_input_value = 0;
+    }
+    // First obtain the value of the matrix.
+    for (var int i = 0; i < this.connections.length; i++) {
+        this.connections[i].sink_input_value += this.connections[i].source.value;
+    }
+    // Then perform the next iteration.
+    for (var int i = 0; i < this.connections.length; i++) {
+    }
+    // Then calculate the value of this.
+}
 
 var LinearCongruence = {
     modulo: modulo,
