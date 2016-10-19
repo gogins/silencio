@@ -10,13 +10,13 @@ This code is licensed under the terms of the GNU Library General Public License,
 
 Generative music, algorithmic composition, score generation, call it what you will. Silencio is the first system for algorithmic composition that is designed to run on smartphones and tablets as well as personal computers. 
 
-Silencio features advanced score generators based on recurrent iterated function systems and parametric Lindenmayer systems, and includes code for chord transformations and voice-leading based on the work of [Dmitri Tymoczko](http://dmitri.mycpanel.princeton.edu/) and other mathematical music theorists. I have been performing works composed with Silencio at conferences and festivals for several years.
+Silencio features advanced score generators based on recurrent iterated function systems and parametric Lindenmayer systems, and includes code for chord transformations and voice-leading inspired by the work of [Dmitri Tymoczko](http://dmitri.mycpanel.princeton.edu/) and other mathematical music theorists. I have been performing works composed with Silencio at conferences and festivals for several years.
 
 Please note, some full-scale examples for Silencio may be found at https://github.com/gogins/gogins.github.io.
 
-The original version of Silencio is written in the Lua programming language, and runs best on Mike Pall's marvelous [LuaJIT/FFI](http://luajit.org/). The current version of Silencio is written in portable JavaScript because that makes more capabilities available to Csound than any other programming environment, including animated 3-dimensional graphics and symbolic mathematics. 
+The original version of Silencio is written in the Lua programming language, and runs best on Mike Pall's marvelous [LuaJIT/FFI](http://luajit.org/). The current version of Silencio is written in portable JavaScript because that makes more capabilities (audio, MIDI, animated 3-dimensional graphics, video, proper mathematics typesetting, symbolic mathematics, <it>etc</it>., <it>etc</it>.) available to Csound than any other programming environment. 
 
-For the most part, only the JavaScript version is currently under development, although I will fix bugs in the Lua version. If and when [WebAssembly](http://webassembly.org/) becomes an accepted standard implemented in major Web browsers, I will port Silencio to WebAssembly, probably by updating my [CsoundAC C++ code base](https://github.com/csound/csound/tree/develop/frontends/CsoundAC) which is the inspiration for Silencio. 
+Thus, for the most part, only the JavaScript version is currently under development, although I will fix bugs in the Lua version. If and when [WebAssembly](http://webassembly.org/) becomes an accepted standard implemented in major Web browsers, I will port Silencio to WebAssembly, probably by updating my [CsoundAC C++ code base](https://github.com/csound/csound/tree/develop/frontends/CsoundAC) which is the inspiration for Silencio. 
 
 Both the Lua and the JavaScript versions of Silencio are designed to be used with [Csound](http://csound.github.io/) as part of a computer music "playpen" for rapid, iterative composition and development without functional limitations:
 
