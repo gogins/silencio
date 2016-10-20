@@ -57,9 +57,9 @@ An Event is a homogeneous vector with the following dimensions:
  4 MIDI channel (any real number >= 0, fractional part ties events).
  5 MIDI key number from 0 to 127, 60 is middle C (a real number).
  6 MIDI velocity from 0 to 127, 80 is mezzo-forte (a real number).
- 7 x or depth, 0 is the origin.
- 8 y or pan, 0 is the origin.
- 9 z or heigth, 0 is the origin.
+ 7 x or pan, 0 is the origin.
+ 8 y or height, 0 is the origin.
+ 9 z or depth, 0 is the origin.
 10 Phase, in radians.
 11 Homogeneity, normally always 1.
 
@@ -371,6 +371,12 @@ Score.prototype.append = function(event) {
   this.data.push(event);
 }
 
+Score.prototype.append_score = function (score) {
+    for (var i = 0; i < score.data.length; i++) {
+        this.data.push(score.data[i]);
+    }
+}
+
 Score.prototype.clear = function () {
   while(this.data.length > 0) {
     this.data.pop();
@@ -636,6 +642,9 @@ Score.prototype.draw = function(canvas, W, H) {
   return context;
 }
 
+/**
+ * Displays the score cursor at the current time.
+ */
 Score.prototype.progress3D = function(score_time) {
     if (this.scene !== null) {
         this.score_cursor.position.x = score_time;
@@ -648,31 +657,14 @@ Score.prototype.progress3D = function(score_time) {
 }
 
 /**
- * Draws the notes in this score as a 3-dimensional piano roll. The score is 
- * fitted into the viewport to start with, but the user can use the mouse or 
- * trackball to move around the score and to zoom in and out. The dimensions 
- * are: time = x, MIDI key = y, MIDI channel = z and hue, and loudness = 
- * value; a grid shows tens of seconds and octaves.
+ * Sets up a scene, camera, and renderer with controls to view 
+ * either a fixed or a real-time score.
  */
-Score.prototype.draw3D = function(canvas) {
+Score.prototype.prepareScene3D = function(canvas) {
     this.canvas = canvas;
     canvas.width  = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     this.findScales();
-    var time_minimum = this.minima.time;
-    var time_maximum = this.getDuration();
-    var key_minimum = this.minima.key;
-    var key_maximum = this.maxima.key;
-    var channel_minimum = this.minima.channel;
-    var channel_maximum = this.maxima.channel;
-    var channelRange = this.ranges.channel;
-    if (channelRange == 0) {
-        channelRange = 1;
-    }
-    var velocityRange = this.ranges.velocity;
-    if (velocityRange == 0) {        
-        velocityRange = 1;
-    }
     this.scene = new THREE.Scene();
     var scene = this.scene;
     this.renderer = new THREE.WebGLRenderer({canvas: canvas, antialias: true});
@@ -699,33 +691,66 @@ Score.prototype.draw3D = function(canvas) {
     this.scene.add(light);
     var light2 = new THREE.AmbientLight(0x404040, .5);
     this.scene.add(light2);
-    // Plot the notes.
-    for (var i = 0; i < this.data.length; i++) {
-        var begin = this.data[i].time;
-        var end = this.data[i].end;
-        var duration = end - begin;
-        var key = this.data[i].key;
-        var channel = this.data[i].channel - this.minima.channel;
-        var geometry = new THREE.BoxBufferGeometry(duration, 1, 1);
-        hue = channel / channelRange;
-        var value = this.data[i].velocity - this.minima.velocity;
-        value = value / velocityRange;
-        value = .5 + value / 2;
-        var material = new THREE.MeshLambertMaterial();
-        material.color.setHSL(hue, 1, value);
-        material.opacity = 0.5;
-        material.reflectivity = 0.5;
-        material.transparent = true;
-        material.emissive = material.color;
-        material.emissiveIntensity = 2 / 3;
-        var note = new THREE.Mesh(geometry, material);
-        note.position.x = begin + duration / 2;// + note.scale.x;
-        note.position.y = key;
-        note.position.z = channel;
-        this.scene.add(note);
-    }    
+    var onResize = function() {
+        canvas.width  = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        this.renderer.setViewport(0, 0, canvas.clientWidth, canvas.clientHeight);
+        this.camera.aspect = canvas.clientWidth / canvas.clientHeight;
+        this.controls.handleResize();
+        this.camera.updateProjectionMatrix();
+        this.renderer.render(this.scene, this.camera);
+    }
+    window.addEventListener('resize', onResize, false);
+}
+
+/**
+ * Adds the note to the 3D scene. Can be used with a fixed or a real-time score.
+ */
+Score.prototype.plotNote3D = function(note) {
+    var begin = note.time;
+    var end = note.end;
+    var duration = end - begin;
+    var key = note.key;
+    var channel = note.channel - this.minima.channel;
+    var geometry = new THREE.BoxBufferGeometry(duration, 1, 1);
+    var channelRange = this.ranges.channel;
+    if (channelRange == 0) {
+        channelRange = 1;
+    }
+    var velocityRange = this.ranges.velocity;
+    if (velocityRange == 0) {        
+        velocityRange = 1;
+    }
+    hue = channel / channelRange;
+    var value = note.velocity - this.minima.velocity;
+    value = value / velocityRange;
+    value = .5 + value / 2;
+    var material = new THREE.MeshLambertMaterial();
+    material.color.setHSL(hue, 1, value);
+    material.opacity = 0.5;
+    material.reflectivity = 0.5;
+    material.transparent = true;
+    material.emissive = material.color;
+    material.emissiveIntensity = 2 / 3;
+    var note_mesh = new THREE.Mesh(geometry, material);
+    note_mesh.position.x = begin + duration / 2;// + note.scale.x;
+    note_mesh.position.y = key;
+    note_mesh.position.z = channel;
+    this.scene.add(note_mesh);
+}
+
+/**
+ * Plots a grid for a fixed score.
+ */
+Score.prototype.plotGrid3D = function() {
     // Generate the grid. Its origin for time is 0 and for pitch its origin is the 
     // first C lower than or equal to the lowest pitch in the score.
+    var time_minimum = this.minima.time;
+    var time_maximum = this.getDuration();
+    var key_minimum = this.minima.key;
+    var key_maximum = this.maxima.key;
+    var channel_minimum = this.minima.channel;
+    var channel_maximum = this.maxima.channel;    
     var line_material = new THREE.LineBasicMaterial();
     time_minimum = 0;
     instrument_minimum = 0;
@@ -766,26 +791,53 @@ Score.prototype.draw3D = function(canvas) {
     this.score_cursor.position.y = 60;
     this.score_cursor.position.z = 0;
     this.scene.add(this.score_cursor);
-    var onResize = function() {
-        canvas.width  = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-        renderer.setViewport(0, 0, canvas.clientWidth, canvas.clientHeight);
-        camera.aspect = canvas.clientWidth / canvas.clientHeight;
-        controls.handleResize();
-        camera.updateProjectionMatrix();
-        renderer.render(scene, camera);
-    }
-    window.addEventListener('resize', onResize, false);
-    // Start out looking straight at the full score.
-    var bounding_box = new THREE.Box3().setFromObject(scene);
-    camera.lookAt(bounding_box.getCenter());
-    camera.fov = 2 * Math.atan((bounding_box.getSize().x / (canvas.width / canvas.height)) / (2 * bounding_box.getSize().y)) * (180 / Math.PI);
-    camera.position.copy(bounding_box.getCenter());
-    camera.position.z = 1.125 * Math.min(bounding_box.getSize().x, bounding_box.getSize().y);
-    controls.target.copy(bounding_box.getCenter());
-    controls.update();
-    camera.updateProjectionMatrix();
-    renderer.render(scene, camera);
+}
+
+/**
+ * Looks at a full fixed score.
+ */
+Score.prototype.lookAtFullScore3D = function() {
+    var bounding_box = new THREE.Box3().setFromObject(this.scene);
+    this.camera.lookAt(bounding_box.getCenter());
+    this.camera.fov = 2 * Math.atan((bounding_box.getSize().x / (this.canvas.width / this.canvas.height)) / (2 * bounding_box.getSize().y)) * (180 / Math.PI);
+    this.camera.position.copy(bounding_box.getCenter());
+    this.camera.position.z = 1.125 * Math.min(bounding_box.getSize().x, bounding_box.getSize().y);
+    this.controls.target.copy(bounding_box.getCenter());
+    this.controls.update();
+    this.camera.updateProjectionMatrix();
+    this.renderer.render(this.scene, this.camera);
+}
+
+/**
+ * Looks at the front (current notes) of a real-time score.
+ */
+Score.prototype.lookAtFront3D = function() {
+    var bounding_box = new THREE.Box3().setFromObject(this.scene);
+    this.camera.lookAt(bounding_box.getCenter());
+    this.camera.fov = 2 * Math.atan((bounding_box.getSize().z / (this.canvas.width / this.canvas.height)) / (2 * bounding_box.getSize().y)) * (180 / Math.PI);
+    this.camera.position.copy(bounding_box.getCenter());
+    this.camera.position.z = 1.125 * Math.min(bounding_box.getSize().z, bounding_box.getSize().y);
+    this.controls.target.copy(bounding_box.getCenter());
+    this.controls.update();
+    this.camera.updateProjectionMatrix();
+    this.renderer.render(this.scene, this.camera);
+}
+
+/**
+ * Draws the notes in a fixed score as a 3-dimensional piano roll. The score is 
+ * fitted into the viewport to start with, but the user can use the mouse or 
+ * trackball to move around the score and to zoom in and out. The dimensions 
+ * are: time = x, MIDI key = y, MIDI channel = z and hue, and loudness = 
+ * value; a grid shows tens of seconds and octaves.
+ */
+Score.prototype.draw3D = function(canvas) {
+    this.prepareScene3D(canvas);
+    // Plot the notes.
+    for (var i = 0; i < this.data.length; i++) {
+        this.plotNote3D(this.data[i]);
+    }    
+    this.plotGrid3D();
+    this.lookAtFullScore3D();
     return canvas;
 }
 
