@@ -1,5 +1,5 @@
 # Silencio 
-## Please note, this repository is deprecated. It has been replaced by the csound/silecio subdirectory i https://github.com/gogins/gogins.github.io.git, where all further development will be done.
+## Please note, this repository is deprecated. It has been replaced by the csound/silecio subdirectory in `https://github.com/gogins/gogins.github.io.git`, where all further development will be done.
 
 Michael Gogins<br>
 http://michaelgogins.tumblr.com<br>
@@ -37,7 +37,7 @@ Currently, the environments I recommend for musicians are csound.node running in
 
 ### 29 October 2016
 
-I have deprecated this repository. It will remain as is indefinitely. Please use https://github.com/gogins/gogins.github.io.git, specifically the csound/silencio subdirectory, where all further development will be done.
+I have deprecated this repository. It will remain as is indefinitely. Please use `https://github.com/gogins/gogins.github.io.git`, specifically the csound/silencio subdirectory, where all further development will be done.
 
 ### 12 October 2016
 
