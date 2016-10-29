@@ -1,4 +1,5 @@
-# Silencio
+# Silencio 
+## Please note, this repository is deprecated. It has been replaced by the csound/silecio subdirectory i https://github.com/gogins/gogins.github.io.git, where all further development will be done.
 
 Michael Gogins<br>
 http://michaelgogins.tumblr.com<br>
@@ -33,6 +34,10 @@ Both the Lua and the JavaScript versions of Silencio are designed to be used wit
 Currently, the environments I recommend for musicians are csound.node running in [NW.js](http://nwjs.io/) on the desktop, and [Csound for Android](https://play.google.com/store/apps/details?id=com.csounds.Csound6&hl=en) for mobile devices.
 
 ## News
+
+### 29 October 2016
+
+I have deprecated this repository. It will remain as is indefinitely. Please use https://github.com/gogins/gogins.github.io.git, specifically the csound/silencio subdirectory, where all further development will be done.
 
 ### 12 October 2016
 
