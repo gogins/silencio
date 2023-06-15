@@ -5,6 +5,20 @@ Michael Gogins<br>
 http://michaelgogins.tumblr.com<br>
 michael /dot/ gogins /at/ gmail /dot/ com
 
+https://www.modartt.com/organteq
+
+## Deprecation Notice
+
+Currently, I am not maintaining this repository. In general, my priority is 
+composing music, not programming. However, I do create open-source GitHub 
+repositories in order to share tools that I make for composing. As my 
+working methods change, so do the tools I make. 
+
+Please look at [my other GitHub repositories](https://github.com/gogins?tab=repositories) 
+for tools I currently maintain.
+
+However, this repository will remain available.
+
 ## Introduction
 
 This code is licensed under the terms of the GNU Library General Public License, version 2.
