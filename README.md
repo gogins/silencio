@@ -1,5 +1,4 @@
 # Silencio 
-## Please note, this repository is deprecated. It has been replaced by the csound/silecio subdirectory in https://github.com/gogins/gogins.github.io.git, where all further development will be done.
 
 Michael Gogins<br>
 http://michaelgogins.tumblr.com<br>
